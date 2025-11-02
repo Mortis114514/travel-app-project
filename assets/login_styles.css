@@ -1,0 +1,199 @@
+/* 登入系統專用樣式 */
+
+/* 引入 FontAwesome */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
+
+/* 淡入動畫 */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* 從上方淡入動畫 */
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 從下方滑入動畫 */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(40px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 背景光暈動畫 */
+@keyframes glow {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(222, 181, 34, 0.3),
+                    0 0 40px rgba(222, 181, 34, 0.2),
+                    0 0 60px rgba(222, 181, 34, 0.1);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(222, 181, 34, 0.4),
+                    0 0 60px rgba(222, 181, 34, 0.3),
+                    0 0 90px rgba(222, 181, 34, 0.2);
+    }
+}
+
+/* 輸入框聚焦效果 */
+input:focus {
+    border-color: #deb522 !important;
+    box-shadow: 0 0 0 3px rgba(222, 181, 34, 0.2) !important;
+    outline: none !important;
+}
+
+/* 按鈕懸停效果 */
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(222, 181, 34, 0.5) !important;
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* 連結懸停效果 */
+a:hover {
+    text-decoration: underline !important;
+    filter: brightness(1.2);
+}
+
+/* 卡片懸停效果 */
+.card:hover {
+    animation: glow 2s ease-in-out infinite;
+}
+
+/* 漸變文字動畫 */
+@keyframes gradientShift {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Logo 旋轉動畫（懸停時） */
+img:hover {
+    transform: scale(1.05) rotate(5deg);
+    transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* 平滑滾動 */
+html {
+    scroll-behavior: smooth;
+}
+
+/* 選擇文字顏色 */
+::selection {
+    background-color: rgba(222, 181, 34, 0.3);
+    color: #fff;
+}
+
+::-moz-selection {
+    background-color: rgba(222, 181, 34, 0.3);
+    color: #fff;
+}
+
+/* 自定義滾動條 */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0a0a0a;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #deb522 0%, #f5d876 100%);
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #f5d876 0%, #deb522 100%);
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 1.8rem !important;
+    }
+
+    .card {
+        margin: 10px !important;
+    }
+}
+
+/* Placeholder 顏色 */
+::placeholder {
+    color: #666 !important;
+    opacity: 1;
+}
+
+:-ms-input-placeholder {
+    color: #666 !important;
+}
+
+::-ms-input-placeholder {
+    color: #666 !important;
+}
+
+/* 禁用元素樣式 */
+input:disabled, button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Loading 動畫 */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading {
+    animation: spin 1s linear infinite;
+}
+
+/* 錯誤訊息動畫 */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+.alert {
+    animation: fadeIn 0.3s ease-out, shake 0.5s ease-out;
+}
+
+/* Icon 脈衝動畫 */
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.fa-user-circle, .fa-user-plus {
+    animation: pulse 2s ease-in-out infinite;
+}

@@ -6,10 +6,14 @@ import pandas as pd
 import dash_leaflet as dl
 from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
+import uuid
+from datetime import datetime, timedelta
 
 # 從./utils導入所有自定義函數
 from utils.const import get_constants, TAB_STYLE, ALL_COMPARE_METRICS
 from utils.data_clean import travel_data_clean, countryinfo_data_clean, data_merge
+from utils.auth import verify_user, create_user, get_session, create_session, delete_session, clean_expired_sessions
+from pages.login_page import create_login_layout, create_register_layout
 from utils.data_transform import (
     prepare_country_compare_data, 
     get_dashboard_default_values, 
@@ -69,10 +73,18 @@ server = app.server
 
 # ===== 版面配置 =====
 app.layout = html.Div([
-    dbc.Container([
+    dcc.Location(id='url', refresh=False),
+    dcc.Store(id='session-store', storage_type='session'),
+    dcc.Store(id='page-mode', data='login', storage_type='memory'),  # 'login' 或 'register'
+    html.Div(id='page-content', style={'minHeight': '100vh'})
+], style={'backgroundColor': '#1a1a1a', 'minHeight': '100vh'})
+
+# 主應用布局（登入後顯示）
+def create_main_layout():
+    return dbc.Container([
         # 頂部 Logo 與 分頁選項
         dbc.Row([
-            dbc.Col(html.Img(src="./assets/logo.png", height=100), width=5, style={'marginTop': '15px'}),
+            dbc.Col(html.Img(src="./assets/logo.png", height=100), width=4, style={'marginTop': '15px'}),
             dbc.Col(
                 dcc.Tabs(id='graph-tabs', value='overview', children=[
                     dcc.Tab(label='Overview', value='overview',
@@ -82,8 +94,22 @@ app.layout = html.Div([
                     dcc.Tab(label='Attractions', value='attractions',
                             style=TAB_STYLE['idle'], selected_style=TAB_STYLE['active']),
                 ], style={'height':'50px'}),
-                width=7, style={'alignSelf': 'center'}
+                width=6, style={'alignSelf': 'center'}
             ),
+            dbc.Col([
+                dbc.Button(
+                    '登出',
+                    id='logout-button',
+                    color='warning',
+                    size='sm',
+                    style={
+                        'backgroundColor': '#deb522',
+                        'border': 'none',
+                        'fontWeight': 'bold',
+                        'marginTop': '30px'
+                    }
+                )
+            ], width=2, style={'textAlign': 'right'})
         ]),
 
         # 四格統計
@@ -97,7 +123,151 @@ app.layout = html.Div([
         # 頁面主要內容的放置區(容器)
         html.Div(id='graph-content')
     ], style={'padding': '0px'})
-], style={'backgroundColor': 'black', 'minHeight': '100vh'})
+
+# ====== 認證相關 Callbacks ======
+
+# 頁面路由控制
+@app.callback(
+    [Output('page-content', 'children'),
+     Output('page-mode', 'data')],
+    [Input('url', 'pathname'),
+     Input('session-store', 'data')],
+    [State('page-mode', 'data')],
+    prevent_initial_call=False
+)
+def display_page(pathname, session_data, current_mode):
+    """根據 session 狀態顯示登入頁或主頁面"""
+    # 清理過期 sessions
+    clean_expired_sessions()
+
+    # 檢查 session
+    if session_data and 'session_id' in session_data:
+        user_id = get_session(session_data['session_id'])
+        if user_id:
+            # 已登入，顯示主應用
+            return create_main_layout(), 'main'
+
+    # 未登入，根據當前模式顯示登入或註冊頁
+    if current_mode == 'register':
+        return create_register_layout(), 'register'
+
+    return create_login_layout(), 'login'
+
+# 切換到註冊頁面
+@app.callback(
+    Output('page-mode', 'data', allow_duplicate=True),
+    [Input('register-link', 'n_clicks')],
+    prevent_initial_call=True
+)
+def switch_to_register(n_clicks):
+    """切換到註冊頁面"""
+    if n_clicks:
+        return 'register'
+    raise PreventUpdate
+
+# 切換回登入頁面
+@app.callback(
+    Output('page-mode', 'data', allow_duplicate=True),
+    [Input('back-to-login-link', 'n_clicks')],
+    prevent_initial_call=True
+)
+def switch_to_login(n_clicks):
+    """切換回登入頁面"""
+    if n_clicks:
+        return 'login'
+    raise PreventUpdate
+
+# 登入處理
+@app.callback(
+    [Output('session-store', 'data'),
+     Output('login-error-message', 'children')],
+    [Input('login-button', 'n_clicks')],
+    [State('login-username', 'value'),
+     State('login-password', 'value'),
+     State('login-remember', 'value')],
+    prevent_initial_call=True
+)
+def login(n_clicks, username, password, remember):
+    """處理使用者登入"""
+    if not n_clicks:
+        raise PreventUpdate
+
+    # 驗證輸入
+    if not username or not password:
+        return no_update, dbc.Alert('請輸入使用者名稱和密碼', color='danger')
+
+    # 驗證使用者
+    user = verify_user(username, password)
+
+    if user:
+        # 登入成功，建立 session
+        session_id = str(uuid.uuid4())
+        user_id = user[0]
+
+        # 根據「記住我」設定過期時間
+        if remember:
+            expires_at = datetime.now() + timedelta(days=30)
+        else:
+            expires_at = datetime.now() + timedelta(hours=2)
+
+        create_session(user_id, session_id, expires_at)
+
+        return {'session_id': session_id, 'user_id': user_id, 'username': user[1]}, None
+    else:
+        return no_update, dbc.Alert('使用者名稱或密碼錯誤', color='danger')
+
+# 登出處理
+@app.callback(
+    Output('session-store', 'data', allow_duplicate=True),
+    [Input('logout-button', 'n_clicks')],
+    [State('session-store', 'data')],
+    prevent_initial_call=True
+)
+def logout(n_clicks, session_data):
+    """處理使用者登出"""
+    if not n_clicks:
+        raise PreventUpdate
+
+    if session_data and 'session_id' in session_data:
+        delete_session(session_data['session_id'])
+
+    return None
+
+# 註冊處理
+@app.callback(
+    Output('register-message', 'children'),
+    [Input('register-button', 'n_clicks')],
+    [State('register-username', 'value'),
+     State('register-email', 'value'),
+     State('register-password', 'value'),
+     State('register-password-confirm', 'value')],
+    prevent_initial_call=True
+)
+def register(n_clicks, username, email, password, password_confirm):
+    """處理使用者註冊"""
+    if not n_clicks:
+        raise PreventUpdate
+
+    # 驗證輸入
+    if not username or not password:
+        return dbc.Alert('請輸入使用者名稱和密碼', color='danger')
+
+    if len(password) < 6:
+        return dbc.Alert('密碼至少需要 6 個字元', color='danger')
+
+    if password != password_confirm:
+        return dbc.Alert('兩次輸入的密碼不一致', color='danger')
+
+    # 建立使用者
+    success, message = create_user(username, password, email)
+
+    if success:
+        return dbc.Alert([
+            html.P(message, style={'marginBottom': '10px'}),
+            html.P('請返回登入頁面進行登入', style={'marginBottom': '0'})
+        ], color='success')
+    else:
+        return dbc.Alert(message, color='danger')
 
 # ====== 頁面切換內容 ======
 @app.callback(
