@@ -50,7 +50,7 @@ def create_login_layout():
                                 }
                             ),
                             html.P(
-                                'Travel Data Analysis Platform',
+                                'Roger Travel Platform',
                                 style={
                                     'textAlign': 'center',
                                     'color': '#999',

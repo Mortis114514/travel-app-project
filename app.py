@@ -1,5 +1,5 @@
 # Import 所有相關套件
-from dash import Dash, html, dcc, Input, State, Output, dash_table, no_update
+from dash import Dash, html, dcc, Input, State, Output, dash_table, no_update, callback_context
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 import pandas as pd
@@ -67,7 +67,11 @@ def load_data(tab):
 ##########################
 ####   初始化應用程式   ####
 ##########################
-app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP],
+app = Dash(__name__, external_stylesheets=[
+    dbc.themes.BOOTSTRAP,
+    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
+    '/assets/gear_menu.css'
+],
            title='Travel Data Analysis Dashboard', suppress_callback_exceptions=True)
 server = app.server
 
@@ -76,40 +80,52 @@ app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
     dcc.Store(id='session-store', storage_type='session'),
     dcc.Store(id='page-mode', data='login', storage_type='memory'),  # 'login' 或 'register'
+    dcc.Store(id='current-page', data='overview', storage_type='memory'),  # 記錄當前頁面
+    dcc.Store(id='menu-open', data=False, storage_type='memory'),  # 記錄選單開關狀態
     html.Div(id='page-content', style={'minHeight': '100vh'})
 ], style={'backgroundColor': '#1a1a1a', 'minHeight': '100vh'})
 
 # 主應用布局（登入後顯示）
 def create_main_layout():
     return dbc.Container([
-        # 頂部 Logo 與 分頁選項
+        # 齒輪選單按鈕
+        html.Div([
+            html.Div([
+                html.Div([
+                    html.Div(className='hamburger-line'),
+                    html.Div(className='hamburger-line'),
+                ], className='hamburger-lines')
+            ], id='gear-button', className='gear-button', n_clicks=0),
+
+            # 下拉選單
+            html.Div([
+                html.Div([
+                    html.I(className='fas fa-chart-line'),
+                    html.Span('Overview')
+                ], id='menu-overview', className='menu-item', n_clicks=0),
+
+                html.Div([
+                    html.I(className='fas fa-map-marked-alt'),
+                    html.Span('Trip Planner')
+                ], id='menu-planner', className='menu-item', n_clicks=0),
+
+                html.Div([
+                    html.I(className='fas fa-map-pin'),
+                    html.Span('Attractions')
+                ], id='menu-attractions', className='menu-item', n_clicks=0),
+
+                html.Div(className='menu-divider'),
+
+                html.Div([
+                    html.I(className='fas fa-sign-out-alt'),
+                    html.Span('登出')
+                ], id='menu-logout', className='menu-item logout-item', n_clicks=0),
+            ], id='menu-dropdown', className='menu-dropdown')
+        ], className='gear-menu-container'),
+
+        # 頂部 Logo
         dbc.Row([
-            dbc.Col(html.Img(src="./assets/logo.png", height=100), width=4, style={'marginTop': '15px'}),
-            dbc.Col(
-                dcc.Tabs(id='graph-tabs', value='overview', children=[
-                    dcc.Tab(label='Overview', value='overview',
-                            style=TAB_STYLE['idle'], selected_style=TAB_STYLE['active']),
-                    dcc.Tab(label='Trip Planner', value='planner',
-                            style=TAB_STYLE['idle'], selected_style=TAB_STYLE['active']),
-                    dcc.Tab(label='Attractions', value='attractions',
-                            style=TAB_STYLE['idle'], selected_style=TAB_STYLE['active']),
-                ], style={'height':'50px'}),
-                width=6, style={'alignSelf': 'center'}
-            ),
-            dbc.Col([
-                dbc.Button(
-                    '登出',
-                    id='logout-button',
-                    color='warning',
-                    size='sm',
-                    style={
-                        'backgroundColor': '#deb522',
-                        'border': 'none',
-                        'fontWeight': 'bold',
-                        'marginTop': '30px'
-                    }
-                )
-            ], width=2, style={'textAlign': 'right'})
+            dbc.Col(html.Img(src="./assets/logo.png", height=100), width=12, style={'marginTop': '15px', 'textAlign': 'center'}),
         ]),
 
         # 四格統計
@@ -216,23 +232,6 @@ def login(n_clicks, username, password, remember):
     else:
         return no_update, dbc.Alert('使用者名稱或密碼錯誤', color='danger')
 
-# 登出處理
-@app.callback(
-    Output('session-store', 'data', allow_duplicate=True),
-    [Input('logout-button', 'n_clicks')],
-    [State('session-store', 'data')],
-    prevent_initial_call=True
-)
-def logout(n_clicks, session_data):
-    """處理使用者登出"""
-    if not n_clicks:
-        raise PreventUpdate
-
-    if session_data and 'session_id' in session_data:
-        delete_session(session_data['session_id'])
-
-    return None
-
 # 註冊處理
 @app.callback(
     Output('register-message', 'children'),
@@ -269,10 +268,96 @@ def register(n_clicks, username, email, password, password_confirm):
     else:
         return dbc.Alert(message, color='danger')
 
+# ====== 齒輪選單相關 Callbacks ======
+
+# 切換選單開關狀態
+@app.callback(
+    Output('menu-open', 'data'),
+    [Input('gear-button', 'n_clicks')],
+    [State('menu-open', 'data')],
+    prevent_initial_call=True
+)
+def toggle_menu(n_clicks, is_open):
+    """切換選單的開關狀態"""
+    return not is_open
+
+# 更新選單和齒輪的顯示樣式
+@app.callback(
+    [Output('menu-dropdown', 'className'),
+     Output('gear-button', 'className')],
+    [Input('menu-open', 'data')]
+)
+def update_menu_display(is_open):
+    """根據開關狀態更新選單和齒輪的樣式"""
+    if is_open:
+        return 'menu-dropdown show', 'gear-button active'
+    return 'menu-dropdown', 'gear-button'
+
+# 處理選單項目點擊 - 切換頁面
+@app.callback(
+    [Output('current-page', 'data'),
+     Output('menu-open', 'data', allow_duplicate=True)],
+    [Input('menu-overview', 'n_clicks'),
+     Input('menu-planner', 'n_clicks'),
+     Input('menu-attractions', 'n_clicks')],
+    prevent_initial_call=True
+)
+def navigate_page(overview_clicks, planner_clicks, attractions_clicks):
+    """根據點擊的選單項目切換頁面"""
+    ctx = callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
+
+    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
+
+    # 根據點擊的按鈕決定顯示哪個頁面
+    page_map = {
+        'menu-overview': 'overview',
+        'menu-planner': 'planner',
+        'menu-attractions': 'attractions'
+    }
+
+    return page_map.get(button_id, 'overview'), False  # 切換頁面後關閉選單
+
+# 處理登出按鈕
+@app.callback(
+    Output('session-store', 'data', allow_duplicate=True),
+    [Input('menu-logout', 'n_clicks')],
+    [State('session-store', 'data')],
+    prevent_initial_call=True
+)
+def logout_from_menu(n_clicks, session_data):
+    """從選單登出"""
+    if not n_clicks:
+        raise PreventUpdate
+
+    if session_data and 'session_id' in session_data:
+        delete_session(session_data['session_id'])
+
+    return None
+
+# 更新選單項目的 active 狀態
+@app.callback(
+    [Output('menu-overview', 'className'),
+     Output('menu-planner', 'className'),
+     Output('menu-attractions', 'className')],
+    [Input('current-page', 'data')]
+)
+def update_menu_active_state(current_page):
+    """根據當前頁面更新選單項目的 active 狀態"""
+    base_class = 'menu-item'
+    active_class = 'menu-item active'
+
+    return (
+        active_class if current_page == 'overview' else base_class,
+        active_class if current_page == 'planner' else base_class,
+        active_class if current_page == 'attractions' else base_class
+    )
+
 # ====== 頁面切換內容 ======
 @app.callback(
     Output('graph-content', 'children'),
-    [Input('graph-tabs', 'value')]
+    [Input('current-page', 'data')]
 )
 def render_tab_content(tab):
     if tab == 'overview':
@@ -489,7 +574,7 @@ def render_tab_content(tab):
 # 長條圖（Bar Chart）
 @app.callback(
     Output('tabs-content-1', 'children'),
-    [Input('dropdown-bar-1', 'value'), Input('graph-tabs', 'value')]
+    [Input('dropdown-bar-1', 'value'), Input('current-page', 'data')]
 )
 def update_bar_chart(dropdown_value, tab):
     # 只在 "overview" 分頁時才更新圖表，否則不動
@@ -509,7 +594,7 @@ def update_bar_chart(dropdown_value, tab):
 # 圓餅圖（Pie Chart）
 @app.callback(
     Output('tabs-content-2', 'children'),
-    [Input('dropdown-pie-1', 'value'), Input('dropdown-pie-2', 'value'), Input('graph-tabs', 'value')]
+    [Input('dropdown-pie-1', 'value'), Input('dropdown-pie-2', 'value'), Input('current-page', 'data')]
 )
 def update_pie_chart(dropdown_value_1, dropdown_value_2, tab):
     if tab != 'overview':
@@ -527,7 +612,7 @@ def update_pie_chart(dropdown_value_1, dropdown_value_2, tab):
 # 地圖（Map Chart）
 @app.callback(
     Output('tabs-content-3', 'children'),
-    [Input('dropdown-map-1', 'value'), Input('dropdown-map-2', 'value'), Input('graph-tabs', 'value')]
+    [Input('dropdown-map-1', 'value'), Input('dropdown-map-2', 'value'), Input('current-page', 'data')]
 )
 def update_map(dropdown_value_1, dropdown_value_2, tab):
     if tab != 'overview':
@@ -545,7 +630,7 @@ def update_map(dropdown_value_1, dropdown_value_2, tab):
 # 盒鬚圖（Box Chart）
 @app.callback(
     Output('tabs-content-4', 'children'),
-    [Input('dropdown-box-1', 'value'), Input('dropdown-box-2', 'value'), Input('graph-tabs', 'value')]
+    [Input('dropdown-box-1', 'value'), Input('dropdown-box-2', 'value'), Input('current-page', 'data')]
 )
 def update_box_chart(dropdown_value_1, dropdown_value_2, tab):
     if tab != 'overview':
@@ -559,7 +644,7 @@ def update_box_chart(dropdown_value_1, dropdown_value_2, tab):
 ####################################
 #### Trip Planner 頁面 callbacks ####
 ####################################
-# 推薦國家表格 
+# 推薦國家表格
 @app.callback(
     [Output('planner-table-container', 'children'),
      Output('planner-selected-countries', 'data')],
@@ -571,7 +656,7 @@ def update_box_chart(dropdown_value_1, dropdown_value_2, tab):
         Input('planner-visa-only', 'value'),
         Input('w-safety', 'value'),
         Input('w-cost', 'value'),
-        Input('graph-tabs', 'value'),
+        Input('current-page', 'data'),
     ]
 )
 def update_trip_planner_table(cost_min, cost_max, acc_types,
@@ -631,7 +716,7 @@ def update_trip_planner_table(cost_min, cost_max, acc_types,
      Output('planner-compare-bar', 'children'),
      Output('planner-compare-line', 'children')],
     [Input('planner-selected-countries', 'data'),
-     Input('graph-tabs', 'value')]
+     Input('current-page', 'data')]
 )
 def update_trip_planner_comparison(countries, tab):
     if tab != 'planner':
@@ -661,7 +746,7 @@ def update_trip_planner_comparison(countries, tab):
 @app.callback(
     [Output('attractions-output-container', 'children'),
      Output('attractions-map-container', 'children')],
-    [Input('attractions-submit', 'n_clicks'), Input('graph-tabs', 'value')],
+    [Input('attractions-submit', 'n_clicks'), Input('current-page', 'data')],
     [State('attractions-dropdown', 'value')],
     prevent_initial_call=True
 )

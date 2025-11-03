@@ -1,0 +1,208 @@
+/* 齒輪選單樣式 */
+
+/* 齒輪按鈕容器 */
+.gear-menu-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+/* 齒輪按鈕 */
+.gear-button {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: url('./bg_hamburger.png') center/cover no-repeat;
+    border: 3px solid #deb522;
+    cursor: pointer;
+    position: relative;
+    box-shadow: 0 4px 15px rgba(222, 181, 34, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: rotate-forever 8s linear infinite;
+}
+
+.gear-button:hover {
+    box-shadow: 0 6px 20px rgba(222, 181, 34, 0.6);
+}
+
+/* 齒輪永久旋轉動畫 */
+@keyframes rotate-forever {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* 點擊時加速旋轉 */
+.gear-button.active {
+    animation: rotate-fast 1s linear infinite;
+}
+
+@keyframes rotate-fast {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* 中間的兩條線（漢堡選單圖示） */
+.hamburger-lines {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    pointer-events: none;
+    animation: counter-rotate 8s linear infinite;
+}
+
+/* 反向旋轉，抵消齒輪旋轉，保持線條垂直 */
+@keyframes counter-rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(-360deg);
+    }
+}
+
+/* 選單打開時，線條加速反向旋轉以抵消齒輪加速 */
+.gear-button.active .hamburger-lines {
+    animation: counter-rotate-fast 1s linear infinite;
+}
+
+@keyframes counter-rotate-fast {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(-360deg);
+    }
+}
+
+.hamburger-line {
+    width: 30px;
+    height: 3px;
+    background-color: #deb522;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.gear-button.active .hamburger-line:first-child {
+    transform: translateY(5.5px) rotate(45deg);
+    transition: all 0.3s ease 0.1s;
+}
+
+.gear-button.active .hamburger-line:last-child {
+    transform: translateY(-5.5px) rotate(-45deg);
+    transition: all 0.3s ease 0.1s;
+}
+
+/* 選單容器 */
+.menu-dropdown {
+    position: fixed;
+    top: 110px;
+    right: 20px;
+    background: rgba(26, 26, 26, 0.98);
+    border: 2px solid #deb522;
+    border-radius: 16px;
+    padding: 15px 0;
+    min-width: 200px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(222, 181, 34, 0.2);
+    backdrop-filter: blur(10px);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-20px);
+    transition: all 0.3s ease;
+    z-index: 9998;
+}
+
+.menu-dropdown.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* 選單項目 */
+.menu-item {
+    padding: 15px 25px;
+    color: #deb522;
+    font-weight: 600;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.menu-item:hover {
+    background: rgba(222, 181, 34, 0.1);
+    border-left-color: #deb522;
+    padding-left: 30px;
+}
+
+.menu-item.active {
+    background: rgba(222, 181, 34, 0.2);
+    border-left-color: #deb522;
+}
+
+.menu-item i {
+    font-size: 18px;
+    width: 20px;
+    text-align: center;
+}
+
+/* 分隔線 */
+.menu-divider {
+    height: 1px;
+    background: rgba(222, 181, 34, 0.3);
+    margin: 10px 15px;
+}
+
+/* 登出按鈕特殊樣式 */
+.menu-item.logout-item {
+    color: #ff6b6b;
+}
+
+.menu-item.logout-item:hover {
+    background: rgba(255, 107, 107, 0.1);
+    border-left-color: #ff6b6b;
+}
+
+.menu-item.logout-item i {
+    color: #ff6b6b;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .gear-button {
+        width: 60px;
+        height: 60px;
+    }
+
+    .hamburger-line {
+        width: 24px;
+        height: 2.5px;
+    }
+
+    .menu-dropdown {
+        right: 10px;
+        top: 90px;
+        min-width: 180px;
+    }
+
+    .menu-item {
+        padding: 12px 20px;
+        font-size: 14px;
+    }
+}
