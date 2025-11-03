@@ -35,7 +35,7 @@ def create_login_layout():
                             ], style={'textAlign': 'center'}),
 
                             html.H1(
-                                '旅遊數據分析平台',
+                                '柔成員的旅遊平台',
                                 style={
                                     'textAlign': 'center',
                                     'background': 'linear-gradient(135deg, #deb522 0%, #f5d876 100%)',
