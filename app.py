@@ -131,8 +131,8 @@ def create_main_layout():
     [Output('page-content', 'children'),
      Output('page-mode', 'data')],
     [Input('url', 'pathname'),
-     Input('session-store', 'data')],
-    [State('page-mode', 'data')],
+     Input('session-store', 'data'),
+     Input('page-mode', 'data')],
     prevent_initial_call=False
 )
 def display_page(pathname, session_data, current_mode):
