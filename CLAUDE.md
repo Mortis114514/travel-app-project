@@ -4,12 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Python-based Dash web application for travel data analysis and trip planning with integrated user authentication. The application provides an interactive dashboard with three main sections:
+This is a Python-based Dash web application for travel data analysis and trip planning with integrated user authentication. The application provides an interactive dashboard with three main sections accessed via a hamburger menu (gear icon):
 - **Overview**: Visualizations of travel patterns, safety metrics, and costs by country/continent
 - **Trip Planner**: A recommendation system for destinations based on budget, safety, accommodation preferences, and visa requirements
 - **Attractions**: Geographic display of tourist attractions by country
 
-The application includes a complete authentication system with login, registration, session management, and page access protection.
+The application includes a complete authentication system with login, registration, session management, and page access protection. Navigation between pages is handled by a custom hamburger menu in the top-right corner.
 
 ## Development Commands
 
@@ -89,6 +89,15 @@ The app runs on default Dash port (usually http://127.0.0.1:8050). Set `debug=Tr
 - `create_login_layout()`: Login page with username/password form, "remember me" checkbox, and registration link
 - `create_register_layout()`: Registration page with username, email, password, and password confirmation fields
 - Both layouts use consistent dark theme with gold accent (`#deb522`)
+- Requires `assets/login_styles.css` for custom styling
+
+### Assets Package (`assets/`)
+
+Contains static resources for the application:
+- `login_styles.css`: Authentication page styles
+- `gear_menu.css`: Hamburger menu navigation styles
+- `logo.png`, `earth.svg`, `user.svg`, `calendar.svg`: UI icons and branding
+- `bg_hamburger.png`: Background for menu button
 
 ### Key Data Flow
 
@@ -110,8 +119,16 @@ The app runs on default Dash port (usually http://127.0.0.1:8050). Set `debug=Tr
 - **Authentication Callbacks**:
   - `display_page()`: Routes user to login/register/main app based on session state and page mode
   - `login()`: Validates credentials, creates session, updates session storage
-  - `logout()`: Deletes session and clears session storage
+  - `logout_from_menu()`: Deletes session and clears session storage (triggered from hamburger menu)
   - `register()`: Validates inputs and creates new user account
+  - `switch_to_register()` / `switch_to_login()`: Toggle between login and register pages
+
+- **Navigation Callbacks** (Hamburger Menu):
+  - `toggle_menu()`: Opens/closes the hamburger menu
+  - `update_menu_display()`: Updates CSS classes for menu visibility and animation
+  - `navigate_page()`: Switches between Overview/Trip Planner/Attractions pages
+  - `update_menu_active_state()`: Highlights the current active page in menu
+  - All navigation state stored in `dcc.Store` components (`menu-open`, `current-page`)
 
 - **Overview Page**: Four independent callbacks for bar/pie/map/box charts, each triggered by dropdown changes
 
@@ -134,10 +151,21 @@ The app runs on default Dash port (usually http://127.0.0.1:8050). Set `debug=Tr
 - **Authentication**: Application requires login on startup. Default test accounts: `admin`/`admin123` and `demo`/`demo123`
 - **Session Management**: Sessions stored in SQLite (`data/users.db`). Default expiry: 2 hours (normal) or 30 days (remember me)
 - **Password Security**: Uses SHA-256 hashing (consider bcrypt/argon2 for production)
-- **Database**: SQLite database (`users.db`) auto-created on first run with two tables: `users` and `sessions`
+- **Database**: SQLite database (`users.db`) auto-created on first run with two tables: `users` and `sessions`. Default admin accounts created automatically by `auth.py` on initialization
+- **First Run**: On first run, `auth.py` creates the database and initializes test accounts. If database exists, it safely skips account creation
 - **Geopy Rate Limiting**: `RateLimiter(min_delay_seconds=1)` prevents API throttling when geocoding attractions
-- **Country Code Mapping**: `visualization.py` contains hardcoded ISO country code mapping for choropleth maps
-- **Alert Ranking**: Lower numbers = safer (灰色=2 is safer than 橙色=4)
+- **Country Code Mapping**: `visualization.py` contains hardcoded ISO country code mapping for choropleth maps (23 countries mapped to ISO 3166 codes)
+- **Alert Ranking**: Lower numbers = safer (灰色=2 is safer than 橙色=4) as defined in `ALERT_RANK_MAP`
 - **Month Ordering**: Bar charts use predefined month order array for correct chronological display
 - **Bootstrap Theme**: Uses `dbc.themes.BOOTSTRAP` for responsive layout
 - **Color Scheme**: Gold/black theme (`#deb522` / `black`) used consistently across UI and authentication pages
+- **External Resources**: FontAwesome 6.4.0 icons loaded from CDN for UI elements
+- **Page Navigation**: Uses `dcc.Store` components with `storage_type='memory'` for in-session state (menu, page routing)
+
+## Troubleshooting
+
+- **Database locked errors**: Only one process can write to SQLite at a time. Ensure only one app instance is running
+- **Geocoding failures**: Attractions page uses Nominatim API. If attractions don't appear, check internet connectivity and rate limiting
+- **Session not persisting**: Check that `session-store` uses `storage_type='session'` not `'memory'`
+- **Menu not appearing**: Verify `assets/gear_menu.css` is loaded and no CSS conflicts exist
+- **Charts not updating**: Ensure callbacks check `current-page` data to prevent unnecessary updates on inactive tabs
