@@ -2,7 +2,7 @@ from dash import html, dcc
 import dash_bootstrap_components as dbc
 
 def create_login_layout():
-    """建立登入頁面布局 - 專業設計版"""
+    
     return html.Div([
         # 背景裝飾元素
         html.Div(style={
