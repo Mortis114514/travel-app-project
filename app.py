@@ -43,7 +43,7 @@ from utils.visualization import (
 travel_df = pd.read_csv('./data/Travel_dataset.csv')  # 旅遊資訊
 country_info_df = pd.read_csv('./data/country_info.csv')  # 國家資訊
 attractions_df = pd.read_csv('./data/Attractions.csv')  # 景點資訊
-restaurants_df = pd.read_csv('./data/Kyoto_Restaurant_Info_Rated.csv')  # 餐廳資訊
+restaurants_df = pd.read_csv('./data/Kyoto_Restaurant_Info_Full.csv')  # 餐廳資訊
 
 # 進行資料前處理
 travel_df = travel_data_clean(travel_df)
