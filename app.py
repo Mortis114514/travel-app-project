@@ -7,6 +7,7 @@ import dash_leaflet as dl
 from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
 import uuid
+import random
 from datetime import datetime, timedelta
 
 # 從./utils導入所有自定義函數
@@ -42,6 +43,7 @@ from utils.visualization import (
 travel_df = pd.read_csv('./data/Travel_dataset.csv')  # 旅遊資訊
 country_info_df = pd.read_csv('./data/country_info.csv')  # 國家資訊
 attractions_df = pd.read_csv('./data/Attractions.csv')  # 景點資訊
+restaurants_df = pd.read_csv('./data/Kyoto_Restaurant_Info_Rated.csv')  # 餐廳資訊
 
 # 進行資料前處理
 travel_df = travel_data_clean(travel_df)
@@ -63,6 +65,15 @@ DEFAULTS = get_dashboard_default_values(df_merged)
 def load_data(tab):
     if tab in ('travel', 'planner'):
         return df_merged
+
+# 隨機選擇5個4-5星餐廳
+def get_random_top_restaurants(n=5):
+    """從4-5星餐廳中隨機選擇n個餐廳"""
+    top_restaurants = restaurants_df[restaurants_df['Rating_Category'] == '4~5 星餐廳'].copy()
+    if len(top_restaurants) >= n:
+        return top_restaurants.sample(n=n)
+    else:
+        return top_restaurants
 
 ##########################
 ####   初始化應用程式   ####
@@ -137,7 +148,21 @@ def create_main_layout():
         ], style={'marginBlock': '10px'}),
 
         # 頁面主要內容的放置區(容器)
-        html.Div(id='graph-content')
+        html.Div(id='graph-content'),
+
+        # 熱門餐廳區域
+        html.Div([
+            html.H2("🍣 熱門餐廳", style={
+                'color': '#deb522',
+                'textAlign': 'center',
+                'marginTop': '30px',
+                'marginBottom': '20px',
+                'fontWeight': 'bold'
+            }),
+
+            # 餐廳卡片容器
+            html.Div(id='popular-restaurants-container')
+        ], style={'marginBottom': '30px'})
     ], style={'padding': '0px'})
 
 # ====== 認證相關 Callbacks ======
@@ -815,6 +840,58 @@ def update_attractions_output(n_clicks, tab, chosen_country):
                          children=[tile_layer, dl.LayerGroup(markers)],
                          bounds=bounds, style={'width': '100%','height': '600px'})
     return table, the_map
+
+####################################
+#### 熱門餐廳卡片 callback ####
+####################################
+@app.callback(
+    Output('popular-restaurants-container', 'children'),
+    [Input('current-page', 'data')]
+)
+def update_popular_restaurants(current_page):
+    """動態生成熱門餐廳卡片"""
+    # 隨機選擇5個4-5星餐廳
+    selected_restaurants = get_random_top_restaurants(5)
+
+    # 建立餐廳卡片列表
+    cards = []
+    for _, restaurant in selected_restaurants.iterrows():
+        card = dbc.Card([
+            dbc.CardBody([
+                html.H4(restaurant['Name'], style={
+                    'color': '#deb522',
+                    'fontWeight': 'bold',
+                    'marginBottom': '10px'
+                }),
+                html.P(restaurant['JapaneseName'], style={
+                    'color': '#999',
+                    'fontSize': '14px',
+                    'marginBottom': '15px'
+                }),
+                html.Div([
+                    html.I(className='fas fa-map-marker-alt', style={'color': '#deb522', 'marginRight': '8px'}),
+                    html.Span(f"車站: {restaurant['Station']}", style={'color': 'white'})
+                ], style={'marginBottom': '8px'}),
+                html.Div([
+                    html.I(className='fas fa-utensils', style={'color': '#deb522', 'marginRight': '8px'}),
+                    html.Span(f"{restaurant['FirstCategory']} / {restaurant['SecondCategory']}", style={'color': 'white'})
+                ], style={'marginBottom': '8px'}),
+                html.Div([
+                    html.I(className='fas fa-star', style={'color': '#deb522', 'marginRight': '8px'}),
+                    html.Span(f"評分: {restaurant['TotalRating']:.2f}", style={'color': 'white', 'fontWeight': 'bold'})
+                ], style={'marginBottom': '0px'}),
+            ])
+        ], style={
+            'backgroundColor': '#2a2a2a',
+            'border': '2px solid #deb522',
+            'borderRadius': '10px',
+            'boxShadow': '0 4px 6px rgba(222, 181, 34, 0.2)',
+            'transition': 'transform 0.2s',
+            'height': '100%'
+        })
+        cards.append(dbc.Col(card, width=12, md=6, lg=2, style={'marginBottom': '15px'}))
+
+    return dbc.Row(cards, justify='center', style={'margin': '0 auto', 'maxWidth': '1400px'})
 
 if __name__ == '__main__':
     app.run(debug=False)
