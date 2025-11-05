@@ -729,16 +729,31 @@ def populate_inspiration_grid(pathname):
     [Input('search-btn', 'n_clicks')],
     [State('search-destination', 'value'),
      State('search-cuisine', 'value'),
-     State('search-rating', 'value')],
+     State('search-rating', 'value'),
+     State('price-filter-dropdown', 'value'),
+     State('sort-by-dropdown', 'value')],
     prevent_initial_call=True
 )
-def handle_search(n_clicks, destination, cuisine, rating):
-    """處理搜尋功能"""
+def handle_search(n_clicks, destination, cuisine, rating, price_filter, sort_by):
+    """處理搜尋功能 with filters"""
     if not n_clicks:
         raise PreventUpdate
 
+    # Define price category order
+    price_order = {
+        '頂級': 5,
+        '高價位': 4,
+        '中價位': 3,
+        '平價': 2,
+        '未知': 1
+    }
+
     # Filter restaurants based on search criteria
     filtered_df = restaurants_df.copy()
+    
+    # Add numeric price column
+    if 'Price_Category' in filtered_df.columns:
+        filtered_df['Price_Order'] = filtered_df['Price_Category'].map(price_order).fillna(0)
 
     if destination:
         filtered_df = filtered_df[
@@ -751,11 +766,29 @@ def handle_search(n_clicks, destination, cuisine, rating):
 
     if rating:
         filtered_df = filtered_df[filtered_df['TotalRating'] >= rating]
+    
+    # Apply price filter
+    if price_filter != 'all':
+        if 'Price_Category' in filtered_df.columns:
+            filtered_df = filtered_df[filtered_df['Price_Category'] == price_filter]
 
-    # Get top results
+    # Apply sorting
+    if sort_by == 'price_desc':
+        if 'Price_Order' in filtered_df.columns:
+            filtered_df = filtered_df.sort_values('Price_Order', ascending=False)
+    elif sort_by == 'price_asc':
+        if 'Price_Order' in filtered_df.columns:
+            filtered_df = filtered_df.sort_values('Price_Order', ascending=True)
+    elif sort_by == 'rating_desc':
+        filtered_df = filtered_df.sort_values('TotalRating', ascending=False)
+    elif sort_by == 'rating_asc':
+        filtered_df = filtered_df.sort_values('TotalRating', ascending=True)
+    elif sort_by == 'name_asc':
+        filtered_df = filtered_df.sort_values('Name', ascending=True)
+
+    # Get top results (top 20)
     if len(filtered_df) > 0:
-        # Sort by rating and get top 10
-        filtered_df = filtered_df.nlargest(10, 'TotalRating')
+        filtered_df = filtered_df.head(20)
         cards = [create_destination_card(row) for _, row in filtered_df.iterrows()]
         return cards
     else:
