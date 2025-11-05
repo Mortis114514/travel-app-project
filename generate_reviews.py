@@ -3,7 +3,7 @@ import random
 import csv
 
 # 讀取餐廳資料
-df_restaurants = pd.read_csv('data/Kyoto_Restaurant_Info.csv')
+df_restaurants = pd.read_csv('data/Kyoto_Restaurant_Combined.csv')
 
 # 評論模板（中英日混合，更多樣性）
 review_templates_5star = [

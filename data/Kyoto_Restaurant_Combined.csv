@@ -1,4 +1,4 @@
-"","Name","JapaneseName","Station","FirstCategory","SecondCategory","DinnerPrice","LunchPrice","TotalRating","DinnerRating","LunchRating","ReviewNum","Lat","Long"
+"Restaurant_ID","Name","JapaneseName","Station","FirstCategory","SecondCategory","DinnerPrice","LunchPrice","TotalRating","DinnerRating","LunchRating","ReviewNum","Lat","Long"
 "1","Orudeidainingurajou  ","オールデイダイニング　ラジョウ","Kyoto","Buffet style","Cafe","￥4000～￥4999","￥2000～￥2999","3.39","3.2","3.38","56","34.9861751483108","135.761313932311"
 "2","Steak Frites Gaspard zinzin  ","ステックフリット ガスパール ザンザン","Karasuma","Bistro","Steak","￥3000～￥3999","￥1000～￥1999","3.18","3.06","3.33","70","35.0058257987896","135.759856759688"
 "3","KAZUMA  ","和馬","Sanjo","Izakaya (Tavern)","Japanese food (other)","￥3000～￥3999","NA","3.28","3.28","NA","7","35.0065825659963","135.770246695295"

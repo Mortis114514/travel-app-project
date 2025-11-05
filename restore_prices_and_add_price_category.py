@@ -1,18 +1,21 @@
 import pandas as pd
 import re
 
-# ====== 讀取原始與修改後的餐廳資料 ======
-original = pd.read_csv("data/Kyoto_Restaurant_Info.csv")           # 原始完整檔案（含價格區間）
-modified = pd.read_csv("data/Kyoto_Restaurant_Info_Rated.csv")     # 修改後（無價格欄）
+# # ====== 讀取原始與修改後的餐廳資料 ======
+# original = pd.read_csv("data/Kyoto_Restaurant_Info.csv")           # 原始完整檔案（含價格區間）
+# modified = pd.read_csv("data/Kyoto_Restaurant_Info_Rated.csv")     # 修改後（無價格欄）
 
-# ====== 從原始資料提取價格欄 ======
-price_cols = [col for col in ["Name", "DinnerPrice", "LunchPrice"] if col in original.columns]
-price_df = original[price_cols]
+# # ====== 從原始資料提取價格欄 ======
+# price_cols = [col for col in ["Name", "DinnerPrice", "LunchPrice"] if col in original.columns]
+# price_df = original[price_cols]
 
-# 合併價格資料（以餐廳名稱對應）
-merged_df = pd.merge(modified, price_df, on="Name", how="left")
+# # 合併價格資料（以餐廳名稱對應）
+# merged_df = pd.merge(modified, price_df, on="Name", how="left")
 
 # ====== 定義：將價格文字轉為平均數值（僅用於分類用，不改動原文字） ======
+
+merged_df = pd.read_csv("data/Kyoto_Restaurant_Info_Rated.csv")
+
 def extract_avg_price(value):
     if pd.isna(value):
         return None
@@ -64,7 +67,7 @@ ordered_cols = [
 merged = merged[ordered_cols]
 
 # ====== 輸出成新 CSV ======
-output_path = "data/Kyoto_Restaurant_Info_with_PriceCategory.csv"
+output_path = "data/Kyoto_Restaurant_Info_Full.csv"
 merged.to_csv(output_path, index=False, encoding="utf-8-sig")
 
 print("✅ 已根據價格區間分類並保留原文字格式！")
