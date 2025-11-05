@@ -1,0 +1,596 @@
+/* ========================================
+   Enhanced Search Styles for Voyage App
+   增強搜尋功能樣式表
+   ======================================== */
+
+/* ===== Enhanced Search Container ===== */
+.search-container {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    background: rgba(26, 26, 26, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 60px;
+    padding: 1rem 1.5rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(222, 181, 34, 0.2);
+    max-width: 1200px;
+    margin: 0 auto;
+    position: relative;
+}
+
+/* ===== Search Input with Clear Button ===== */
+.search-input-group {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 1rem;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+}
+
+.clear-btn {
+    position: absolute;
+    right: 1rem;
+    background: transparent;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.clear-btn:hover {
+    background: rgba(222, 181, 34, 0.2);
+    color: #deb522;
+}
+
+/* ===== Filter Toggle Button ===== */
+.filter-toggle-btn {
+    background: rgba(222, 181, 34, 0.1);
+    border: 1px solid rgba(222, 181, 34, 0.4);
+    color: #deb522;
+    padding: 0.75rem 1.5rem;
+    border-radius: 50px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+}
+
+.filter-toggle-btn:hover {
+    background: rgba(222, 181, 34, 0.2);
+    border-color: #deb522;
+}
+
+.filter-toggle-btn.active {
+    background: rgba(222, 181, 34, 0.3);
+    border-color: #deb522;
+    box-shadow: 0 0 15px rgba(222, 181, 34, 0.3);
+}
+
+/* ===== Search Suggestions Dropdown ===== */
+.suggestions-dropdown {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 0;
+    right: 0;
+    background: rgba(26, 26, 26, 0.98);
+    border: 1px solid rgba(222, 181, 34, 0.3);
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    max-height: 400px;
+    overflow-y: auto;
+    backdrop-filter: blur(10px);
+}
+
+.suggestion-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.875rem 1.25rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-item:hover {
+    background: rgba(222, 181, 34, 0.1);
+}
+
+.suggestion-main {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.suggestion-text {
+    color: #ffffff;
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.suggestion-category {
+    color: #888;
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+/* Highlight matched text in suggestions */
+.suggestion-highlight {
+    color: #deb522;
+    font-weight: 700;
+}
+
+/* ===== Advanced Filters Section ===== */
+.advanced-filters-wrapper {
+    margin-top: 1.5rem;
+}
+
+.advanced-filters-container {
+    background: rgba(26, 26, 26, 0.95);
+    border: 1px solid rgba(222, 181, 34, 0.2);
+    border-radius: 20px;
+    padding: 2rem;
+    margin-top: 1rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.advanced-filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-bottom: 1rem;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.filter-label {
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+/* Checklist Styles */
+.filter-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filter-checklist input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-right: 0.5rem;
+    cursor: pointer;
+    accent-color: #deb522;
+}
+
+.filter-checklist label {
+    color: #e0e0e0;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    display: flex;
+    align-items: center;
+}
+
+.filter-checklist label:hover {
+    color: #deb522;
+}
+
+/* Dropdown Styles */
+.filter-dropdown {
+    background: rgba(0, 0, 0, 0.4) !important;
+    border: 1px solid rgba(222, 181, 34, 0.3) !important;
+    border-radius: 8px !important;
+    color: #ffffff !important;
+}
+
+.filter-dropdown .Select-control {
+    background: transparent !important;
+    border-color: rgba(222, 181, 34, 0.3) !important;
+}
+
+.filter-dropdown .Select-menu-outer {
+    background: rgba(26, 26, 26, 0.98) !important;
+    border: 1px solid rgba(222, 181, 34, 0.3) !important;
+    border-radius: 8px !important;
+}
+
+.filter-dropdown .Select-option:hover {
+    background: rgba(222, 181, 34, 0.2) !important;
+}
+
+/* Slider Styles */
+.filter-slider {
+    margin-top: 1rem !important;
+}
+
+.filter-slider .rc-slider-track {
+    background: linear-gradient(to right, #deb522, #d4a017) !important;
+}
+
+.filter-slider .rc-slider-handle {
+    border-color: #deb522 !important;
+    background: #deb522 !important;
+    box-shadow: 0 0 10px rgba(222, 181, 34, 0.5) !important;
+}
+
+.filter-slider .rc-slider-handle:hover {
+    border-color: #d4a017 !important;
+}
+
+.filter-slider .rc-slider-mark-text {
+    color: #888 !important;
+    font-size: 0.85rem !important;
+}
+
+.filter-slider .rc-slider-rail {
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* RadioItems Styles */
+.filter-radioitems {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filter-radioitems input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    margin-right: 0.5rem;
+    cursor: pointer;
+    accent-color: #deb522;
+}
+
+.filter-radioitems label {
+    color: #e0e0e0;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    display: flex;
+    align-items: center;
+}
+
+.filter-radioitems label:hover {
+    color: #deb522;
+}
+
+/* ===== Active Filter Chips ===== */
+.filter-chips-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding: 0 0.5rem;
+}
+
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(222, 181, 34, 0.15);
+    border: 1px solid rgba(222, 181, 34, 0.4);
+    border-radius: 20px;
+    padding: 0.5rem 1rem;
+    color: #deb522;
+    font-size: 0.9rem;
+    font-weight: 500;
+    animation: chipFadeIn 0.3s ease;
+}
+
+.chip-remove-btn {
+    background: transparent;
+    border: none;
+    color: #deb522;
+    cursor: pointer;
+    padding: 0 0 0 0.5rem;
+    margin-left: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.chip-remove-btn:hover {
+    color: #ffffff;
+    transform: scale(1.2);
+}
+
+@keyframes chipFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* ===== Search Sidebar (History & Popular) ===== */
+.search-sidebar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: rgba(26, 26, 26, 0.5);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.search-sidebar-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.sidebar-title {
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+/* History List */
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.history-item:hover {
+    background: rgba(222, 181, 34, 0.1);
+    border-color: rgba(222, 181, 34, 0.3);
+}
+
+.history-text {
+    color: #e0e0e0;
+    font-size: 0.9rem;
+}
+
+.history-time {
+    color: #666;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+/* Popular List */
+.popular-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.popular-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: rgba(222, 181, 34, 0.05);
+    border: 1px solid rgba(222, 181, 34, 0.2);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.popular-item:hover {
+    background: rgba(222, 181, 34, 0.15);
+    border-color: rgba(222, 181, 34, 0.4);
+    transform: translateX(5px);
+}
+
+.popular-text {
+    color: #ffffff;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.popular-count {
+    color: #deb522;
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+}
+
+/* ===== Loading States ===== */
+.search-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    color: #deb522;
+}
+
+.search-loading i {
+    font-size: 2rem;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ===== Empty States ===== */
+.search-empty {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #888;
+}
+
+.search-empty i {
+    font-size: 3rem;
+    color: #666;
+    margin-bottom: 1rem;
+}
+
+.search-empty-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #aaa;
+    margin-bottom: 0.5rem;
+}
+
+.search-empty-text {
+    font-size: 0.95rem;
+    color: #666;
+}
+
+/* ===== Responsive Design ===== */
+@media (max-width: 1024px) {
+    .search-container {
+        flex-wrap: wrap;
+        border-radius: 20px;
+        padding: 1.5rem;
+    }
+
+    .search-input-group {
+        flex: 1 1 100%;
+        border-right: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding-bottom: 1rem;
+    }
+
+    .filter-toggle-btn,
+    .search-btn {
+        flex: 1 1 auto;
+    }
+
+    .advanced-filters-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .search-sidebar {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .search-container {
+        padding: 1rem;
+    }
+
+    .advanced-filters-container {
+        padding: 1.5rem;
+    }
+
+    .filter-chips-container {
+        padding: 0;
+    }
+
+    .suggestions-dropdown {
+        max-height: 300px;
+    }
+
+    .suggestion-item {
+        padding: 0.75rem 1rem;
+    }
+}
+
+/* ===== Dark Mode Optimizations ===== */
+body {
+    scrollbar-color: #deb522 #1a1a1a;
+}
+
+.suggestions-dropdown::-webkit-scrollbar {
+    width: 8px;
+}
+
+.suggestions-dropdown::-webkit-scrollbar-track {
+    background: #1a1a1a;
+}
+
+.suggestions-dropdown::-webkit-scrollbar-thumb {
+    background: #deb522;
+    border-radius: 10px;
+}
+
+.suggestions-dropdown::-webkit-scrollbar-thumb:hover {
+    background: #d4a017;
+}
+
+/* ===== Accessibility ===== */
+.search-input:focus,
+.filter-dropdown:focus,
+.filter-slider:focus {
+    outline: 2px solid rgba(222, 181, 34, 0.5);
+    outline-offset: 2px;
+}
+
+/* Keyboard navigation for suggestions */
+.suggestion-item:focus {
+    outline: 2px solid #deb522;
+    outline-offset: -2px;
+}
+
+/* High contrast for important elements */
+.filter-label,
+.sidebar-title {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* ===== Animation Enhancements ===== */
+.advanced-filters-container {
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.suggestions-dropdown {
+    animation: fadeInScale 0.2s ease;
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}

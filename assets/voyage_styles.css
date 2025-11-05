@@ -701,3 +701,358 @@ body {
 .mt-2 { margin-top: 1rem; }
 .mt-3 { margin-top: 1.5rem; }
 .mt-4 { margin-top: 2rem; }
+
+/* ===== Restaurant List Page Styles ===== */
+.btn-secondary {
+    background: rgba(222, 181, 34, 0.1);
+    color: #deb522;
+    border: 1px solid #deb522;
+    padding: 0.65rem 1.5rem;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-secondary:hover {
+    background: rgba(222, 181, 34, 0.2);
+    transform: translateX(-3px);
+}
+
+/* Restaurant List Grid */
+.restaurant-list-grid {
+    min-height: 400px;
+}
+
+.restaurant-list-card {
+    transition: all 0.3s ease;
+}
+
+.restaurant-list-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(222, 181, 34, 0.3);
+    border-color: #deb522 !important;
+}
+
+/* Pagination Styles */
+.pagination-btn {
+    background: #333;
+    color: #deb522;
+    border: 1px solid #444;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    min-width: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: rgba(222, 181, 34, 0.2);
+    border-color: #deb522;
+    transform: translateY(-2px);
+}
+
+.pagination-btn.active {
+    background: #deb522;
+    color: #000;
+    border: 2px solid #deb522;
+    font-weight: bold;
+    cursor: default;
+}
+
+.pagination-btn:disabled {
+    background: #1a1a1a;
+    color: #666;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* Search Stats */
+#search-stats {
+    text-align: center;
+    padding: 0.5rem;
+    font-weight: 500;
+}
+
+/* ===== Search Suggestions Dropdown ===== */
+.search-suggestions {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.suggestion-item {
+    transition: all 0.2s ease;
+}
+
+.suggestion-item:hover {
+    background: rgba(222, 181, 34, 0.15);
+    padding-left: 20px;
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+/* ===== Advanced Filters Panel ===== */
+#advanced-filters-panel {
+    animation: expandDown 0.3s ease-out;
+}
+
+@keyframes expandDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        max-height: 1000px;
+        transform: translateY(0);
+    }
+}
+
+/* Range Slider Customization */
+.rc-slider {
+    margin: 1rem 0;
+}
+
+.rc-slider-track {
+    background: linear-gradient(90deg, #deb522, #d4a017);
+    height: 6px;
+}
+
+.rc-slider-rail {
+    background: #333;
+    height: 6px;
+}
+
+.rc-slider-handle {
+    background: #deb522;
+    border: 3px solid #000;
+    width: 20px;
+    height: 20px;
+    margin-top: -7px;
+    box-shadow: 0 2px 8px rgba(222, 181, 34, 0.4);
+}
+
+.rc-slider-handle:hover,
+.rc-slider-handle:active,
+.rc-slider-handle:focus {
+    background: #d4a017;
+    border-color: #deb522;
+    box-shadow: 0 4px 12px rgba(222, 181, 34, 0.6);
+}
+
+.rc-slider-mark-text {
+    color: #888;
+    font-size: 0.85rem;
+}
+
+.rc-slider-mark-text-active {
+    color: #deb522;
+}
+
+/* Dash Slider Customization */
+.dash-slider {
+    margin-bottom: 2rem;
+}
+
+.dash-slider .rc-slider-dot {
+    background: #444;
+    border-color: #555;
+}
+
+.dash-slider .rc-slider-dot-active {
+    border-color: #deb522;
+}
+
+/* ===== Filter Chips ===== */
+.filter-chip {
+    transition: all 0.2s ease;
+    animation: chipFadeIn 0.3s ease-out;
+}
+
+@keyframes chipFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.filter-chip:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(222, 181, 34, 0.3);
+}
+
+.filter-chip .fa-times {
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.filter-chip .fa-times:hover {
+    opacity: 1;
+}
+
+/* ===== Dropdown Customization for Filters ===== */
+.Select-control {
+    background-color: #1a1a1a !important;
+    border-color: #333 !important;
+    color: #ffffff !important;
+}
+
+.Select-menu-outer {
+    background-color: #1a1a1a !important;
+    border: 1px solid #deb522 !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+}
+
+.Select-option {
+    background-color: #1a1a1a !important;
+    color: #ffffff !important;
+}
+
+.Select-option:hover {
+    background-color: rgba(222, 181, 34, 0.2) !important;
+    color: #deb522 !important;
+}
+
+.Select-option.is-selected {
+    background-color: rgba(222, 181, 34, 0.3) !important;
+    color: #deb522 !important;
+}
+
+.Select-placeholder {
+    color: #888888 !important;
+}
+
+.Select-value-label {
+    color: #ffffff !important;
+}
+
+.Select-input > input {
+    color: #ffffff !important;
+}
+
+/* Multi-select tags */
+.Select--multi .Select-value {
+    background-color: #333 !important;
+    border: 1px solid #deb522 !important;
+    color: #deb522 !important;
+}
+
+.Select--multi .Select-value-icon {
+    border-right-color: #deb522 !important;
+}
+
+.Select--multi .Select-value-icon:hover {
+    background-color: rgba(222, 181, 34, 0.2) !important;
+    color: #ffffff !important;
+}
+
+/* ===== Enhanced Search Input with Suggestions ===== */
+.search-input-group input[type="text"] {
+    position: relative;
+    z-index: 10;
+}
+
+/* Smooth transitions for filter panel */
+#advanced-filters-panel[style*="display: none"] {
+    animation: collapseUp 0.3s ease-out;
+}
+
+@keyframes collapseUp {
+    from {
+        opacity: 1;
+        max-height: 1000px;
+    }
+    to {
+        opacity: 0;
+        max-height: 0;
+    }
+}
+
+/* ===== Filter Button States ===== */
+#toggle-advanced-filters {
+    transition: all 0.3s ease;
+}
+
+#toggle-advanced-filters:hover {
+    background: rgba(222, 181, 34, 0.2);
+    border-color: #d4a017;
+    transform: scale(1.05);
+}
+
+#clear-filters-btn:hover {
+    background: rgba(222, 181, 34, 0.15);
+    transform: translateY(-2px);
+}
+
+/* ===== Loading States ===== */
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(222, 181, 34, 0.2);
+    border-radius: 50%;
+    border-top-color: #deb522;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ===== Responsive Adjustments for New Features ===== */
+@media (max-width: 1024px) {
+    .search-container {
+        flex-wrap: wrap;
+    }
+
+    #toggle-advanced-filters {
+        width: 100%;
+        margin-top: 0.5rem;
+        margin-left: 0 !important;
+    }
+
+    .search-input-group {
+        flex: 1 1 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .filter-chip {
+        font-size: 0.75rem;
+        padding: 4px 10px;
+    }
+
+    #advanced-filters-panel {
+        margin-top: 1rem;
+    }
+
+    .search-suggestions {
+        max-height: 300px;
+    }
+}
