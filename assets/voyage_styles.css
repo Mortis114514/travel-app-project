@@ -1,0 +1,703 @@
+/* ===================================
+   Voyage - Modern Travel App Styles
+   =================================== */
+
+/* ===== Global Styles ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background-color: #0a0a0a;
+    color: #ffffff;
+    line-height: 1.6;
+}
+
+/* ===== Global Header ===== */
+.global-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: rgba(10, 10, 10, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(222, 181, 34, 0.2);
+    padding: 1rem 3rem;
+}
+
+.header-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-logo {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #deb522;
+    letter-spacing: -0.5px;
+}
+
+.header-nav {
+    display: flex;
+    gap: 2.5rem;
+    align-items: center;
+}
+
+.nav-link {
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: color 0.3s ease;
+    cursor: pointer;
+}
+
+.nav-link:hover {
+    color: #deb522;
+}
+
+.header-actions {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+/* ===== Buttons ===== */
+.btn-primary {
+    background: linear-gradient(135deg, #deb522 0%, #d4a017 100%);
+    color: #000000;
+    border: none;
+    padding: 0.75rem 1.75rem;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(222, 181, 34, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(222, 181, 34, 0.4);
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #deb522 0%, #d4a017 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    position: relative;
+}
+
+.user-avatar:hover {
+    transform: scale(1.1);
+}
+
+.user-avatar i {
+    color: #000000;
+    font-size: 1.1rem;
+}
+
+/* User Dropdown Menu */
+.user-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 1rem;
+    background: rgba(26, 26, 26, 0.98);
+    border: 1px solid rgba(222, 181, 34, 0.3);
+    border-radius: 12px;
+    padding: 0.5rem 0;
+    min-width: 180px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+}
+
+.user-dropdown.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.dropdown-item {
+    padding: 0.75rem 1.25rem;
+    color: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.dropdown-item:hover {
+    background: rgba(222, 181, 34, 0.1);
+    color: #deb522;
+}
+
+.dropdown-item i {
+    width: 20px;
+    font-size: 1rem;
+}
+
+/* ===== Hero Section ===== */
+.hero-section {
+    position: relative;
+    height: 90vh;
+    min-height: 600px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin-top: 70px;
+}
+
+.hero-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: brightness(0.4);
+}
+
+.hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.3) 0%,
+        rgba(10, 10, 10, 0.7) 100%
+    );
+}
+
+.hero-content {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    max-width: 900px;
+    padding: 2rem;
+}
+
+.hero-title {
+    font-size: 4rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, #ffffff 0%, #deb522 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.hero-subtitle {
+    font-size: 1.4rem;
+    color: #e0e0e0;
+    margin-bottom: 3rem;
+    font-weight: 300;
+}
+
+/* ===== Compound Search Bar ===== */
+.search-container {
+    background: rgba(26, 26, 26, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 60px;
+    padding: 1rem 1.5rem;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(222, 181, 34, 0.2);
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.search-input-group {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 1rem;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.search-input-group:last-of-type {
+    border-right: none;
+}
+
+.search-input-group i {
+    color: #deb522;
+    font-size: 1.2rem;
+}
+
+.search-input {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 0.95rem;
+    width: 100%;
+    outline: none;
+}
+
+.search-input::placeholder {
+    color: #888888;
+}
+
+.search-btn {
+    background: linear-gradient(135deg, #deb522 0%, #d4a017 100%);
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 50px;
+    color: #000000;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.search-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(222, 181, 34, 0.5);
+}
+
+/* ===== Content Sections ===== */
+.content-section {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 4rem 2rem;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2.5rem;
+}
+
+.section-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.view-all-link {
+    color: #deb522;
+    font-weight: 600;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: gap 0.3s ease;
+}
+
+.view-all-link:hover {
+    gap: 0.75rem;
+}
+
+/* ===== Horizontal Scrolling Cards ===== */
+.card-scroll-container {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #deb522 #1a1a1a;
+}
+
+.card-scroll-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.card-scroll-container::-webkit-scrollbar-track {
+    background: #1a1a1a;
+}
+
+.card-scroll-container::-webkit-scrollbar-thumb {
+    background: #deb522;
+    border-radius: 10px;
+}
+
+.card-row {
+    display: flex;
+    gap: 1.5rem;
+    padding-bottom: 1rem;
+}
+
+/* ===== Cards ===== */
+/* Destination Card */
+.destination-card {
+    flex: 0 0 280px;
+    height: 380px;
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.destination-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 30px rgba(222, 181, 34, 0.3);
+}
+
+.card-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.card-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.9) 0%,
+        transparent 100%
+    );
+    padding: 2rem 1.5rem;
+}
+
+.card-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 0.5rem;
+}
+
+.card-subtitle {
+    font-size: 0.9rem;
+    color: #deb522;
+    font-weight: 500;
+}
+
+.card-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+}
+
+.card-rating i {
+    color: #deb522;
+    font-size: 0.9rem;
+}
+
+.card-rating span {
+    color: #ffffff;
+    font-weight: 600;
+    margin-left: 0.25rem;
+}
+
+/* Saved Trip Card */
+.saved-trip-card {
+    flex: 0 0 340px;
+    background: rgba(26, 26, 26, 0.8);
+    border: 1px solid rgba(222, 181, 34, 0.2);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.saved-trip-card:hover {
+    border-color: #deb522;
+    box-shadow: 0 8px 25px rgba(222, 181, 34, 0.2);
+}
+
+.trip-card-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.trip-card-content {
+    padding: 1.5rem;
+}
+
+.trip-card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 0.5rem;
+}
+
+.trip-card-description {
+    font-size: 0.9rem;
+    color: #aaaaaa;
+    line-height: 1.5;
+}
+
+.trip-card-meta {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    color: #888888;
+}
+
+.trip-card-meta i {
+    color: #deb522;
+    margin-right: 0.5rem;
+}
+
+/* Add New Card */
+.add-new-card {
+    flex: 0 0 340px;
+    height: 320px;
+    background: rgba(26, 26, 26, 0.5);
+    border: 2px dashed rgba(222, 181, 34, 0.4);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.add-new-card:hover {
+    border-color: #deb522;
+    background: rgba(222, 181, 34, 0.05);
+}
+
+.add-new-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(222, 181, 34, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.add-new-card:hover .add-new-icon {
+    background: rgba(222, 181, 34, 0.2);
+    transform: scale(1.1);
+}
+
+.add-new-icon i {
+    font-size: 2rem;
+    color: #deb522;
+}
+
+.add-new-text {
+    font-size: 1.1rem;
+    color: #ffffff;
+    font-weight: 500;
+    text-align: center;
+    padding: 0 2rem;
+}
+
+/* Inspiration Card */
+.inspiration-card {
+    position: relative;
+    height: 420px;
+    border-radius: 20px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.inspiration-card:hover {
+    transform: scale(1.02);
+}
+
+.inspiration-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.inspiration-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.95) 0%,
+        rgba(0, 0, 0, 0.4) 60%,
+        transparent 100%
+    );
+    padding: 2.5rem 2rem;
+}
+
+.inspiration-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1.3;
+    margin-bottom: 0.75rem;
+}
+
+.inspiration-category {
+    display: inline-block;
+    padding: 0.4rem 1rem;
+    background: rgba(222, 181, 34, 0.2);
+    border: 1px solid #deb522;
+    border-radius: 20px;
+    color: #deb522;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ===== Tab Navigation ===== */
+.tab-navigation {
+    display: flex;
+    gap: 2rem;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 2.5rem;
+}
+
+.tab-item {
+    padding: 1rem 0;
+    color: #888888;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    border-bottom: 3px solid transparent;
+}
+
+.tab-item:hover {
+    color: #ffffff;
+}
+
+.tab-item.active {
+    color: #deb522;
+    border-bottom-color: #deb522;
+}
+
+/* ===== Grid Layout ===== */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 2rem;
+}
+
+/* ===== Responsive Design ===== */
+@media (max-width: 1024px) {
+    .global-header {
+        padding: 1rem 1.5rem;
+    }
+
+    .header-nav {
+        display: none;
+    }
+
+    .hero-title {
+        font-size: 3rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1.2rem;
+    }
+
+    .search-container {
+        flex-direction: column;
+        border-radius: 20px;
+        padding: 1.5rem;
+    }
+
+    .search-input-group {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding-bottom: 1rem;
+    }
+
+    .search-btn {
+        width: 100%;
+    }
+
+    .content-section {
+        padding: 3rem 1.5rem;
+    }
+
+    .card-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2.5rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+    }
+
+    .destination-card,
+    .saved-trip-card,
+    .add-new-card {
+        flex: 0 0 260px;
+    }
+}
+
+/* ===== Animations ===== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+}
+
+/* ===== Utility Classes ===== */
+.text-gold {
+    color: #deb522;
+}
+
+.text-white {
+    color: #ffffff;
+}
+
+.text-gray {
+    color: #888888;
+}
+
+.mb-1 { margin-bottom: 0.5rem; }
+.mb-2 { margin-bottom: 1rem; }
+.mb-3 { margin-bottom: 1.5rem; }
+.mb-4 { margin-bottom: 2rem; }
+
+.mt-1 { margin-top: 0.5rem; }
+.mt-2 { margin-top: 1rem; }
+.mt-3 { margin-top: 1.5rem; }
+.mt-4 { margin-top: 2rem; }
