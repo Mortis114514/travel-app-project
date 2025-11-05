@@ -27,6 +27,19 @@ python app.py
 
 The app runs on default Dash port (usually http://127.0.0.1:8050). Set `debug=True` in `app.run()` for development mode.
 
+### Testing and Utilities
+```bash
+# Run test scripts (standalone Dash apps for testing components)
+python test_restaurant_barChart.py     # Restaurant rating visualization testing
+python test_rating_distribution.py     # Rating distribution analysis
+python test_reviews_join.py           # Review data join testing
+python test_login_page.py             # Login page component testing
+
+# Data generation and transformation utilities
+python generate_reviews.py            # Generate synthetic review data for restaurants
+python change_totalRating.py          # Calculate and update restaurant total ratings from reviews
+```
+
 ## Architecture
 
 ### Main Application (`app.py`)
@@ -99,6 +112,27 @@ Contains static resources for the application:
 - `logo.png`, `earth.svg`, `user.svg`, `calendar.svg`: UI icons and branding
 - `bg_hamburger.png`: Background for menu button
 
+### Data Files (`data/`)
+
+**Core Travel Data:**
+- `Travel_dataset.csv`: Historical travel records (traveler names, nationalities, destinations, costs, duration)
+- `country_info.csv`: Country-level metrics (CPI, PCE, Safety Index, Travel Alerts, Visa requirements)
+- `Attractions.csv`: Tourist attractions by country
+- `users.db`: SQLite database for authentication (users and sessions tables)
+
+**Restaurant/Reviews Data** (for future features or analysis):
+- `Kyoto_Restaurant_Info.csv`: Restaurant metadata (name, location, cuisine type)
+- `Kyoto_Restaurant_Info_Rated.csv`: Restaurant data with calculated ratings and categories
+- `Reviews.csv`: User reviews with ratings (generated via `generate_reviews.py`)
+
+### Test Files
+
+Standalone test scripts for component development and data validation:
+- `test_restaurant_barChart.py`: Interactive Dash app testing restaurant rating visualizations with dropdown filters
+- `test_rating_distribution.py`: Analysis of rating distributions across restaurants
+- `test_reviews_join.py`: Validates proper joining of restaurant and review data
+- `test_login_page.py`: Tests authentication page components and styling
+
 ### Key Data Flow
 
 1. **Authentication**:
@@ -133,8 +167,8 @@ Contains static resources for the application:
 - **Overview Page**: Four independent callbacks for bar/pie/map/box charts, each triggered by dropdown changes
 
 - **Trip Planner Page**:
-  - Main callback returns both table component and top 5 countries to `dcc.Store`
-  - Comparison callback reads from `dcc.Store` to generate radar/bar/line charts
+  - Main callback (`update_trip_planner_table()`) processes filters and returns table + top 5 countries to `dcc.Store`
+  - Comparison callback (`update_trip_planner_comparison()`) reads from `dcc.Store` to generate radar/bar/line charts
 
 - **Attractions Page**: Single callback with `prevent_initial_call=True` and `State` for country selection
 
