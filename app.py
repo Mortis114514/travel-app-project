@@ -39,32 +39,83 @@ from utils.visualization import (
 ########################
 #### 資料載入與前處理 ####
 ########################
-# 加載欲分析的資料集
-travel_df = pd.read_csv('./data/Travel_dataset.csv')  # 旅遊資訊
-country_info_df = pd.read_csv('./data/country_info.csv')  # 國家資訊
-attractions_df = pd.read_csv('./data/Attractions.csv')  # 景點資訊
+# 加載欲分析的資料集# 旅遊資訊
 restaurants_df = pd.read_csv('./data/Kyoto_Restaurant_Info_Full.csv')  # 餐廳資訊
-
-# 進行資料前處理
-travel_df = travel_data_clean(travel_df)
-country_info_df = countryinfo_data_clean(country_info_df)
-
-# 合併 travel_df 和 country_info_df，方便後續分析
-df_merged = data_merge(travel_df, country_info_df)
-
-# 呼叫 ./utils/const.py 中的 get_constants() 函式（畫面上方四格統計）
-num_of_country, num_of_traveler, num_of_nationality, avg_days = get_constants(travel_df)
-
-# 獲取國家名稱列表（景點頁使用）
-country_list = list(attractions_df['country'].unique())
-
-# 設定 Overview 頁面預設值
-DEFAULTS = get_dashboard_default_values(df_merged)
 
 # 切換頁面（如有需要可以自行增加）
 def load_data(tab):
     if tab in ('travel', 'planner'):
         return df_merged
+def create_sort_controls():
+    """創建排序和篩選控制選項"""
+    return html.Div([
+        # Price Range Filter
+        html.Div([
+            html.Label('Price Range:', style={
+                'color': '#ffffff',
+                'marginRight': '10px',
+                'fontSize': '0.95rem',
+                'fontWeight': '500'
+            }),
+            dcc.Dropdown(
+                id='price-filter-dropdown',
+                options=[
+                    {'label': '💎 All Prices', 'value': 'all'},
+                    {'label': '💎 頂級 (Top Tier)', 'value': '頂級'},
+                    {'label': '💰 高價位 (High)', 'value': '高價位'},
+                    {'label': '💵 中價位 (Medium)', 'value': '中價位'},
+                    {'label': '💳 平價 (Budget)', 'value': '平價'},
+                    {'label': '❓ 未知 (Unknown)', 'value': '未知'},
+                ],
+                value='all',  # Default: show all
+                clearable=False,
+                style={
+                    'minWidth': '200px',
+                    'backgroundColor': '#2a2a2a',
+                    'color': '#ffffff'
+                }
+            )
+        ], style={
+            'display': 'flex',
+            'alignItems': 'center',
+            'marginRight': '20px'
+        }),
+        
+        # Sort By Dropdown
+        html.Div([
+            html.Label('Sort by:', style={
+                'color': '#ffffff',
+                'marginRight': '10px',
+                'fontSize': '0.95rem',
+                'fontWeight': '500'
+            }),
+            dcc.Dropdown(
+                id='sort-by-dropdown',
+                options=[
+                    {'label': '💰 Price: High to Low', 'value': 'price_desc'},
+                    {'label': '💰 Price: Low to High', 'value': 'price_asc'},
+                    {'label': '⭐ Rating: High to Low', 'value': 'rating_desc'},
+                    {'label': '⭐ Rating: Low to High', 'value': 'rating_asc'},
+                    {'label': '🔤 Name: A to Z', 'value': 'name_asc'},
+                ],
+                value='rating_desc',  # Default sorting
+                clearable=False,
+                style={
+                    'minWidth': '220px',
+                    'backgroundColor': '#2a2a2a',
+                    'color': '#ffffff'
+                }
+            )
+        ], style={
+            'display': 'flex',
+            'alignItems': 'center'
+        })
+    ], style={
+        'display': 'flex',
+        'alignItems': 'center',
+        'flexWrap': 'wrap',
+        'gap': '10px'
+    })
 
 # 隨機選擇4-5星餐廳
 def get_random_top_restaurants(n=5):
@@ -313,16 +364,22 @@ def create_main_layout():
         # ===== Inspiration Content Section - Find Your Inspiration =====
         html.Div([
             html.Div([
-                html.H2('Find Your Inspiration', className='section-title'),
-                html.A([
-                    'Explore More',
-                    html.I(className='fas fa-arrow-right')
-                ], className='view-all-link', id='view-all-inspiration', n_clicks=0)
-            ], className='section-header'),
+                html.H2('Restaurants You\'ll Love', className='section-title'),
+                html.Div([
+                    create_sort_controls(),  # Add sorting and filter controls
+                    html.A([
+                        'View All',
+                        html.I(className='fas fa-arrow-right')
+                    ], className='view-all-link', id='view-all-restaurants', n_clicks=0)
+                ], style={'display': 'flex', 'alignItems': 'center', 'gap': '20px', 'flexWrap': 'wrap'})
+            ], className='section-header', style={'alignItems': 'flex-start'}),
 
-            # Article Grid
-            html.Div(id='inspiration-grid-container', className='card-grid')
-        ], className='content-section')
+            # Horizontal scrolling container
+            html.Div([
+                html.Div(id='destinations-card-container', className='card-row')
+            ], className='card-scroll-container')
+        ], className='content-section'),
+
     ], style={'backgroundColor': '#0a0a0a', 'minHeight': '100vh'})
 
 # ====== 認證相關 Callbacks ======
@@ -495,19 +552,82 @@ def logout_from_dropdown(n_clicks, session_data):
 # Populate Destinations/Restaurants Cards
 @app.callback(
     Output('destinations-card-container', 'children'),
-    [Input('url', 'pathname')]
+    [Input('url', 'pathname'),
+     Input('price-filter-dropdown', 'value'),
+     Input('sort-by-dropdown', 'value')],
+    prevent_initial_call=False
 )
-def populate_destinations_cards(pathname):
-    """填充餐廳卡片（橫向滾動）"""
-    # Get random 4-5 star restaurants
-    top_restaurants = get_random_top_restaurants(10)
-
+def populate_destinations_cards(pathname, price_filter, sort_by):
+    """填充餐廳卡片（橫向滾動）with filtering and sorting"""
+    
+    # Define price category order (most expensive to cheapest)
+    price_order = {
+        '頂級': 5,
+        '高價位': 4,
+        '中價位': 3,
+        '平價': 2,
+        '未知': 1
+    }
+    
+    # Start with all restaurants or filter for top ones
+    top_restaurants = restaurants_df.copy()
+    
+    # Add numeric price column for sorting
+    if 'Price_Category' in top_restaurants.columns:
+        top_restaurants['Price_Order'] = top_restaurants['Price_Category'].map(price_order).fillna(0)
+    
+    # STEP 1: Filter by Price Range
+    if price_filter != 'all':
+        if 'Price_Category' in top_restaurants.columns:
+            top_restaurants = top_restaurants[top_restaurants['Price_Category'] == price_filter]
+    
+    # STEP 2: Apply sorting based on dropdown selection
+    if sort_by == 'price_desc':
+        # Sort by Price_Category (most expensive first: 頂級 -> 平價)
+        if 'Price_Order' in top_restaurants.columns:
+            top_restaurants = top_restaurants.sort_values('Price_Order', ascending=False)
+        else:
+            top_restaurants = top_restaurants.sort_values('TotalRating', ascending=False)
+            
+    elif sort_by == 'price_asc':
+        # Sort by Price_Category (cheapest first: 平價 -> 頂級)
+        if 'Price_Order' in top_restaurants.columns:
+            top_restaurants = top_restaurants.sort_values('Price_Order', ascending=True)
+        else:
+            top_restaurants = top_restaurants.sort_values('TotalRating', ascending=True)
+            
+    elif sort_by == 'rating_desc':
+        top_restaurants = top_restaurants.sort_values('TotalRating', ascending=False)
+        
+    elif sort_by == 'rating_asc':
+        top_restaurants = top_restaurants.sort_values('TotalRating', ascending=True)
+        
+    elif sort_by == 'name_asc':
+        top_restaurants = top_restaurants.sort_values('Name', ascending=True)
+    
+    # Limit to top 20 results for performance
+    top_restaurants = top_restaurants.head(20)
+    
+    # Create cards
     cards = []
     for _, restaurant in top_restaurants.iterrows():
         card = create_destination_card(restaurant)
         cards.append(card)
-
+    
+    # If no restaurants found
+    if len(cards) == 0:
+        return [html.Div([
+            html.I(className='fas fa-utensils', style={
+                'fontSize': '3rem', 
+                'color': '#deb522', 
+                'marginBottom': '1rem'
+            }),
+            html.H3('No restaurants found', style={'color': '#ffffff'}),
+            html.P('Try adjusting your filters', style={'color': '#888888'})
+        ], style={'textAlign': 'center', 'padding': '4rem', 'width': '100%'})]
+    
     return cards
+
 
 # Handle Tab Navigation
 @app.callback(
