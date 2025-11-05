@@ -4,12 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Python-based Dash web application for travel data analysis and trip planning with integrated user authentication. The application provides an interactive dashboard with three main sections accessed via a hamburger menu (gear icon):
-- **Overview**: Visualizations of travel patterns, safety metrics, and costs by country/continent
-- **Trip Planner**: A recommendation system for destinations based on budget, safety, accommodation preferences, and visa requirements
-- **Attractions**: Geographic display of tourist attractions by country
+This is a Python-based Dash web application called "Voyage" - a modern restaurant discovery and travel planning platform with integrated user authentication. The application features:
+- **Modern Homepage**: Hero section with background image, search functionality, and curated restaurant recommendations
+- **Restaurant Discovery**: Browse top-rated restaurants (4-5 stars) from Kyoto with ratings, categories, and locations
+- **Personalized Content**: Saved trips, wishlisted hotels, and favorite restaurants organized by tabs
+- **Inspiration Section**: Travel articles and guides organized in a grid layout
+- **Search System**: Multi-criteria search by destination, cuisine type, and rating
 
-The application includes a complete authentication system with login, registration, session management, and page access protection. Navigation between pages is handled by a custom hamburger menu in the top-right corner.
+The application includes a complete authentication system with login, registration, session management (SQLite-based), and page access protection. The UI uses a dark theme with gold accent color (#deb522) and modern card-based layouts.
+
+**Note**: The codebase contains legacy travel analysis code (Overview, Trip Planner, Attractions) in `utils/` but the current `app.py` implements a restaurant-focused platform. The CSV files `Travel_dataset.csv`, `country_info.csv`, and `Attractions.csv` are referenced in code but may be missing from the data folder.
 
 ## Development Commands
 
@@ -25,7 +29,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-The app runs on default Dash port (usually http://127.0.0.1:8050). Set `debug=True` in `app.run()` for development mode.
+The app runs on default Dash port (usually http://127.0.0.1:8050). App automatically runs with `debug=True` (see line 649 in app.py).
 
 ### Testing and Utilities
 ```bash
@@ -36,65 +40,91 @@ python test_reviews_join.py           # Review data join testing
 python test_login_page.py             # Login page component testing
 
 # Data generation and transformation utilities
-python generate_reviews.py            # Generate synthetic review data for restaurants
-python change_totalRating.py          # Calculate and update restaurant total ratings from reviews
+python generate_reviews.py                        # Generate synthetic review data
+python change_totalRating.py                      # Update restaurant total ratings from reviews
+python restore_prices_and_add_price_category.py  # Process pricing data
 ```
+
+## Current vs Legacy Architecture
+
+**IMPORTANT**: This codebase is in transition. The `app.py` file has been completely redesigned, but legacy utility code remains.
+
+### Current Implementation (app.py)
+- **UI**: Modern "Voyage" homepage with hero section, search bar, restaurant cards
+- **Data**: Only uses `Kyoto_Restaurant_Info_Full.csv` for restaurants
+- **Features**: Restaurant search/filter, user authentication, tab navigation
+- **Callbacks**: Focus on UI interactions (dropdown, tabs, search, cards)
+- **Style**: `voyage_styles.css` for modern card-based layouts
+
+### Legacy Code (still in codebase but unused)
+- **UI**: Multi-tab dashboard (Overview/Trip Planner/Attractions) with hamburger menu
+- **Data**: Travel datasets, country info, attractions, safety metrics
+- **Features**: Data visualizations (bar/pie/map/box), trip scoring, geocoding
+- **Utils**: `data_transform.py`, `data_clean.py`, `visualization.py` functions
+- **Style**: `gear_menu.css`, `login_styles.css`
+
+**When modifying code**: Check if you're working with current features (restaurant homepage) or legacy features (travel analysis). Many functions in `utils/` are no longer called by `app.py`.
 
 ## Architecture
 
 ### Main Application (`app.py`)
-- Initializes Dash app with Bootstrap styling
-- Loads and preprocesses three CSV datasets from `./data/`:
-  - `Travel_dataset.csv`: Historical travel records with traveler demographics and costs
-  - `country_info.csv`: Country-level data (CPI, PCE, Safety Index, Travel Alerts, Visa info)
-  - `Attractions.csv`: Tourist attractions by country
+- Initializes Dash app with Bootstrap styling and custom CSS (`voyage_styles.css`)
+- Loads CSV datasets from `./data/`:
+  - `Kyoto_Restaurant_Info_Full.csv`: Restaurant data with ratings, categories, locations, and stations
+  - `Travel_dataset.csv`, `country_info.csv`, `Attractions.csv`: Legacy travel analysis data (may be missing)
+  - `Reviews.csv`: User reviews for restaurants
 - Implements authentication system with login/logout/register callbacks
-- Uses `dcc.Store` for session management (`session-store`) and cross-callback state management
-- Defines multi-tab layout with callbacks for each page
+- Uses `dcc.Store` for session management (`session-store`), page mode (`page-mode`), current page tracking, dropdown state
+- Creates modern homepage layout with hero section, search bar, restaurant cards, tabs, and inspiration grid
 - Routes users to login page or main app based on session validation
+- Key UI components: `create_destination_card()`, `create_saved_trip_card()`, `create_add_new_card()`, `create_inspiration_card()`, `create_compound_search_bar()`
 
 ### Utils Package (`utils/`)
 
-**`const.py`**: Constants and configuration
-- `ALERT_RANK_MAP`: Travel alert severity mapping (灰色=2, 黃色=3, 橙色=4)
-- `ALL_COMPARE_METRICS`: List of metrics for country comparison charts
-- `TAB_STYLE`: UI styling for tab components
-- `get_constants()`: Computes dashboard statistics (countries, travelers, nationalities, avg days)
+**Note**: Most utilities are designed for legacy travel analysis features. Current app.py uses primarily `auth.py` for authentication.
 
-**`data_clean.py`**: Data cleaning pipeline
+**`const.py`**: Constants and configuration
+- `ALERT_RANK_MAP`: Travel alert severity mapping (灰色=2, 黃色=3, 橙色=4) - legacy
+- `ALL_COMPARE_METRICS`: List of metrics for country comparison charts - legacy
+- `TAB_STYLE`: UI styling for tab components (gold/black theme)
+- `get_constants()`: Computes dashboard statistics (countries, travelers, nationalities, avg days) - legacy
+
+**`data_clean.py`**: Data cleaning pipeline (legacy travel features)
 - `travel_data_clean()`: Converts cost strings to float, parses dates, creates age groups and monthly bins
 - `countryinfo_data_clean()`: Removes null values from country info
 - `data_merge()`: Left joins travel data with country info on 'Destination'
 
-**`data_transform.py`**: Business logic and filtering
-- `preprocess_travel_df()`: Calculates daily/trip accommodation costs (`acc_daily_cost`, `acc_trip_cost`)
+**`data_transform.py`**: Business logic and filtering (legacy travel features)
+- `preprocess_travel_df()`: Calculates daily/trip accommodation costs
 - `filter_by_cost_and_types()`: Filters by accommodation cost range and types
-- `pick_country_level()`: Aggregates trip-level data to country-level using first non-null values
+- `pick_country_level()`: Aggregates trip-level data to country-level
 - `filter_by_alert_and_visa()`: Applies travel alert threshold and visa-exempt filtering
-- `compute_scores()`: Calculates weighted scores (0-100) combining safety and cost metrics using CPI adjustment and MinMax normalization
-- `prepare_country_compare_data()`: Prepares data for radar/bar/line comparison charts (max 5 countries)
+- `compute_scores()`: Calculates weighted scores (0-100) combining safety and cost metrics
+- `prepare_country_compare_data()`: Prepares data for comparison charts (max 5 countries)
+- `get_dashboard_default_values()`: Returns default dropdown values for visualizations
 
 **`data_validation.py`**: Helper utilities
-- `is_exempt()`: Validates visa exemption status from various input formats
+- `is_exempt()`: Validates visa exemption status - legacy
 - `minmax()`: MinMax normalization (0-1 range) with edge case handling
 - `fmt()`: Number formatting for display
 
-**`visualization.py`**: Plotly chart generation
-- `build_compare_figure()`: Creates radar/bar/line charts for country comparisons with MinMax normalization
-- `generate_bar()`, `generate_pie()`, `generate_map()`, `generate_box()`: Overview page visualizations
-- `build_table_component()`: Creates sortable/filterable Dash DataTable for trip planner results
+**`visualization.py`**: Plotly chart generation (mostly legacy)
+- `build_compare_figure()`: Creates radar/bar/line charts with MinMax normalization
+- `generate_bar()`, `generate_pie()`, `generate_map()`, `generate_box()`: Travel visualizations
+- `build_table_component()`: Creates sortable/filterable Dash DataTable
 - `generate_stats_card()`: Top-level statistics cards with icons
 - All charts use dark theme (`plotly_dark`) with golden accent color (`#deb522`)
 
-**`auth.py`**: Authentication and user management
+**`auth.py`**: Authentication and user management (actively used)
 - `init_db()`: Initializes SQLite database with users and sessions tables
-- `create_user()`: Creates new user with hashed password (SHA-256)
+- `create_user()`: Creates new user with SHA-256 hashed password
 - `verify_user()`: Validates username/password and updates last login time
 - `create_session()`: Creates new session with expiration time
 - `get_session()`: Retrieves and validates session by ID
 - `delete_session()`: Removes session (logout)
 - `clean_expired_sessions()`: Removes expired sessions from database
 - Database location: `./data/users.db`
+- Auto-creates test accounts: `admin`/`admin123` and `demo`/`demo123`
 
 ### Pages Package (`pages/`)
 
@@ -107,72 +137,91 @@ python change_totalRating.py          # Calculate and update restaurant total ra
 ### Assets Package (`assets/`)
 
 Contains static resources for the application:
-- `login_styles.css`: Authentication page styles
-- `gear_menu.css`: Hamburger menu navigation styles
-- `logo.png`, `earth.svg`, `user.svg`, `calendar.svg`: UI icons and branding
-- `bg_hamburger.png`: Background for menu button
+- `voyage_styles.css`: Main application styles for modern homepage layout
+- `login_styles.css`: Authentication page styles (legacy, may not be actively used)
+- `gear_menu.css`: Hamburger menu navigation styles (legacy, may not be actively used)
+- `logo.png`: Application logo displayed on login/register pages
+- `Hazuki.jpg`: Hero background image and placeholder for cards
+- `earth.svg`, `user.svg`, `calendar.svg`: UI icons (legacy)
+- `bg_hamburger.png`: Background for menu button (legacy)
 
 ### Data Files (`data/`)
 
-**Core Travel Data:**
-- `Travel_dataset.csv`: Historical travel records (traveler names, nationalities, destinations, costs, duration)
-- `country_info.csv`: Country-level metrics (CPI, PCE, Safety Index, Travel Alerts, Visa requirements)
-- `Attractions.csv`: Tourist attractions by country
-- `users.db`: SQLite database for authentication (users and sessions tables)
+**Active Data Files:**
+- `Kyoto_Restaurant_Info_Full.csv`: Complete restaurant data with ratings, categories, stations, and price ranges
+  - Key columns: `Name`, `FirstCategory`, `SecondCategory`, `Station`, `TotalRating`, `Rating_Category`
+- `Reviews.csv`: User reviews for restaurants (generated via `generate_reviews.py`)
+- `users.db`: SQLite database for authentication (auto-created on first run)
+  - Tables: `users` (id, username, password_hash, email, created_at, last_login)
+  - Tables: `sessions` (session_id, user_id, created_at, expires_at)
 
-**Restaurant/Reviews Data** (for future features or analysis):
-- `Kyoto_Restaurant_Info.csv`: Restaurant metadata (name, location, cuisine type)
-- `Kyoto_Restaurant_Info_Rated.csv`: Restaurant data with calculated ratings and categories
-- `Reviews.csv`: User reviews with ratings (generated via `generate_reviews.py`)
+**Missing/Legacy Data Files** (referenced in code but may not exist):
+- `Travel_dataset.csv`: Historical travel records (legacy)
+- `country_info.csv`: Country-level metrics (legacy)
+- `Attractions.csv`: Tourist attractions by country (legacy)
+- `booking_reviews copy.csv`: Backup or alternative review data
 
-### Test Files
+### Test and Utility Scripts
 
-Standalone test scripts for component development and data validation:
-- `test_restaurant_barChart.py`: Interactive Dash app testing restaurant rating visualizations with dropdown filters
+**Test Scripts** - Standalone Dash apps for component testing:
+- `test_restaurant_barChart.py`: Interactive testing of restaurant rating visualizations with dropdown filters
 - `test_rating_distribution.py`: Analysis of rating distributions across restaurants
 - `test_reviews_join.py`: Validates proper joining of restaurant and review data
 - `test_login_page.py`: Tests authentication page components and styling
+- `test.py`, `test2.py`: Additional test scripts
+
+**Data Generation Scripts**:
+- `generate_reviews.py`: Generates synthetic review data for restaurants
+- `change_totalRating.py`: Calculates and updates restaurant total ratings from reviews
+- `restore_prices_and_add_price_category.py`: Processes restaurant pricing data and categorization
+- `combine.py`: Data combination utility (purpose unclear)
 
 ### Key Data Flow
 
 1. **Authentication**:
-   - App loads → check session storage → validate session → route to login or main app
+   - App loads → check `session-store` → validate session → route to login or main app (`create_main_layout()`)
    - Login: verify credentials → create session (UUID) → store in database and session storage
    - Logout: delete session from database → clear session storage → redirect to login
-   - Register: validate inputs → hash password → store in database → redirect to login
+   - Register: validate inputs → hash password (SHA-256) → store in database → show success message
 
-2. **Data Loading**: CSVs → `travel_data_clean()` / `countryinfo_data_clean()` → `data_merge()` → `df_merged`
+2. **Data Loading**:
+   - Restaurant data: `Kyoto_Restaurant_Info_Full.csv` → `restaurants_df` (used for cards and search)
+   - Legacy travel data: CSVs → `travel_data_clean()` / `countryinfo_data_clean()` → `data_merge()` → `df_merged` (loaded but not actively used in current UI)
 
-3. **Trip Planner**:
-   - User inputs (cost, types, alerts, visa, weights) → `filter_by_cost_and_types()` → `pick_country_level()` → `filter_by_alert_and_visa()` → `compute_scores()` → sorted table + top 5 for comparison
+3. **Restaurant Display** (Current Homepage):
+   - On page load → `get_random_top_restaurants(10)` → filter 4-5 star restaurants → display in card grid
+   - User searches → filter by destination/cuisine/rating → display matching restaurants
+   - Tab navigation → switch between saved trips, wishlisted hotels, favorite restaurants
 
-4. **Attractions**: Selected country → filter `attractions_df` → geopy geocoding → Leaflet map with markers
+4. **Legacy Features** (not in current UI but code exists):
+   - Trip Planner: User inputs → filters → scoring → sorted table
+   - Attractions: Country selection → geocoding → map display
 
 ### Callback Architecture
 
-- **Authentication Callbacks**:
-  - `display_page()`: Routes user to login/register/main app based on session state and page mode
-  - `login()`: Validates credentials, creates session, updates session storage
-  - `logout_from_menu()`: Deletes session and clears session storage (triggered from hamburger menu)
-  - `register()`: Validates inputs and creates new user account
-  - `switch_to_register()` / `switch_to_login()`: Toggle between login and register pages
+**Authentication Callbacks**:
+- `display_page()`: Routes user to login/register/main app based on session state and `page-mode`
+- `login()`: Validates credentials, creates session (2 hours or 30 days), updates session storage
+- `logout_from_dropdown()`: Deletes session when user clicks logout in dropdown menu
+- `register()`: Validates inputs (6+ char password, matching confirmation) and creates new user
+- `switch_to_register()` / `switch_to_login()`: Toggle between login and register pages
 
-- **Navigation Callbacks** (Hamburger Menu):
-  - `toggle_menu()`: Opens/closes the hamburger menu
-  - `update_menu_display()`: Updates CSS classes for menu visibility and animation
-  - `navigate_page()`: Switches between Overview/Trip Planner/Attractions pages
-  - `update_menu_active_state()`: Highlights the current active page in menu
-  - All navigation state stored in `dcc.Store` components (`menu-open`, `current-page`)
+**Homepage UI Callbacks** (Current Implementation):
+- `toggle_user_dropdown()`: Opens/closes user avatar dropdown menu
+- `populate_destinations_cards()`: Loads random 4-5 star restaurants on page load
+- `handle_tab_navigation()`: Switches between Saved Trips/Wishlisted/Favorites tabs
+- `populate_inspiration_grid()`: Loads inspiration article cards
+- `handle_search()`: Filters restaurants by destination, cuisine, and rating criteria
 
-- **Overview Page**: Four independent callbacks for bar/pie/map/box charts, each triggered by dropdown changes
+**Legacy Callbacks** (Code exists but not in current UI):
+- Overview page: Bar/pie/map/box chart updates
+- Trip Planner: Table filtering and country comparison charts
+- Attractions: Country selection and map display
+- Hamburger menu navigation
 
-- **Trip Planner Page**:
-  - Main callback (`update_trip_planner_table()`) processes filters and returns table + top 5 countries to `dcc.Store`
-  - Comparison callback (`update_trip_planner_comparison()`) reads from `dcc.Store` to generate radar/bar/line charts
+### Scoring Algorithm (Legacy Trip Planner)
 
-- **Attractions Page**: Single callback with `prevent_initial_call=True` and `State` for country selection
-
-### Scoring Algorithm (Trip Planner)
+**Note**: This algorithm exists in `utils/data_transform.py` but is not used in the current restaurant-focused UI.
 
 1. CPI adjustment normalizes accommodation costs across countries
 2. Safety Index and adjusted cost are MinMax normalized to 0-1
@@ -182,24 +231,42 @@ Standalone test scripts for component development and data validation:
 
 ## Important Notes
 
-- **Authentication**: Application requires login on startup. Default test accounts: `admin`/`admin123` and `demo`/`demo123`
-- **Session Management**: Sessions stored in SQLite (`data/users.db`). Default expiry: 2 hours (normal) or 30 days (remember me)
+**Current Application State**:
+- **UI Focus**: App currently implements a modern restaurant discovery platform (Voyage), not the legacy travel analysis dashboard
+- **Data Mismatch**: Code references travel CSV files that may not exist. App works with restaurant data only
+- **Legacy Code**: Many utility functions in `utils/` are unused by current homepage implementation
+
+**Authentication & Security**:
+- **Login Required**: Application requires login on startup. Test accounts: `admin`/`admin123` and `demo`/`demo123`
+- **Session Management**: SQLite sessions with 2-hour expiry (or 30 days with "remember me")
 - **Password Security**: Uses SHA-256 hashing (consider bcrypt/argon2 for production)
-- **Database**: SQLite database (`users.db`) auto-created on first run with two tables: `users` and `sessions`. Default admin accounts created automatically by `auth.py` on initialization
-- **First Run**: On first run, `auth.py` creates the database and initializes test accounts. If database exists, it safely skips account creation
-- **Geopy Rate Limiting**: `RateLimiter(min_delay_seconds=1)` prevents API throttling when geocoding attractions
-- **Country Code Mapping**: `visualization.py` contains hardcoded ISO country code mapping for choropleth maps (23 countries mapped to ISO 3166 codes)
-- **Alert Ranking**: Lower numbers = safer (灰色=2 is safer than 橙色=4) as defined in `ALERT_RANK_MAP`
-- **Month Ordering**: Bar charts use predefined month order array for correct chronological display
-- **Bootstrap Theme**: Uses `dbc.themes.BOOTSTRAP` for responsive layout
-- **Color Scheme**: Gold/black theme (`#deb522` / `black`) used consistently across UI and authentication pages
-- **External Resources**: FontAwesome 6.4.0 icons loaded from CDN for UI elements
-- **Page Navigation**: Uses `dcc.Store` components with `storage_type='memory'` for in-session state (menu, page routing)
+- **Database Auto-Init**: `users.db` auto-created on first run by `auth.py` module import
+- **Test Accounts**: Created automatically if database is new (admin/admin123, demo/demo123)
+
+**Technical Details**:
+- **Theme**: Dark theme with gold accent (`#deb522`) consistent across all pages
+- **External Resources**: FontAwesome 6.4.0 icons, Bootstrap theme, Plotly dark template
+- **State Management**: Uses `dcc.Store` with `storage_type='session'` for auth, `'memory'` for UI state
+- **Restaurant Filtering**: Filters by `Rating_Category == '4~5 星餐廳'` for top recommendations
+- **Image Assets**: `Hazuki.jpg` used as hero background and placeholder for all card images
+
+**Legacy Features** (code exists but unused):
+- Geopy geocoding for attractions mapping
+- Country code mapping for choropleth maps (23 countries)
+- Alert ranking system (灰色=2, 黃色=3, 橙色=4)
+- Trip planner scoring algorithm with CPI adjustment
+- Hamburger menu navigation system
 
 ## Troubleshooting
 
+**Common Issues**:
+- **Missing CSV files**: If app crashes on startup, check that `Travel_dataset.csv`, `country_info.csv`, and `Attractions.csv` exist in `data/` folder, or comment out their loading in `app.py` lines 43-45
 - **Database locked errors**: Only one process can write to SQLite at a time. Ensure only one app instance is running
-- **Geocoding failures**: Attractions page uses Nominatim API. If attractions don't appear, check internet connectivity and rate limiting
-- **Session not persisting**: Check that `session-store` uses `storage_type='session'` not `'memory'`
-- **Menu not appearing**: Verify `assets/gear_menu.css` is loaded and no CSS conflicts exist
-- **Charts not updating**: Ensure callbacks check `current-page` data to prevent unnecessary updates on inactive tabs
+- **Session not persisting**: Verify `session-store` uses `storage_type='session'` not `'memory'`
+- **Restaurant cards not showing**: Check that `Kyoto_Restaurant_Info_Full.csv` exists and has `Rating_Category` column with '4~5 星餐廳' values
+- **Images not displaying**: Ensure `assets/Hazuki.jpg` and `assets/logo.png` exist
+
+**Legacy Feature Issues** (if trying to use old features):
+- **Geocoding failures**: Attractions page requires internet connection for Nominatim API
+- **Charts not updating**: Legacy callbacks may reference missing data or `dcc.Store` components
+- **Menu not appearing**: Hamburger menu CSS and callbacks exist but are not integrated in current UI

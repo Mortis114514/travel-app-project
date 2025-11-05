@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(ping:*)",
+      "Bash(nul)",
+      "Bash(timeout 5 sleep:*)",
+      "Bash(exit 0)"
     ],
     "deny": [],
     "ask": []
