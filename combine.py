@@ -1,40 +1,53 @@
-import csv
+import pandas as pd
 
-csv1_file = 'data/Kyoto_Restaurant_Info_Full.csv'  # 有 Price_Category 的 CSV
-csv2_file = 'data/Kyoto_Restaurant_Info_Rated.csv'  # 有 Rating_Category 的 CSV
-output_file = 'Combined_Restaurants.csv'
+try:
+    # Read both CSV files
+    df1 = pd.read_csv('data/Kyoto_Restaurant_Info_Full.csv', encoding='utf-8-sig')
+    df2 = pd.read_csv('data/Kyoto_Restaurant_Info_Rated.csv', encoding='utf-8-sig')
 
-# 最終欄位順序
-final_fields = [
-    'Restaurant_ID', 'Name', 'JapaneseName', 'Station', 'FirstCategory', 'SecondCategory',
-    'TotalRating', 'Lat', 'Long', 'DinnerPrice', 'LunchPrice', 'Price_Category',
-    'DinnerRating', 'LunchRating', 'ReviewNum', 'Rating_Category'
-]
+    # Print info about the dataframes before merging
+    print("Before merging:")
+    print(f"File 1 shape: {df1.shape}")
+    print(f"File 2 shape: {df2.shape}")
+    
+    # Merge the dataframes on Restaurant_ID
+    merged_df = pd.merge(
+        df1, 
+        df2,
+        on='Restaurant_ID',
+        how='outer',
+        suffixes=('_1', '_2')
+    )
 
-def read_csv(file_path):
-    with open(file_path, 'r', encoding='utf-8-sig', newline='') as f:
-        reader = csv.DictReader(f)
-        return list(reader)
+    # Print info after merging
+    print(f"\nAfter merging:")
+    print(f"Merged shape: {merged_df.shape}")
 
-# 讀取兩個 CSV
-csv1_rows = read_csv(csv1_file)
-csv2_rows = read_csv(csv2_file)
+    # For columns that appear in both dataframes, keep the non-null values
+    for col in merged_df.columns:
+        if col.endswith('_1'):
+            base_col = col[:-2]
+            if f"{base_col}_2" in merged_df.columns:
+                merged_df[base_col] = merged_df[f"{base_col}_2"].fillna(merged_df[col])
+                # Drop the duplicate columns
+                merged_df = merged_df.drop(columns=[col, f"{base_col}_2"])
 
-# 合併資料並補齊缺失欄位
-all_rows = []
-for row in csv1_rows + csv2_rows:
-    new_row = {field: row.get(field, '') for field in final_fields}
-    all_rows.append(new_row)
+    # Define the final column order
+    final_fields = [
+        'Restaurant_ID', 'Name', 'JapaneseName', 'Station', 'FirstCategory', 'SecondCategory',
+        'TotalRating', 'Lat', 'Long', 'DinnerPrice', 'LunchPrice', 'Price_Category',
+        'DinnerRating', 'LunchRating', 'ReviewNum', 'Rating_Category'
+    ]
 
-# 重新編號 Restaurant_ID
-for idx, row in enumerate(all_rows, start=1):
-    row['Restaurant_ID'] = str(idx)
+    # Reorder columns and save to CSV
+    merged_df = merged_df[final_fields]
+    merged_df.to_csv('data/Combined_Restaurants.csv', index=False, encoding='utf-8-sig')
 
-# 寫入新的 CSV
-with open(output_file, 'w', encoding='utf-8', newline='') as f:
-    writer = csv.DictWriter(f, fieldnames=final_fields, quoting=csv.QUOTE_ALL)
-    writer.writeheader()
-    for row in all_rows:
-        writer.writerow(row)
+    print(f"\nSuccessfully merged and saved! Total rows: {len(merged_df)}")
+    print("Missing values in final dataset:")
+    print(merged_df.isnull().sum())
 
-print(f"已成功合併兩個 CSV 並重新編號，共 {len(all_rows)} 筆資料")
+except FileNotFoundError as e:
+    print(f"Error: Could not find file - {e}")
+except Exception as e:
+    print(f"Error: {e}")
