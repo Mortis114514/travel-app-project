@@ -162,8 +162,9 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
+    overflow: visible;
     margin-top: 70px;
+    z-index: 50;
 }
 
 .hero-background {
@@ -174,6 +175,7 @@ body {
     height: 100%;
     object-fit: cover;
     filter: brightness(0.4);
+    overflow: hidden;
 }
 
 .hero-overlay {
@@ -195,6 +197,7 @@ body {
     text-align: center;
     max-width: 900px;
     padding: 2rem;
+    overflow: visible;
 }
 
 .hero-title {
@@ -229,6 +232,9 @@ body {
     border: 1px solid rgba(222, 181, 34, 0.2);
     max-width: 1100px;
     margin: 0 auto;
+    overflow: visible;
+    position: relative;
+    z-index: 100;
 }
 
 .search-input-group {
@@ -240,6 +246,7 @@ body {
     border-right: 1px solid rgba(255, 255, 255, 0.1);
     min-width: 0;
     overflow: visible;
+    position: relative;
 }
 
 .search-input-group:last-of-type {
@@ -270,40 +277,64 @@ body {
     border: none;
     color: #ffffff;
     font-size: 0.95rem;
-    width: 100%;
-    min-width: 180px;
+    width: 100% !important;
+    max-width: 100% !important;
     outline: none;
+}
+
+.search-dropdown > div {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.search-dropdown .Select {
+    width: 100% !important;
+    max-width: 100% !important;
 }
 
 .search-dropdown .Select-control {
     background-color: transparent !important;
     border: none !important;
-    min-width: 180px;
-    overflow: visible !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis;
+    max-width: 100% !important;
+    width: 100% !important;
+}
+
+.search-dropdown .Select-value {
+    max-width: 100% !important;
+    overflow: hidden !important;
 }
 
 .search-dropdown .Select-placeholder {
     color: #888888 !important;
     white-space: nowrap;
-    overflow: visible !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }
 
 .search-dropdown .Select-value-label {
     color: #ffffff !important;
     white-space: nowrap;
-    overflow: visible !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }
 
 /* Dropdown menu width and option display */
 .search-dropdown .Select-menu-outer {
-    min-width: 220px;
-    width: auto !important;
+    min-width: 250px;
+    width: max-content !important;
+    max-width: 400px;
     z-index: 9999 !important;
+    position: absolute !important;
+    left: 0;
 }
 
 .search-dropdown .Select-menu {
-    min-width: 220px;
-    width: auto !important;
+    min-width: 250px;
+    width: 100% !important;
     max-height: 300px;
     overflow-y: auto;
 }
@@ -311,7 +342,57 @@ body {
 .search-dropdown .Select-option {
     white-space: nowrap;
     padding: 10px 16px;
-    overflow: visible !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis;
+}
+
+/* Custom Dropdown Menu Styles */
+#cuisine-trigger, #rating-trigger {
+    overflow: hidden;
+    max-width: 100%;
+    white-space: nowrap;
+}
+
+#cuisine-trigger span, #rating-trigger span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+    display: inline-block;
+}
+
+.custom-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    background: rgba(26, 26, 26, 0.98);
+    border: 1px solid rgba(222, 181, 34, 0.3);
+    border-radius: 12px;
+    min-width: 250px;
+    max-width: 350px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+}
+
+.custom-dropdown-item {
+    padding: 12px 20px;
+    color: #ffffff;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.custom-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.custom-dropdown-item:hover {
+    background: rgba(222, 181, 34, 0.15);
+    color: #deb522;
+    padding-left: 24px;
 }
 
 .search-btn {
@@ -336,6 +417,8 @@ body {
     max-width: 1400px;
     margin: 0 auto;
     padding: 4rem 2rem;
+    position: relative;
+    z-index: 10;
 }
 
 .section-header {

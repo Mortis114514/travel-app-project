@@ -9,6 +9,7 @@ from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
 import uuid
 import random
+import json
 from datetime import datetime, timedelta
 
 # 從./utils導入所有自定義函數
@@ -75,6 +76,74 @@ def get_random_top_restaurants(n=5):
         return top_restaurants.sample(n=n)
     else:
         return top_restaurants
+
+# 移除類別名稱中的括號內容
+def remove_parentheses(text):
+    """移除字符串中的括號及其內容
+    例如: "Izakaya (Tavern)" -> "Izakaya"
+    """
+    import re
+    if pd.isna(text):
+        return text
+    # 移除括號及其內容，並去除多餘空格
+    return re.sub(r'\s*\([^)]*\)', '', str(text)).strip()
+
+def create_cuisine_options():
+    """創建料理類型選項列表（包含清除選項）"""
+    options = []
+    # 清除選擇選項
+    options.append(
+        html.Div([
+            html.I(className='fas fa-times', style={'marginRight': '8px'}),
+            'Clear Selection'
+        ],
+        className='custom-dropdown-item',
+        id={'type': 'cuisine-option', 'index': '__CLEAR__'},
+        n_clicks=0,
+        style={'borderBottom': '2px solid rgba(222, 181, 34, 0.3)', 'fontWeight': '500'})
+    )
+    # 其他選項
+    for cat in sorted(restaurants_df['FirstCategory'].dropna().unique()):
+        options.append(
+            html.Div(remove_parentheses(cat),
+                    className='custom-dropdown-item',
+                    id={'type': 'cuisine-option', 'index': cat},
+                    n_clicks=0)
+        )
+    return options
+
+def create_rating_options():
+    """創建評分選項列表（包含清除選項）"""
+    options = []
+    # 清除選擇選項
+    options.append(
+        html.Div([
+            html.I(className='fas fa-times', style={'marginRight': '8px'}),
+            'Clear Selection'
+        ],
+        className='custom-dropdown-item',
+        id={'type': 'rating-option', 'index': '__CLEAR__'},
+        n_clicks=0,
+        style={'borderBottom': '2px solid rgba(222, 181, 34, 0.3)', 'fontWeight': '500'})
+    )
+    # 評分選項
+    options.append(html.Div('⭐⭐⭐⭐⭐ 4~5 Stars',
+                            className='custom-dropdown-item',
+                            id={'type': 'rating-option', 'index': '4-5'},
+                            n_clicks=0))
+    options.append(html.Div('⭐⭐⭐⭐ 3~4 Stars',
+                            className='custom-dropdown-item',
+                            id={'type': 'rating-option', 'index': '3-4'},
+                            n_clicks=0))
+    options.append(html.Div('⭐⭐⭐ 2~3 Stars',
+                            className='custom-dropdown-item',
+                            id={'type': 'rating-option', 'index': '2-3'},
+                            n_clicks=0))
+    options.append(html.Div('⭐⭐ 1~2 Stars',
+                            className='custom-dropdown-item',
+                            id={'type': 'rating-option', 'index': '1-2'},
+                            n_clicks=0))
+    return options
 
 ########################
 #### UI Component Functions ####
@@ -171,32 +240,38 @@ def create_compound_search_bar():
             ], className='search-input-group', style={'position': 'relative', 'flex': '2'}),
 
             html.Div([
-                html.I(className='fas fa-utensils'),
-                dcc.Dropdown(
-                    id='search-cuisine',
-                    options=[{'label': cat, 'value': cat} for cat in restaurants_df['FirstCategory'].dropna().unique()],
-                    placeholder='Cuisine Type',
-                    className='search-dropdown',
-                    style={'border': 'none', 'background': 'transparent', 'minWidth': '180px'}
-                )
-            ], className='search-input-group', style={'flex': '1.3', 'minWidth': '200px'}),
+                html.Div([
+                    html.I(className='fas fa-utensils', id='cuisine-icon',
+                           style={'cursor': 'pointer', 'color': '#deb522'}, n_clicks=0),
+                    html.Span(id='cuisine-selected-text',
+                             children='Cuisine Type',
+                             style={'cursor': 'pointer', 'marginLeft': '10px', 'color': '#888888'})
+                ], id='cuisine-trigger', style={'display': 'flex', 'alignItems': 'center'}, n_clicks=0),
+
+                # Hidden dropdown list
+                html.Div([
+                    html.Div(create_cuisine_options(),
+                            style={'maxHeight': '300px', 'overflowY': 'auto'})
+                ], id='cuisine-dropdown-menu', className='custom-dropdown-menu',
+                   style={'display': 'none'})
+            ], className='search-input-group', style={'flex': '1.3', 'minWidth': '200px', 'position': 'relative'}),
 
             html.Div([
-                html.I(className='fas fa-star'),
-                dcc.Dropdown(
-                    id='search-rating',
-                    options=[
-                        {'label': '⭐⭐⭐⭐⭐ 5 Stars', 'value': 5},
-                        {'label': '⭐⭐⭐⭐ 4+ Stars', 'value': 4},
-                        {'label': '⭐⭐⭐ 3+ Stars', 'value': 3},
-                        {'label': '⭐⭐ 2+ Stars', 'value': 2},
-                        {'label': '⭐ 1+ Stars', 'value': 1}
-                    ],
-                    placeholder='Rating',
-                    className='search-dropdown',
-                    style={'border': 'none', 'background': 'transparent', 'minWidth': '180px'}
-                )
-            ], className='search-input-group', style={'flex': '1.3', 'minWidth': '200px'}),
+                html.Div([
+                    html.I(className='fas fa-star', id='rating-icon',
+                           style={'cursor': 'pointer', 'color': '#deb522'}, n_clicks=0),
+                    html.Span(id='rating-selected-text',
+                             children='Rating',
+                             style={'cursor': 'pointer', 'marginLeft': '10px', 'color': '#888888'})
+                ], id='rating-trigger', style={'display': 'flex', 'alignItems': 'center'}, n_clicks=0),
+
+                # Hidden dropdown list
+                html.Div([
+                    html.Div(create_rating_options(),
+                            style={'maxHeight': '300px', 'overflowY': 'auto'})
+                ], id='rating-dropdown-menu', className='custom-dropdown-menu',
+                   style={'display': 'none'})
+            ], className='search-input-group', style={'flex': '1.3', 'minWidth': '200px', 'position': 'relative'}),
 
             html.Button([
                 html.I(className='fas fa-search', style={'marginRight': '8px'}),
@@ -324,6 +399,9 @@ app.layout = html.Div([
     dcc.Store(id='menu-open', data=False, storage_type='memory'),  # 記錄選單開關狀態
     dcc.Store(id='view-mode', data='home', storage_type='memory'),  # 'home' 或 'restaurant-list'
     dcc.Store(id='navigation-trigger', storage_type='memory'),  # 導航觸發器
+    dcc.Store(id='search-cuisine', storage_type='memory'),  # 選中的料理類型
+    dcc.Store(id='search-rating', storage_type='memory'),  # 選中的評分範圍
+    dcc.Store(id='active-dropdown', storage_type='memory', data=None),  # 當前打開的下拉菜單 ('cuisine', 'rating', or None)
     html.Div(id='page-content', style={'minHeight': '100vh'})
 ], style={'backgroundColor': '#1a1a1a', 'minHeight': '100vh'})
 
@@ -929,7 +1007,7 @@ def handle_tab_navigation(saved_clicks, wishlisted_clicks, favorites_clicks):
         cards = [create_saved_trip_card(trip) for trip in trips]
         cards.append(create_add_new_card("Start planning a new trip..."))
 
-        content = html.Div(cards + [create_add_new_card()], className='card-row')
+        content = html.Div(cards, className='card-row')
         content = html.Div(content, className='card-scroll-container')
 
     elif active_tab == 'wishlisted':
@@ -1009,9 +1087,27 @@ def search_restaurants(keyword=None, cuisine=None, rating=None, price_range=None
     if cuisine:
         filtered_df = filtered_df[filtered_df['FirstCategory'] == cuisine]
 
-    # Rating filter
+    # Rating filter (区间筛选)
     if rating:
-        filtered_df = filtered_df[filtered_df['TotalRating'] >= rating]
+        if isinstance(rating, str) and '-' in rating:
+            # 解析区间字符串 (例如 "4-5" -> 4.0 到 5.0)
+            try:
+                min_rating, max_rating = rating.split('-')
+                min_rating = float(min_rating)
+                max_rating = float(max_rating)
+                filtered_df = filtered_df[
+                    (filtered_df['TotalRating'] >= min_rating) &
+                    (filtered_df['TotalRating'] < max_rating if max_rating < 5 else filtered_df['TotalRating'] <= max_rating)
+                ]
+            except (ValueError, AttributeError):
+                pass  # 如果解析失败，跳过评分筛选
+        else:
+            # 向后兼容：如果是数字，使用大于等于逻辑
+            try:
+                rating_num = float(rating)
+                filtered_df = filtered_df[filtered_df['TotalRating'] >= rating_num]
+            except (ValueError, TypeError):
+                pass
 
     # Price range filter (using average of lunch and dinner prices)
     if price_range and isinstance(price_range, (list, tuple)) and len(price_range) == 2:
@@ -1187,27 +1283,189 @@ def toggle_advanced_filters(n_clicks, current_style):
 # Clear all filters
 @app.callback(
     [Output('search-destination', 'value'),
-     Output('search-cuisine', 'value'),
-     Output('search-rating', 'value'),
+     Output('search-cuisine', 'data', allow_duplicate=True),
+     Output('search-rating', 'data', allow_duplicate=True),
      Output('price-range-filter', 'value'),
      Output('review-count-filter', 'value'),
      Output('station-filter', 'value'),
-     Output('sort-by-filter', 'value')],
+     Output('sort-by-filter', 'value'),
+     Output('cuisine-selected-text', 'children', allow_duplicate=True),
+     Output('cuisine-selected-text', 'style', allow_duplicate=True),
+     Output('rating-selected-text', 'children', allow_duplicate=True),
+     Output('rating-selected-text', 'style', allow_duplicate=True)],
     [Input('clear-filters-btn', 'n_clicks')],
     prevent_initial_call=True
 )
 def clear_all_filters(n_clicks):
     """清除所有篩選器"""
     if n_clicks:
-        return '', None, None, [0, 30000], 0, None, 'rating_desc'
+        return (
+            '', None, None, [0, 30000], 0, None, 'rating_desc',
+            'Cuisine Type', {'cursor': 'pointer', 'marginLeft': '10px', 'color': '#888888'},
+            'Rating', {'cursor': 'pointer', 'marginLeft': '10px', 'color': '#888888'}
+        )
     raise PreventUpdate
+
+# Toggle cuisine dropdown menu with mutual exclusivity
+@app.callback(
+    [Output('cuisine-dropdown-menu', 'style'),
+     Output('rating-dropdown-menu', 'style', allow_duplicate=True),
+     Output('active-dropdown', 'data', allow_duplicate=True)],
+    [Input('cuisine-trigger', 'n_clicks'),
+     Input('cuisine-icon', 'n_clicks')],
+    [State('active-dropdown', 'data')],
+    prevent_initial_call=True
+)
+def toggle_cuisine_menu(trigger_clicks, icon_clicks, active_dropdown):
+    """切換料理類型下拉菜單，並確保評分菜單關閉（互斥性）"""
+    # 如果 cuisine 已經是活動狀態，則關閉它
+    if active_dropdown == 'cuisine':
+        return (
+            {'display': 'none'},    # 關閉 cuisine
+            {'display': 'none'},    # 保持 rating 關閉
+            None                     # 沒有活動的下拉菜單
+        )
+    else:
+        # 打開 cuisine，關閉 rating
+        return (
+            {'display': 'block'},   # 打開 cuisine
+            {'display': 'none'},    # 關閉 rating
+            'cuisine'               # 設置 cuisine 為活動狀態
+        )
+
+# Toggle rating dropdown menu with mutual exclusivity
+@app.callback(
+    [Output('cuisine-dropdown-menu', 'style', allow_duplicate=True),
+     Output('rating-dropdown-menu', 'style', allow_duplicate=True),
+     Output('active-dropdown', 'data', allow_duplicate=True)],
+    [Input('rating-trigger', 'n_clicks'),
+     Input('rating-icon', 'n_clicks')],
+    [State('active-dropdown', 'data')],
+    prevent_initial_call=True
+)
+def toggle_rating_menu(trigger_clicks, icon_clicks, active_dropdown):
+    """切換評分下拉菜單，並確保料理類型菜單關閉（互斥性）"""
+    # 如果 rating 已經是活動狀態，則關閉它
+    if active_dropdown == 'rating':
+        return (
+            {'display': 'none'},    # 保持 cuisine 關閉
+            {'display': 'none'},    # 關閉 rating
+            None                     # 沒有活動的下拉菜單
+        )
+    else:
+        # 打開 rating，關閉 cuisine
+        return (
+            {'display': 'none'},    # 關閉 cuisine
+            {'display': 'block'},   # 打開 rating
+            'rating'                # 設置 rating 為活動狀態
+        )
+
+# Handle cuisine option selection
+@app.callback(
+    [Output('search-cuisine', 'data', allow_duplicate=True),
+     Output('cuisine-selected-text', 'children', allow_duplicate=True),
+     Output('cuisine-selected-text', 'style', allow_duplicate=True),
+     Output('cuisine-dropdown-menu', 'style', allow_duplicate=True),
+     Output('active-dropdown', 'data', allow_duplicate=True)],
+    [Input({'type': 'cuisine-option', 'index': ALL}, 'n_clicks')],
+    [State({'type': 'cuisine-option', 'index': ALL}, 'id')],
+    prevent_initial_call=True
+)
+def select_cuisine_option(n_clicks_list, option_ids):
+    """選擇料理類型選項"""
+    if not any(n_clicks_list):
+        raise PreventUpdate
+
+    # Use callback_context to find which option was actually clicked
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
+
+    # Get the triggered input ID
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    # Parse the JSON string to get the index
+    triggered_dict = json.loads(triggered_id)
+    selected_value = triggered_dict['index']
+
+    # 處理清除選擇
+    if selected_value == '__CLEAR__':
+        return (
+            None,  # 清除選擇
+            'Cuisine Type',  # 重置顯示文本
+            {'cursor': 'pointer', 'marginLeft': '10px', 'color': '#888888'},  # 重置為灰色
+            {'display': 'none'},
+            None  # 重置 active-dropdown
+        )
+
+    selected_label = remove_parentheses(selected_value)
+
+    return (
+        selected_value,
+        selected_label,
+        {'cursor': 'pointer', 'marginLeft': '10px', 'color': '#ffffff'},
+        {'display': 'none'},
+        None  # 重置 active-dropdown
+    )
+
+# Handle rating option selection
+@app.callback(
+    [Output('search-rating', 'data', allow_duplicate=True),
+     Output('rating-selected-text', 'children', allow_duplicate=True),
+     Output('rating-selected-text', 'style', allow_duplicate=True),
+     Output('rating-dropdown-menu', 'style', allow_duplicate=True),
+     Output('active-dropdown', 'data', allow_duplicate=True)],
+    [Input({'type': 'rating-option', 'index': ALL}, 'n_clicks')],
+    [State({'type': 'rating-option', 'index': ALL}, 'id'),
+     State({'type': 'rating-option', 'index': ALL}, 'children')],
+    prevent_initial_call=True
+)
+def select_rating_option(n_clicks_list, option_ids, option_labels):
+    """選擇評分選項"""
+    if not any(n_clicks_list):
+        raise PreventUpdate
+
+    # Use callback_context to find which option was actually clicked
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
+
+    # Get the triggered input ID
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    # Parse the JSON string to get the index
+    triggered_dict = json.loads(triggered_id)
+    selected_value = triggered_dict['index']
+
+    # 處理清除選擇
+    if selected_value == '__CLEAR__':
+        return (
+            None,  # 清除選擇
+            'Rating',  # 重置顯示文本
+            {'cursor': 'pointer', 'marginLeft': '10px', 'color': '#888888'},  # 重置為灰色
+            {'display': 'none'},
+            None  # 重置 active-dropdown
+        )
+
+    # Find the label for this value
+    selected_label = selected_value  # Default to value if not found
+    for i, opt_id in enumerate(option_ids):
+        if opt_id['index'] == selected_value:
+            selected_label = option_labels[i]
+            break
+
+    return (
+        selected_value,
+        selected_label,
+        {'cursor': 'pointer', 'marginLeft': '10px', 'color': '#ffffff'},
+        {'display': 'none'},
+        None  # 重置 active-dropdown
+    )
 
 # Display active filter chips
 @app.callback(
     Output('active-filter-chips', 'children'),
     [Input('search-destination', 'value'),
-     Input('search-cuisine', 'value'),
-     Input('search-rating', 'value'),
+     Input('search-cuisine', 'data'),
+     Input('search-rating', 'data'),
      Input('price-range-filter', 'value'),
      Input('review-count-filter', 'value'),
      Input('station-filter', 'value')]
@@ -1338,22 +1596,22 @@ def display_active_filters(keyword, cuisine, rating, price_range, min_reviews, s
     return []
 
 # Handle Search Button with advanced filters (home page preview)
+# 自动搜索：当选择料理类型或评分时自动触发搜索
 @app.callback(
     Output('destinations-card-container', 'children', allow_duplicate=True),
-    [Input('search-btn', 'n_clicks')],
+    [Input('search-btn', 'n_clicks'),
+     Input('search-cuisine', 'data'),
+     Input('search-rating', 'data')],
     [State('search-destination', 'value'),
-     State('search-cuisine', 'value'),
-     State('search-rating', 'value'),
      State('price-range-filter', 'value'),
      State('review-count-filter', 'value'),
      State('station-filter', 'value'),
      State('sort-by-filter', 'value')],
     prevent_initial_call=True
 )
-def handle_search(n_clicks, destination, cuisine, rating, price_range, min_reviews, stations, sort_by):
-    """處理搜尋功能（首頁預覽）- 支援進階篩選"""
-    if not n_clicks:
-        raise PreventUpdate
+def handle_search(n_clicks, cuisine, rating, destination, price_range, min_reviews, stations, sort_by):
+    """處理搜尋功能（首頁預覽）- 支援進階篩選和自動搜索"""
+    # 不需要检查 n_clicks，因为 dropdown 改变也会触发搜索
 
     # Ensure default values for None parameters
     if price_range is None:
@@ -1392,23 +1650,24 @@ def handle_search(n_clicks, destination, cuisine, rating, price_range, min_revie
 # ====== Restaurant List Page Callbacks ======
 
 # Handle search in restaurant list page with advanced filters
+# 自动搜索：当选择料理类型或评分时自动触发搜索
 @app.callback(
     [Output('search-results-store', 'data'),
      Output('current-page-store', 'data'),
      Output('search-params-store', 'data')],
     [Input('search-btn', 'n_clicks'),
+     Input('search-cuisine', 'data'),
+     Input('search-rating', 'data'),
      Input('sort-by-filter', 'value')],  # Also trigger on sort change
     [State('search-destination', 'value'),
-     State('search-cuisine', 'value'),
-     State('search-rating', 'value'),
      State('price-range-filter', 'value'),
      State('review-count-filter', 'value'),
      State('station-filter', 'value'),
      State('view-mode', 'data')],
     prevent_initial_call=True
 )
-def handle_restaurant_list_search(n_clicks, sort_by, destination, cuisine, rating, price_range, min_reviews, stations, view_mode):
-    """處理餐廳列表頁的搜尋功能 - 支援進階篩選和排序"""
+def handle_restaurant_list_search(n_clicks, cuisine, rating, sort_by, destination, price_range, min_reviews, stations, view_mode):
+    """處理餐廳列表頁的搜尋功能 - 支援進階篩選、排序和自動搜索"""
     if view_mode != 'restaurant-list':
         raise PreventUpdate
 
