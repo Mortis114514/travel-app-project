@@ -176,10 +176,10 @@ def create_compound_search_bar():
                     id='search-cuisine',
                     options=[{'label': cat, 'value': cat} for cat in restaurants_df['FirstCategory'].dropna().unique()],
                     placeholder='Cuisine Type',
-                    className='search-input',
-                    style={'border': 'none', 'background': 'transparent'}
+                    className='search-dropdown',
+                    style={'border': 'none', 'background': 'transparent', 'minWidth': '180px'}
                 )
-            ], className='search-input-group', style={'flex': '1'}),
+            ], className='search-input-group', style={'flex': '1.3', 'minWidth': '200px'}),
 
             html.Div([
                 html.I(className='fas fa-star'),
@@ -188,13 +188,15 @@ def create_compound_search_bar():
                     options=[
                         {'label': '⭐⭐⭐⭐⭐ 5 Stars', 'value': 5},
                         {'label': '⭐⭐⭐⭐ 4+ Stars', 'value': 4},
-                        {'label': '⭐⭐⭐ 3+ Stars', 'value': 3}
+                        {'label': '⭐⭐⭐ 3+ Stars', 'value': 3},
+                        {'label': '⭐⭐ 2+ Stars', 'value': 2},
+                        {'label': '⭐ 1+ Stars', 'value': 1}
                     ],
                     placeholder='Rating',
-                    className='search-input',
-                    style={'border': 'none', 'background': 'transparent'}
+                    className='search-dropdown',
+                    style={'border': 'none', 'background': 'transparent', 'minWidth': '180px'}
                 )
-            ], className='search-input-group', style={'flex': '1'}),
+            ], className='search-input-group', style={'flex': '1.3', 'minWidth': '200px'}),
 
             html.Button([
                 html.I(className='fas fa-search', style={'marginRight': '8px'}),

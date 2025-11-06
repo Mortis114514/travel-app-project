@@ -222,11 +222,12 @@ body {
     border-radius: 60px;
     padding: 1rem 1.5rem;
     display: flex;
+    flex-wrap: wrap;
     gap: 1rem;
     align-items: center;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
     border: 1px solid rgba(222, 181, 34, 0.2);
-    max-width: 900px;
+    max-width: 1100px;
     margin: 0 auto;
 }
 
@@ -237,6 +238,8 @@ body {
     gap: 0.75rem;
     padding: 0.5rem 1rem;
     border-right: 1px solid rgba(255, 255, 255, 0.1);
+    min-width: 0;
+    overflow: visible;
 }
 
 .search-input-group:last-of-type {
@@ -259,6 +262,56 @@ body {
 
 .search-input::placeholder {
     color: #888888;
+}
+
+/* Search Dropdown Specific Styles */
+.search-dropdown {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 0.95rem;
+    width: 100%;
+    min-width: 180px;
+    outline: none;
+}
+
+.search-dropdown .Select-control {
+    background-color: transparent !important;
+    border: none !important;
+    min-width: 180px;
+    overflow: visible !important;
+}
+
+.search-dropdown .Select-placeholder {
+    color: #888888 !important;
+    white-space: nowrap;
+    overflow: visible !important;
+}
+
+.search-dropdown .Select-value-label {
+    color: #ffffff !important;
+    white-space: nowrap;
+    overflow: visible !important;
+}
+
+/* Dropdown menu width and option display */
+.search-dropdown .Select-menu-outer {
+    min-width: 220px;
+    width: auto !important;
+    z-index: 9999 !important;
+}
+
+.search-dropdown .Select-menu {
+    min-width: 220px;
+    width: auto !important;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.search-dropdown .Select-option {
+    white-space: nowrap;
+    padding: 10px 16px;
+    overflow: visible !important;
 }
 
 .search-btn {
@@ -921,17 +974,23 @@ body {
     background-color: #1a1a1a !important;
     border-color: #333 !important;
     color: #ffffff !important;
+    overflow: visible !important;
 }
 
 .Select-menu-outer {
     background-color: #1a1a1a !important;
     border: 1px solid #deb522 !important;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+    z-index: 9999 !important;
+    min-width: 220px !important;
+    width: auto !important;
 }
 
 .Select-option {
     background-color: #1a1a1a !important;
     color: #ffffff !important;
+    white-space: nowrap !important;
+    padding: 10px 16px !important;
 }
 
 .Select-option:hover {
@@ -946,10 +1005,12 @@ body {
 
 .Select-placeholder {
     color: #888888 !important;
+    white-space: nowrap !important;
 }
 
 .Select-value-label {
     color: #ffffff !important;
+    white-space: nowrap !important;
 }
 
 .Select-input > input {
