@@ -102,14 +102,23 @@ def create_cuisine_options():
         n_clicks=0,
         style={'borderBottom': '2px solid rgba(222, 181, 34, 0.3)', 'fontWeight': '500'})
     )
+
+    # 創建一個字典來追蹤已經顯示過的文本，避免重複
+    seen_labels = {}
+    all_categories = sorted(restaurants_df['FirstCategory'].dropna().unique())
+
     # 其他選項
-    for cat in sorted(restaurants_df['FirstCategory'].dropna().unique()):
-        options.append(
-            html.Div(remove_parentheses(cat),
-                    className='custom-dropdown-item',
-                    id={'type': 'cuisine-option', 'index': cat},
-                    n_clicks=0)
-        )
+    for cat in all_categories:
+        display_label = remove_parentheses(cat)
+        # 只添加第一次出現的顯示文本
+        if display_label not in seen_labels:
+            seen_labels[display_label] = cat
+            options.append(
+                html.Div(display_label,
+                        className='custom-dropdown-item',
+                        id={'type': 'cuisine-option', 'index': cat},
+                        n_clicks=0)
+            )
     return options
 
 def create_rating_options():
