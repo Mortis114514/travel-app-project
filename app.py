@@ -176,7 +176,7 @@ def create_destination_card(restaurant):
     """創建目的地卡片 (使用餐廳資料) - 可點擊並導航到詳細頁面"""
     card_content = html.Div([
         html.Img(
-            src='/assets/Hazuki.jpg',  # 使用相同圖片作為佔位符
+            src='/assets/Roger.jpg',  # 使用相同圖片作為佔位符
             className='card-image'
         ),
         html.Div([
@@ -205,7 +205,7 @@ def create_saved_trip_card(trip_data):
     """創建已存行程卡片"""
     return html.Div([
         html.Img(
-            src='/assets/Hazuki.jpg',
+            src='/assets/Roger.jpg',
             className='trip-card-image'
         ),
         html.Div([
@@ -231,7 +231,7 @@ def create_inspiration_card(article):
     """創建靈感文章卡片"""
     return html.Div([
         html.Img(
-            src='/assets/Hazuki.jpg',
+            src='/assets/Roger.jpg',
             className='inspiration-image'
         ),
         html.Div([
@@ -507,7 +507,7 @@ def create_detail_hero(data):
     return html.Div([
         # 背景圖片
         html.Img(
-            src='/assets/Hazuki.jpg',
+            src='/assets/Roger.jpg',
             style={
                 'width': '100%',
                 'height': '100%',
@@ -888,7 +888,7 @@ app = Dash(__name__, external_stylesheets=[
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
     '/assets/voyage_styles.css'
 ],
-           title='Voyage - Your Journey, Perfectly Planned', suppress_callback_exceptions=True)
+           title='柔成員的旅遊平台', suppress_callback_exceptions=True)
 server = app.server
 
 # ===== 版面配置 =====
@@ -917,7 +917,7 @@ def create_main_layout():
         html.Div([
             html.Div([
                 # Logo
-                html.Div('Voyage', className='header-logo'),
+                html.Div('Roger', className='header-logo'),
 
                 # Navigation
                 html.Div([
@@ -961,11 +961,11 @@ def create_main_layout():
 
         # ===== Hero Section =====
         html.Div([
-            html.Img(src='/assets/Hazuki.jpg', className='hero-background'),
+            html.Img(src='/assets/Roger.jpg', className='hero-background'),
             html.Div(className='hero-overlay'),
             html.Div([
-                html.H1('Your Journey, Perfectly Planned.', className='hero-title'),
-                html.P('Discover and design your dream trip with personalized recommendations', className='hero-subtitle'),
+                html.H1('欸欸發瘋啦嚴厲斥責', className='hero-title'),
+                html.P('自己設計想要的旅遊阿，底迪', className='hero-subtitle'),
                 create_compound_search_bar()
             ], className='hero-content')
         ], className='hero-section'),
@@ -2200,7 +2200,7 @@ def update_restaurant_grid(search_results, current_page):
         # 卡片內容
         card_content = html.Div([
             html.Img(
-                src='/assets/Hazuki.jpg',
+                src='/assets/Roger.jpg',
                 className='card-image',
                 style={'width': '100%', 'height': '200px', 'objectFit': 'cover', 'borderRadius': '8px 8px 0 0'}
             ),
