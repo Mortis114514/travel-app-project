@@ -5,6 +5,7 @@ from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 import pandas as pd
 import dash_leaflet as dl
+import plotly.express as px
 from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
 import uuid
@@ -775,25 +776,58 @@ def create_statistics_section(data):
         'marginBottom': '1.5rem'
     })
 
-def create_reviews_placeholder_section(data):
-    """創建評論預留區域（未來功能）"""
+def create_reviews_section(data):
+    """創建評論區：包含星等分佈長條圖與點擊後顯示評論（含 Show all 按鈕）"""
+    reviews = data.get('reviews', []) if isinstance(data, dict) else []
+    # Build counts for 1..5
+    counts = {i: 0 for i in range(1, 6)}
+    for r in reviews:
+        try:
+            rating = r.get('rating', None)
+            if rating is None:
+                continue
+            rating_int = int(round(float(rating)))
+            if 1 <= rating_int <= 5:
+                counts[rating_int] += 1
+        except Exception:
+            continue
+
+    ratings = list(counts.keys())
+    values = [counts[r] for r in ratings]
+
+    # Create Plotly bar chart for visibility
+    fig = px.bar(
+        x=ratings,
+        y=values,
+        labels={'x': 'Stars', 'y': 'Count'},
+        title='Ratings distribution',
+        text=values,
+        height=360
+    )
+    fig.update_traces(marker_color='#deb522', hovertemplate='Stars: %{x}<br>Count: %{y}<extra></extra>')
+    fig.update_layout(
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        title={'x':0.02, 'xanchor':'left', 'font': {'color':'#ffffff'}},
+        xaxis=dict(tickfont=dict(color='#ffffff')),
+        yaxis=dict(tickfont=dict(color='#ffffff')),
+        margin=dict(l=20, r=20, t=40, b=20)
+    )
+
+    comments_area = html.Div(id='reviews-comments', children=[
+        html.Div('Click a star bar to show comments', style={'color': '#888888'})
+    ], style={'marginTop': '1rem', 'color': '#ffffff', 'maxHeight': '260px', 'overflowY': 'auto'})
+
     return html.Div([
         html.H3('Reviews', style={'color': '#deb522', 'marginBottom': '1rem', 'fontSize': '1.5rem', 'fontWeight': 'bold'}),
-        html.Div([
-            html.I(className='fas fa-comments', style={'fontSize': '3rem', 'color': '#555555', 'marginBottom': '1rem'}),
-            html.P('Reviews integration coming soon', style={'color': '#888888', 'fontSize': '1rem', 'textAlign': 'center'})
-        ], style={
-            'display': 'flex',
-            'flexDirection': 'column',
-            'alignItems': 'center',
-            'justifyContent': 'center',
-            'minHeight': '200px'
-        })
+        dcc.Graph(id='ratings-bar-chart', figure=fig, config={'displayModeBar': False}),
+        comments_area
     ], style={
         'backgroundColor': '#1a1a1a',
         'border': '1px solid #333',
         'borderRadius': '12px',
-        'padding': '1.5rem'
+        'padding': '1.5rem',
+        'marginBottom': '1.5rem'
     })
 
 def create_restaurant_detail_page(restaurant_id):
@@ -822,26 +856,19 @@ def create_restaurant_detail_content(data):
     if 'error' in data:
         return create_error_state(data.get('error', 'An error occurred'))
 
-    # 創建完整的詳細頁面布局
     return html.Div([
-        # Hero 區域
         create_detail_hero(data),
-
-        # 主要內容區（兩欄布局）
         html.Div([
-            # 左欄
             html.Div([
                 create_location_section(data),
                 create_pricing_section(data),
                 create_categories_section(data),
                 create_map_placeholder_section(data)
             ], style={'flex': '1', 'minWidth': '300px'}),
-
-            # 右欄
             html.Div([
                 create_ratings_breakdown_section(data),
                 create_statistics_section(data),
-                create_reviews_placeholder_section(data)
+                create_reviews_section(data)  # <-- use real reviews section
             ], style={'flex': '1', 'minWidth': '300px'})
         ], style={
             'maxWidth': '1400px',
@@ -2251,7 +2278,9 @@ def handle_pagination_click(n_clicks_list, current_page, search_results):
 
     # Get which button was clicked
     button_id = ctx.triggered[0]['prop_id'].split('.')[0]
-    button_data = eval(button_id)  # Convert string to dict
+    # safer: parse JSON id rather than eval
+    import json as _json
+    button_data = _json.loads(button_id)
     page_index = button_data['index']
 
     # Calculate total pages
@@ -2335,24 +2364,58 @@ def detect_restaurant_route(pathname):
     prevent_initial_call=True
 )
 def load_restaurant_detail(restaurant_id_data):
-    """從數據庫獲取餐廳詳細資料"""
+    """從數據庫獲取餐廳詳細資料並附帶 ALL 評論（若存在）"""
     if not restaurant_id_data or not restaurant_id_data.get('id'):
         raise PreventUpdate
 
     restaurant_id = restaurant_id_data['id']
 
     try:
-        # 使用現有的數據庫函數獲取餐廳資料
         restaurant_data = get_restaurant_by_id(restaurant_id)
-
-        if restaurant_data:
-            return restaurant_data
-        else:
-            # 餐廳未找到
+        if not restaurant_data:
             return {'error': 'Restaurant not found', 'id': restaurant_id}
 
+        # 將 restaurant_data 轉為 dict（可序列化）
+        try:
+            if not isinstance(restaurant_data, dict):
+                restaurant_data = dict(restaurant_data)
+        except Exception:
+            restaurant_data = {'error': 'Invalid restaurant data format', 'id': restaurant_id}
+
+        # Load reviews from CSV if available and attach ALL comments for this restaurant
+        reviews_list = []
+        try:
+            reviews_df = pd.read_csv('data/Reviews.csv', encoding='utf-8-sig')
+            # detect restaurant id column
+            id_cols = [c for c in reviews_df.columns if c.lower().replace('-', '_') in ('restaurant_id', 'restaurantid')]
+            if id_cols:
+                id_col = id_cols[0]
+                filt = reviews_df[reviews_df[id_col] == restaurant_id]
+            else:
+                filt = pd.DataFrame()
+
+            for _, row in filt.iterrows():
+                # detect rating and comment columns with common names
+                rating = None
+                for rc in ('Review_Rating', 'ReviewRating', 'Rating', 'rating', 'review_rating'):
+                    if rc in row.index:
+                        rating = row[rc]
+                        break
+                comment = None
+                for cc in ('Review_Text', 'ReviewText', 'Comment', 'comment', 'Review'):
+                    if cc in row.index:
+                        comment = row[cc]
+                        break
+                reviews_list.append({'rating': rating, 'comment': comment})
+        except FileNotFoundError:
+            reviews_list = []
+        except Exception:
+            reviews_list = []
+
+        restaurant_data['reviews'] = reviews_list
+        return restaurant_data
+
     except Exception as e:
-        # 數據庫錯誤
         return {'error': str(e), 'id': restaurant_id}
 
 # Callback 3: Content Renderer - 渲染詳細頁面內容
@@ -2459,5 +2522,81 @@ def logout_from_detail_page(n_clicks, session_data):
 
     return None
 
+# 點擊星等長條圖顯示該星級部分評論，並提供 Show all 按鈕
+@app.callback(
+    Output('reviews-comments', 'children'),
+    [Input('ratings-bar-chart', 'clickData'),
+     Input({'type': 'show-all-comments', 'index': ALL}, 'n_clicks')],
+    [State('restaurant-detail-data', 'data')],
+    prevent_initial_call=True
+)
+def handle_reviews_interaction(clickData, show_all_n_clicks, restaurant_data):
+    """Handle both rating-bar clicks (show sample + Show all button) and Show all button clicks."""
+    ctx = callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
+
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+
+    # Safely get reviews list
+    reviews = restaurant_data.get('reviews', []) if isinstance(restaurant_data, dict) else []
+
+    # If the ratings bar was clicked
+    if triggered_id == 'ratings-bar-chart':
+        if not clickData:
+            raise PreventUpdate
+        try:
+            clicked_star = int(clickData['points'][0]['x'])
+        except Exception:
+            return html.Div('Unable to parse clicked rating', style={'color': '#888888'})
+
+        matched = [r for r in reviews if r and r.get('rating') is not None and int(round(float(r['rating']))) == clicked_star]
+
+        if not matched:
+            return html.Div(f'No comments for {clicked_star}★', style={'color': '#888888'})
+
+        items = []
+        for r in matched[:6]:
+            text = r.get('comment') or 'No comment text'
+            items.append(html.Div([
+                html.Div(f"★ {clicked_star}", style={'color': '#deb522', 'fontWeight': '600', 'marginRight': '8px', 'display': 'inline-block', 'width': '48px'}),
+                html.Div(text, style={'color': '#ffffff', 'display': 'inline-block', 'verticalAlign': 'top', 'maxWidth': 'calc(100% - 60px)'})
+            ], style={'padding': '8px 0', 'borderBottom': '1px solid #222'}))
+
+        # Add Show all button if more comments exist
+        if len(matched) > 6:
+            items.append(html.Div([
+                html.Button('Show all comments', id={'type': 'show-all-comments', 'index': clicked_star}, n_clicks=0, className='btn-primary', style={'marginTop': '10px'})
+            ], style={'textAlign': 'center'}))
+
+        return html.Div(items)
+
+    # Otherwise a "Show all" button was clicked (pattern-matching id)
+    else:
+        try:
+            triggered_obj = json.loads(triggered_id)
+        except Exception:
+            raise PreventUpdate
+
+        if triggered_obj.get('type') != 'show-all-comments':
+            raise PreventUpdate
+
+        star = int(triggered_obj['index'])
+
+        matched = [r for r in reviews if r and r.get('rating') is not None and int(round(float(r['rating']))) == star]
+
+        if not matched:
+            return html.Div(f'No comments for {star}★', style={'color': '#888888'})
+
+        items = []
+        for r in matched:
+            text = r.get('comment') or 'No comment text'
+            items.append(html.Div([
+                html.Div(f"★ {star}", style={'color': '#deb522', 'fontWeight': '600', 'marginRight': '8px', 'display': 'inline-block', 'width': '48px'}),
+                html.Div(text, style={'color': '#ffffff', 'display': 'inline-block', 'verticalAlign': 'top', 'maxWidth': 'calc(100% - 60px)'})
+            ], style={'padding': '8px 0', 'borderBottom': '1px solid #222'}))
+
+        return html.Div(items)
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=8050)
