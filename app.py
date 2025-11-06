@@ -48,7 +48,8 @@ from utils.database import (
     search_restaurants as db_search_restaurants,
     get_unique_stations,
     get_unique_cuisines,
-    get_restaurants_by_category
+    get_restaurants_by_category,
+    get_restaurant_by_id
 )
 
 # === 數據庫模式（替代 CSV 加載）===
@@ -171,8 +172,8 @@ def create_primary_button(text, button_id=None, icon=None):
     )
 
 def create_destination_card(restaurant):
-    """創建目的地卡片 (使用餐廳資料)"""
-    return html.Div([
+    """創建目的地卡片 (使用餐廳資料) - 可點擊並導航到詳細頁面"""
+    card_content = html.Div([
         html.Img(
             src='/assets/Hazuki.jpg',  # 使用相同圖片作為佔位符
             className='card-image'
@@ -190,6 +191,14 @@ def create_destination_card(restaurant):
             ], className='card-rating')
         ], className='card-overlay')
     ], className='destination-card')
+
+    # 包裝在可點擊的容器中，使用 pattern-matching ID
+    return html.Div(
+        card_content,
+        id={'type': 'restaurant-card', 'index': restaurant['Restaurant_ID']},
+        n_clicks=0,
+        style={'cursor': 'pointer'}
+    )
 
 def create_saved_trip_card(trip_data):
     """創建已存行程卡片"""
@@ -386,6 +395,464 @@ def create_compound_search_bar():
         html.Div(id='active-filter-chips', style={'marginTop': '1rem'})
     ], style={'width': '100%'})
 
+##############################################
+####  餐廳詳細頁面布局函數（Restaurant Detail Page）  ####
+##############################################
+
+def create_loading_state():
+    """載入狀態顯示（Loading spinner）"""
+    return html.Div([
+        html.I(className='fas fa-spinner fa-spin',
+               style={'fontSize': '3rem', 'color': '#deb522'}),
+        html.P('Loading restaurant details...',
+               style={'color': '#ffffff', 'marginTop': '1rem', 'fontSize': '1.2rem'})
+    ], style={
+        'display': 'flex',
+        'flexDirection': 'column',
+        'alignItems': 'center',
+        'justifyContent': 'center',
+        'minHeight': '80vh',
+        'backgroundColor': '#1a1a1a'
+    })
+
+def create_error_state(error_message):
+    """錯誤狀態顯示（Error display with back button）"""
+    return html.Div([
+        html.I(className='fas fa-exclamation-triangle',
+               style={'fontSize': '3rem', 'color': '#deb522', 'marginBottom': '1rem'}),
+        html.H2('Restaurant Not Found',
+                style={'color': '#ffffff', 'marginBottom': '0.5rem'}),
+        html.P(error_message,
+               style={'color': '#888888', 'marginBottom': '2rem', 'fontSize': '1.1rem'}),
+        html.Button([
+            html.I(className='fas fa-arrow-left', style={'marginRight': '8px'}),
+            'Back to Restaurants'
+        ], id='error-back-btn', className='btn-primary', n_clicks=0)
+    ], style={
+        'display': 'flex',
+        'flexDirection': 'column',
+        'alignItems': 'center',
+        'justifyContent': 'center',
+        'minHeight': '80vh',
+        'backgroundColor': '#1a1a1a',
+        'textAlign': 'center',
+        'padding': '2rem'
+    })
+
+def create_detail_header():
+    """創建餐廳詳細頁面的頁首（包含返回按鈕和用戶下拉菜單）"""
+    return html.Div([
+        html.Div([
+            # 返回按鈕
+            html.Button([
+                html.I(className='fas fa-arrow-left', style={'marginRight': '8px'}),
+                'Back'
+            ], id='restaurant-detail-back-btn', className='btn-secondary', n_clicks=0,
+               style={'marginRight': 'auto'}),
+
+            # 用戶頭像和下拉菜單（右側）
+            html.Div([
+                html.Div([
+                    html.I(className='fas fa-user-circle', style={'fontSize': '2rem', 'color': '#deb522'})
+                ], id='user-avatar-detail', className='user-avatar', n_clicks=0,
+                   style={'cursor': 'pointer', 'display': 'flex', 'alignItems': 'center'}),
+
+                html.Div([
+                    html.Div([
+                        html.I(className='fas fa-user', style={'marginRight': '10px'}),
+                        'Profile'
+                    ], className='menu-item', id='menu-profile-detail', n_clicks=0),
+                    html.Div([
+                        html.I(className='fas fa-cog', style={'marginRight': '10px'}),
+                        'Settings'
+                    ], className='menu-item', id='menu-settings-detail', n_clicks=0),
+                    html.Div([
+                        html.I(className='fas fa-sign-out-alt', style={'marginRight': '10px'}),
+                        'Logout'
+                    ], className='menu-item', id='menu-logout-detail', n_clicks=0)
+                ], id='user-dropdown-detail', className='user-dropdown', style={'display': 'none'})
+            ], style={'position': 'relative'}),
+
+            # 下拉菜單狀態儲存
+            dcc.Store(id='dropdown-open-detail', data=False, storage_type='memory')
+        ], style={
+            'maxWidth': '1400px',
+            'margin': '0 auto',
+            'padding': '1rem 2rem',
+            'display': 'flex',
+            'alignItems': 'center',
+            'justifyContent': 'space-between'
+        })
+    ], style={
+        'backgroundColor': '#1a1a1a',
+        'borderBottom': '1px solid #333',
+        'position': 'sticky',
+        'top': '0',
+        'zIndex': '1000'
+    })
+
+def create_detail_hero(data):
+    """創建餐廳詳細頁面的 Hero 區域（大圖和主要資訊）"""
+    # 生成星星評分
+    rating = data.get('TotalRating', 0)
+    full_stars = int(rating)
+    stars = []
+    for i in range(5):
+        if i < full_stars:
+            stars.append(html.I(className='fas fa-star', style={'color': '#deb522', 'marginRight': '4px'}))
+        else:
+            stars.append(html.I(className='far fa-star', style={'color': '#555555', 'marginRight': '4px'}))
+
+    return html.Div([
+        # 背景圖片
+        html.Img(
+            src='/assets/Hazuki.jpg',
+            style={
+                'width': '100%',
+                'height': '100%',
+                'objectFit': 'cover',
+                'position': 'absolute',
+                'top': '0',
+                'left': '0'
+            }
+        ),
+        # 漸層遮罩
+        html.Div(style={
+            'position': 'absolute',
+            'bottom': '0',
+            'left': '0',
+            'right': '0',
+            'height': '70%',
+            'background': 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 70%, transparent 100%)'
+        }),
+        # Hero 內容
+        html.Div([
+            html.H1(data.get('Name', 'Restaurant'), style={
+                'color': '#ffffff',
+                'fontSize': '3rem',
+                'fontWeight': 'bold',
+                'marginBottom': '0.5rem',
+                'textShadow': '2px 2px 4px rgba(0,0,0,0.5)'
+            }),
+            html.Div(data.get('JapaneseName', ''), style={
+                'color': '#cccccc',
+                'fontSize': '1.5rem',
+                'marginBottom': '1rem',
+                'textShadow': '1px 1px 2px rgba(0,0,0,0.5)'
+            }),
+            html.Div([
+                html.Div(stars + [
+                    html.Span(f"{rating:.1f}", style={
+                        'color': '#deb522',
+                        'fontSize': '1.8rem',
+                        'fontWeight': 'bold',
+                        'marginLeft': '12px'
+                    })
+                ], style={'marginBottom': '1rem'}),
+                html.Div([
+                    html.Span([
+                        html.I(className='fas fa-utensils', style={'marginRight': '6px'}),
+                        data.get('SecondCategory', data.get('FirstCategory', 'Restaurant'))
+                    ], style={
+                        'backgroundColor': 'rgba(222, 181, 34, 0.2)',
+                        'border': '1px solid #deb522',
+                        'color': '#deb522',
+                        'padding': '8px 16px',
+                        'borderRadius': '20px',
+                        'marginRight': '10px',
+                        'fontSize': '1rem'
+                    }),
+                    html.Span([
+                        html.I(className='fas fa-yen-sign', style={'marginRight': '6px'}),
+                        data.get('Price_Category', 'N/A')
+                    ], style={
+                        'backgroundColor': 'rgba(222, 181, 34, 0.2)',
+                        'border': '1px solid #deb522',
+                        'color': '#deb522',
+                        'padding': '8px 16px',
+                        'borderRadius': '20px',
+                        'marginRight': '10px',
+                        'fontSize': '1rem'
+                    }),
+                    html.Span([
+                        html.I(className='fas fa-comment', style={'marginRight': '6px'}),
+                        f"{data.get('ReviewNum', 0)} reviews"
+                    ], style={
+                        'backgroundColor': 'rgba(222, 181, 34, 0.2)',
+                        'border': '1px solid #deb522',
+                        'color': '#deb522',
+                        'padding': '8px 16px',
+                        'borderRadius': '20px',
+                        'fontSize': '1rem'
+                    })
+                ])
+            ])
+        ], style={
+            'position': 'absolute',
+            'bottom': '3rem',
+            'left': '2rem',
+            'right': '2rem',
+            'maxWidth': '1400px',
+            'margin': '0 auto'
+        })
+    ], style={
+        'position': 'relative',
+        'height': '50vh',
+        'minHeight': '400px',
+        'overflow': 'hidden'
+    })
+
+def create_location_section(data):
+    """創建地點資訊區域"""
+    lat = data.get('Lat')
+    long = data.get('Long')
+    has_coords = lat is not None and long is not None
+
+    return html.Div([
+        html.H3('Location', style={'color': '#deb522', 'marginBottom': '1rem', 'fontSize': '1.5rem', 'fontWeight': 'bold'}),
+        html.Div([
+            html.I(className='fas fa-map-marker-alt', style={'color': '#deb522', 'marginRight': '12px', 'fontSize': '1.2rem'}),
+            html.Span(data.get('Station', 'Not Available'), style={'color': '#ffffff', 'fontSize': '1.1rem'})
+        ], style={'marginBottom': '1rem', 'display': 'flex', 'alignItems': 'center'}),
+        html.Small(f"Coordinates: {lat:.6f}, {long:.6f}" if has_coords else "Coordinates not available",
+                   style={'color': '#888888', 'fontSize': '0.9rem'})
+    ], style={
+        'backgroundColor': '#1a1a1a',
+        'border': '1px solid #333',
+        'borderRadius': '12px',
+        'padding': '1.5rem',
+        'marginBottom': '1.5rem'
+    })
+
+def create_pricing_section(data):
+    """創建價格資訊區域"""
+    dinner_price = data.get('DinnerPrice', 'Not Available')
+    lunch_price = data.get('LunchPrice', 'Not Available')
+
+    return html.Div([
+        html.H3('Pricing', style={'color': '#deb522', 'marginBottom': '1rem', 'fontSize': '1.5rem', 'fontWeight': 'bold'}),
+        html.Div([
+            html.I(className='fas fa-moon', style={'color': '#deb522', 'marginRight': '12px', 'fontSize': '1.1rem'}),
+            html.Span('Dinner: ', style={'color': '#cccccc', 'marginRight': '8px', 'fontSize': '1rem'}),
+            html.Span(dinner_price, style={'color': '#ffffff', 'fontSize': '1.1rem', 'fontWeight': '500'})
+        ], style={'marginBottom': '0.8rem', 'display': 'flex', 'alignItems': 'center'}),
+        html.Div([
+            html.I(className='fas fa-sun', style={'color': '#deb522', 'marginRight': '12px', 'fontSize': '1.1rem'}),
+            html.Span('Lunch: ', style={'color': '#cccccc', 'marginRight': '8px', 'fontSize': '1rem'}),
+            html.Span(lunch_price, style={'color': '#ffffff', 'fontSize': '1.1rem', 'fontWeight': '500'})
+        ], style={'display': 'flex', 'alignItems': 'center'})
+    ], style={
+        'backgroundColor': '#1a1a1a',
+        'border': '1px solid #333',
+        'borderRadius': '12px',
+        'padding': '1.5rem',
+        'marginBottom': '1.5rem'
+    })
+
+def create_categories_section(data):
+    """創建分類標籤區域"""
+    first_category = data.get('FirstCategory', '')
+    second_category = data.get('SecondCategory', '')
+
+    categories = []
+    if first_category:
+        categories.append(html.Span(first_category, style={
+            'backgroundColor': 'rgba(222, 181, 34, 0.1)',
+            'border': '1px solid #deb522',
+            'color': '#deb522',
+            'padding': '8px 16px',
+            'borderRadius': '20px',
+            'marginRight': '10px',
+            'fontSize': '1rem',
+            'display': 'inline-block'
+        }))
+    if second_category and second_category != first_category:
+        categories.append(html.Span(second_category, style={
+            'backgroundColor': 'rgba(222, 181, 34, 0.1)',
+            'border': '1px solid #deb522',
+            'color': '#deb522',
+            'padding': '8px 16px',
+            'borderRadius': '20px',
+            'fontSize': '1rem',
+            'display': 'inline-block'
+        }))
+
+    if not categories:
+        categories.append(html.Span('No categories available', style={'color': '#888888', 'fontSize': '1rem'}))
+
+    return html.Div([
+        html.H3('Categories', style={'color': '#deb522', 'marginBottom': '1rem', 'fontSize': '1.5rem', 'fontWeight': 'bold'}),
+        html.Div(categories)
+    ], style={
+        'backgroundColor': '#1a1a1a',
+        'border': '1px solid #333',
+        'borderRadius': '12px',
+        'padding': '1.5rem',
+        'marginBottom': '1.5rem'
+    })
+
+def create_map_placeholder_section(data):
+    """創建地圖預留區域（未來功能）"""
+    return html.Div([
+        html.H3('Map', style={'color': '#deb522', 'marginBottom': '1rem', 'fontSize': '1.5rem', 'fontWeight': 'bold'}),
+        html.Div([
+            html.I(className='fas fa-map', style={'fontSize': '3rem', 'color': '#555555', 'marginBottom': '1rem'}),
+            html.P('Map integration coming soon', style={'color': '#888888', 'fontSize': '1rem', 'textAlign': 'center'})
+        ], style={
+            'display': 'flex',
+            'flexDirection': 'column',
+            'alignItems': 'center',
+            'justifyContent': 'center',
+            'minHeight': '200px'
+        })
+    ], style={
+        'backgroundColor': '#1a1a1a',
+        'border': '1px solid #333',
+        'borderRadius': '12px',
+        'padding': '1.5rem'
+    })
+
+def create_ratings_breakdown_section(data):
+    """創建評分細節區域"""
+    def create_rating_row(label, rating):
+        """生成單個評分行"""
+        if rating is None or pd.isna(rating):
+            rating = 0.0
+
+        full_stars = int(rating)
+        stars = []
+        for i in range(5):
+            if i < full_stars:
+                stars.append(html.I(className='fas fa-star', style={'color': '#deb522', 'marginRight': '3px', 'fontSize': '0.9rem'}))
+            else:
+                stars.append(html.I(className='far fa-star', style={'color': '#555555', 'marginRight': '3px', 'fontSize': '0.9rem'}))
+
+        return html.Div([
+            html.Span(label, style={'color': '#cccccc', 'minWidth': '80px', 'fontSize': '1rem'}),
+            html.Div(stars, style={'display': 'flex', 'alignItems': 'center', 'flex': '1'}),
+            html.Span(f"{rating:.1f}", style={'color': '#ffffff', 'fontWeight': 'bold', 'marginLeft': '12px', 'fontSize': '1.1rem'})
+        ], style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '0.8rem'})
+
+    return html.Div([
+        html.H3('Ratings Breakdown', style={'color': '#deb522', 'marginBottom': '1rem', 'fontSize': '1.5rem', 'fontWeight': 'bold'}),
+        create_rating_row('Overall', data.get('TotalRating', 0)),
+        create_rating_row('Dinner', data.get('DinnerRating', 0)),
+        create_rating_row('Lunch', data.get('LunchRating', 0))
+    ], style={
+        'backgroundColor': '#1a1a1a',
+        'border': '1px solid #333',
+        'borderRadius': '12px',
+        'padding': '1.5rem',
+        'marginBottom': '1.5rem'
+    })
+
+def create_statistics_section(data):
+    """創建統計資訊區域"""
+    review_num = data.get('ReviewNum', 0)
+    rating_category = data.get('Rating_Category', 'N/A')
+
+    return html.Div([
+        html.H3('Statistics', style={'color': '#deb522', 'marginBottom': '1rem', 'fontSize': '1.5rem', 'fontWeight': 'bold'}),
+        html.Div([
+            html.I(className='fas fa-comment', style={'color': '#deb522', 'marginRight': '12px', 'fontSize': '1.5rem'}),
+            html.Div([
+                html.Div(f"{review_num:,}", style={'color': '#ffffff', 'fontSize': '1.8rem', 'fontWeight': 'bold'}),
+                html.Div('Total Reviews', style={'color': '#888888', 'fontSize': '0.9rem'})
+            ])
+        ], style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '1.5rem'}),
+        html.Div([
+            html.I(className='fas fa-award', style={'color': '#deb522', 'marginRight': '12px', 'fontSize': '1.5rem'}),
+            html.Div([
+                html.Div(rating_category, style={'color': '#ffffff', 'fontSize': '1.3rem', 'fontWeight': 'bold'}),
+                html.Div('Rating Category', style={'color': '#888888', 'fontSize': '0.9rem'})
+            ])
+        ], style={'display': 'flex', 'alignItems': 'center'})
+    ], style={
+        'backgroundColor': '#1a1a1a',
+        'border': '1px solid #333',
+        'borderRadius': '12px',
+        'padding': '1.5rem',
+        'marginBottom': '1.5rem'
+    })
+
+def create_reviews_placeholder_section(data):
+    """創建評論預留區域（未來功能）"""
+    return html.Div([
+        html.H3('Reviews', style={'color': '#deb522', 'marginBottom': '1rem', 'fontSize': '1.5rem', 'fontWeight': 'bold'}),
+        html.Div([
+            html.I(className='fas fa-comments', style={'fontSize': '3rem', 'color': '#555555', 'marginBottom': '1rem'}),
+            html.P('Reviews integration coming soon', style={'color': '#888888', 'fontSize': '1rem', 'textAlign': 'center'})
+        ], style={
+            'display': 'flex',
+            'flexDirection': 'column',
+            'alignItems': 'center',
+            'justifyContent': 'center',
+            'minHeight': '200px'
+        })
+    ], style={
+        'backgroundColor': '#1a1a1a',
+        'border': '1px solid #333',
+        'borderRadius': '12px',
+        'padding': '1.5rem'
+    })
+
+def create_restaurant_detail_page(restaurant_id):
+    """創建餐廳詳細頁面（主函數）
+
+    注意：這個函數返回頁面框架，實際數據由 callback 填充
+    """
+    return html.Div([
+        # 頁首（返回按鈕和用戶菜單）
+        create_detail_header(),
+
+        # 主要內容容器（將由 callback 根據數據填充）
+        html.Div(id='restaurant-detail-content', children=[
+            create_loading_state()  # 預設顯示載入狀態
+        ])
+    ], style={'backgroundColor': '#1a1a1a', 'minHeight': '100vh'})
+
+def create_restaurant_detail_content(data):
+    """根據餐廳數據創建詳細頁面內容
+
+    此函數由 callback 調用，用於填充實際數據
+    """
+    if not data:
+        return create_loading_state()
+
+    if 'error' in data:
+        return create_error_state(data.get('error', 'An error occurred'))
+
+    # 創建完整的詳細頁面布局
+    return html.Div([
+        # Hero 區域
+        create_detail_hero(data),
+
+        # 主要內容區（兩欄布局）
+        html.Div([
+            # 左欄
+            html.Div([
+                create_location_section(data),
+                create_pricing_section(data),
+                create_categories_section(data),
+                create_map_placeholder_section(data)
+            ], style={'flex': '1', 'minWidth': '300px'}),
+
+            # 右欄
+            html.Div([
+                create_ratings_breakdown_section(data),
+                create_statistics_section(data),
+                create_reviews_placeholder_section(data)
+            ], style={'flex': '1', 'minWidth': '300px'})
+        ], style={
+            'maxWidth': '1400px',
+            'margin': '0 auto',
+            'padding': '3rem 2rem',
+            'display': 'grid',
+            'gridTemplateColumns': '1fr 1fr',
+            'gap': '2rem'
+        })
+    ])
+
 ##########################
 ####   初始化應用程式   ####
 ##########################
@@ -409,6 +876,10 @@ app.layout = html.Div([
     dcc.Store(id='search-cuisine', storage_type='memory'),  # 選中的料理類型
     dcc.Store(id='search-rating', storage_type='memory'),  # 選中的評分範圍
     dcc.Store(id='active-dropdown', storage_type='memory', data=None),  # 當前打開的下拉菜單 ('cuisine', 'rating', or None)
+    # 餐廳詳細頁面狀態管理
+    dcc.Store(id='selected-restaurant-id', storage_type='memory'),  # 選中的餐廳 ID
+    dcc.Store(id='previous-page-location', storage_type='memory'),  # 上一頁位置 (用於返回導航)
+    dcc.Store(id='restaurant-detail-data', storage_type='memory'),  # 餐廳詳細資料
     html.Div(id='page-content', style={'minHeight': '100vh'})
 ], style={'backgroundColor': '#1a1a1a', 'minHeight': '100vh'})
 
@@ -751,11 +1222,12 @@ def create_pagination_buttons(current_page, total_pages):
     [Input('url', 'pathname'),
      Input('session-store', 'data'),
      Input('page-mode', 'data'),
-     Input('view-mode', 'data')],
+     Input('view-mode', 'data'),
+     Input('selected-restaurant-id', 'data')],
     prevent_initial_call=False
 )
-def display_page(pathname, session_data, current_mode, view_mode):
-    """根據 session 狀態和 view_mode 顯示對應頁面"""
+def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_data):
+    """根據 session 狀態、view_mode 和 pathname 顯示對應頁面"""
     # 清理過期 sessions
     clean_expired_sessions()
 
@@ -763,9 +1235,21 @@ def display_page(pathname, session_data, current_mode, view_mode):
     if session_data and 'session_id' in session_data:
         user_id = get_session(session_data['session_id'])
         if user_id:
-            # 已登入，根據 view_mode 顯示不同頁面
-            if view_mode == 'restaurant-list':
+            # 已登入，根據 pathname 和 view_mode 顯示不同頁面
+
+            # 檢查是否為餐廳詳細頁面路由
+            if pathname and pathname.startswith('/restaurant/'):
+                if restaurant_id_data and restaurant_id_data.get('id'):
+                    return create_restaurant_detail_page(restaurant_id_data['id']), 'main'
+                else:
+                    # 無效的餐廳 ID，重定向到餐廳列表
+                    return create_restaurant_list_page(), 'main'
+
+            # 檢查餐廳列表頁面
+            elif view_mode == 'restaurant-list':
                 return create_restaurant_list_page(), 'main'
+
+            # 預設顯示首頁
             else:
                 return create_main_layout(), 'main'
 
@@ -1686,7 +2170,8 @@ def update_restaurant_grid(search_results, current_page):
     # Create restaurant cards in grid layout
     cards = []
     for restaurant in current_items:
-        card = html.Div([
+        # 卡片內容
+        card_content = html.Div([
             html.Img(
                 src='/assets/Hazuki.jpg',
                 className='card-image',
@@ -1724,7 +2209,14 @@ def update_restaurant_grid(search_results, current_page):
             'transition': 'transform 0.2s, border-color 0.2s',
             'cursor': 'pointer'
         }, className='restaurant-list-card')
-        cards.append(card)
+
+        # 包裝在可點擊的容器中，使用 pattern-matching ID
+        card_wrapper = html.Div(
+            card_content,
+            id={'type': 'restaurant-card', 'index': restaurant['Restaurant_ID']},
+            n_clicks=0
+        )
+        cards.append(card_wrapper)
 
     # Create grid layout
     grid = html.Div(cards, style={
@@ -1802,6 +2294,163 @@ def toggle_user_dropdown_list(n_clicks, is_open):
 )
 def logout_from_dropdown_list(n_clicks, session_data):
     """從餐廳列表頁下拉選單登出"""
+    if not n_clicks:
+        raise PreventUpdate
+
+    if session_data and 'session_id' in session_data:
+        delete_session(session_data['session_id'])
+
+    return None
+
+##########################################################
+####  餐廳詳細頁面 Callbacks (Restaurant Detail Page)  ####
+##########################################################
+
+# Callback 1: Route Detector - 解析 URL 中的餐廳 ID
+@app.callback(
+    [Output('selected-restaurant-id', 'data'),
+     Output('previous-page-location', 'data')],
+    [Input('url', 'pathname')],
+    prevent_initial_call=False
+)
+def detect_restaurant_route(pathname):
+    """解析 URL pathname 來提取餐廳 ID 並追蹤導航來源"""
+    if pathname and pathname.startswith('/restaurant/'):
+        try:
+            # 從 URL 中提取餐廳 ID
+            restaurant_id = int(pathname.split('/')[-1])
+            return {'id': restaurant_id}, {'from': 'restaurant-list'}
+        except (ValueError, IndexError):
+            # 無效的餐廳 ID
+            return {'id': None}, {'from': 'home'}
+    elif pathname == '/restaurant-list':
+        return {'id': None}, {'from': 'home'}
+    else:
+        return {'id': None}, {'from': 'home'}
+
+# Callback 2: Data Loader - 從數據庫載入餐廳數據
+@app.callback(
+    Output('restaurant-detail-data', 'data'),
+    [Input('selected-restaurant-id', 'data')],
+    prevent_initial_call=True
+)
+def load_restaurant_detail(restaurant_id_data):
+    """從數據庫獲取餐廳詳細資料"""
+    if not restaurant_id_data or not restaurant_id_data.get('id'):
+        raise PreventUpdate
+
+    restaurant_id = restaurant_id_data['id']
+
+    try:
+        # 使用現有的數據庫函數獲取餐廳資料
+        restaurant_data = get_restaurant_by_id(restaurant_id)
+
+        if restaurant_data:
+            return restaurant_data
+        else:
+            # 餐廳未找到
+            return {'error': 'Restaurant not found', 'id': restaurant_id}
+
+    except Exception as e:
+        # 數據庫錯誤
+        return {'error': str(e), 'id': restaurant_id}
+
+# Callback 3: Content Renderer - 渲染詳細頁面內容
+@app.callback(
+    Output('restaurant-detail-content', 'children'),
+    [Input('restaurant-detail-data', 'data')],
+    prevent_initial_call=True
+)
+def render_restaurant_detail(restaurant_data):
+    """根據餐廳數據渲染詳細頁面內容"""
+    if not restaurant_data:
+        return create_loading_state()
+
+    if 'error' in restaurant_data:
+        return create_error_state(restaurant_data.get('error', 'An error occurred'))
+
+    # 渲染完整的詳細頁面
+    return create_restaurant_detail_content(restaurant_data)
+
+# Callback 4: Card Click Handler - 處理餐廳卡片點擊事件
+@app.callback(
+    Output('url', 'pathname', allow_duplicate=True),
+    [Input({'type': 'restaurant-card', 'index': ALL}, 'n_clicks')],
+    [State({'type': 'restaurant-card', 'index': ALL}, 'id')],
+    prevent_initial_call=True
+)
+def handle_card_click(n_clicks_list, card_ids):
+    """處理餐廳卡片點擊，導航到詳細頁面"""
+    ctx = callback_context
+
+    if not ctx.triggered or not any(n_clicks_list):
+        raise PreventUpdate
+
+    # 確定哪個卡片被點擊
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    triggered_dict = json.loads(triggered_id)
+    restaurant_id = triggered_dict['index']
+
+    # 導航到詳細頁面
+    return f'/restaurant/{restaurant_id}'
+
+# Callback 5: Back Button Handler - 處理返回按鈕
+@app.callback(
+    [Output('url', 'pathname', allow_duplicate=True),
+     Output('view-mode', 'data', allow_duplicate=True)],
+    [Input('restaurant-detail-back-btn', 'n_clicks')],
+    [State('previous-page-location', 'data')],
+    prevent_initial_call=True
+)
+def handle_back_button(n_clicks, previous_page):
+    """處理返回按鈕點擊，導航回上一頁"""
+    if not n_clicks:
+        raise PreventUpdate
+
+    if previous_page and previous_page.get('from') == 'restaurant-list':
+        return '/restaurant-list', 'restaurant-list'
+    else:
+        return '/', 'home'
+
+# Callback 6: Error Back Button Handler - 處理錯誤頁面的返回按鈕
+@app.callback(
+    [Output('url', 'pathname', allow_duplicate=True),
+     Output('view-mode', 'data', allow_duplicate=True)],
+    [Input('error-back-btn', 'n_clicks')],
+    prevent_initial_call=True
+)
+def handle_error_back_button(n_clicks):
+    """處理錯誤頁面返回按鈕"""
+    if not n_clicks:
+        raise PreventUpdate
+
+    return '/', 'home'
+
+# Callback 7: User Dropdown Toggle (Detail Page) - 詳細頁面用戶下拉菜單
+@app.callback(
+    [Output('user-dropdown-detail', 'style'),
+     Output('dropdown-open-detail', 'data')],
+    [Input('user-avatar-detail', 'n_clicks')],
+    [State('dropdown-open-detail', 'data')],
+    prevent_initial_call=True
+)
+def toggle_user_dropdown_detail(n_clicks, is_open):
+    """切換詳細頁面的用戶下拉菜單"""
+    if n_clicks:
+        new_state = not is_open
+        style = {'display': 'block'} if new_state else {'display': 'none'}
+        return style, new_state
+    raise PreventUpdate
+
+# Callback 8: Logout from Detail Page - 從詳細頁面登出
+@app.callback(
+    Output('session-store', 'data', allow_duplicate=True),
+    [Input('menu-logout-detail', 'n_clicks')],
+    [State('session-store', 'data')],
+    prevent_initial_call=True
+)
+def logout_from_detail_page(n_clicks, session_data):
+    """從詳細頁面下拉選單登出"""
     if not n_clicks:
         raise PreventUpdate
 

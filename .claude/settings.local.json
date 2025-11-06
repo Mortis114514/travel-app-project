@@ -5,7 +5,8 @@
       "Bash(ping:*)",
       "Bash(nul)",
       "Bash(timeout 5 sleep:*)",
-      "Bash(exit 0)"
+      "Bash(exit 0)",
+      "Bash(sqlite3:*)"
     ],
     "deny": [],
     "ask": []
