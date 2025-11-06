@@ -1200,3 +1200,94 @@ body {
         max-height: 300px;
     }
 }
+
+/* ===============================================
+   Restaurant Detail Page Styles
+   =============================================== */
+
+/* Detail Page Hero Section Responsive */
+@media (max-width: 768px) {
+    /* Stack detail page two-column layout on mobile */
+    .restaurant-detail-page [style*="gridTemplateColumns"] {
+        grid-template-columns: 1fr !important;
+        gap: 1.5rem !important;
+        padding: 2rem 1rem !important;
+    }
+
+    /* Reduce hero height on mobile */
+    .restaurant-detail-page [style*="height: 50vh"] {
+        height: 40vh !important;
+        min-height: 300px !important;
+    }
+
+    /* Adjust hero text sizes */
+    .restaurant-detail-page h1 {
+        font-size: 2rem !important;
+    }
+
+    .restaurant-detail-page [style*="fontSize: 1.5rem"] {
+        font-size: 1.2rem !important;
+    }
+
+    /* Adjust chip sizes in hero */
+    .restaurant-detail-page [style*="borderRadius: 20px"] {
+        font-size: 0.85rem !important;
+        padding: 6px 12px !important;
+    }
+
+    /* Back button adjustments */
+    #restaurant-detail-back-btn {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+    }
+
+    /* Section title sizes */
+    .restaurant-detail-page h3 {
+        font-size: 1.3rem !important;
+    }
+
+    /* Rating and stat displays */
+    .restaurant-detail-page [style*="fontSize: 1.8rem"] {
+        font-size: 1.4rem !important;
+    }
+}
+
+/* Tablet adjustments */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .restaurant-detail-page [style*="gridTemplateColumns"] {
+        gap: 2rem !important;
+        padding: 2.5rem 1.5rem !important;
+    }
+
+    .restaurant-detail-page h1 {
+        font-size: 2.5rem !important;
+    }
+}
+
+/* Ensure images scale properly */
+.restaurant-detail-page img {
+    max-width: 100%;
+    height: auto;
+    object-fit: cover;
+}
+
+/* Loading and error states */
+.loading-container,
+.error-container {
+    padding: 2rem 1rem;
+}
+
+@media (max-width: 480px) {
+    /* Very small screens - further adjustments */
+    .restaurant-detail-page h1 {
+        font-size: 1.5rem !important;
+    }
+
+    .restaurant-detail-page [style*="padding: 1.5rem"] {
+        padding: 1rem !important;
+    }
+
+    .restaurant-detail-page [style*="gap: 2rem"] {
+        gap: 1rem !important;
+    }
+}

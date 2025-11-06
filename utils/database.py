@@ -138,20 +138,39 @@ def search_restaurants(
         if price_range and isinstance(price_range, (list, tuple)) and len(price_range) == 2:
             try:
                 min_price, max_price = float(price_range[0]), float(price_range[1])
-                # 使用 SQL 计算平均价格（处理 NULL 值）
+                # 使用 SQL 计算平均价格（使用 COALESCE 处理 NULL 值）
+                # 如果只有一个价格，使用该价格；如果两个都有，使用平均值
                 if max_price < 30000:
                     query_parts.append("""
                         AND (
-                            (CAST(REPLACE(REPLACE(DinnerPrice, '¥', ''), '~', '') AS REAL) +
-                             CAST(REPLACE(REPLACE(LunchPrice, '¥', ''), '~', '') AS REAL)) / 2.0
+                            CASE
+                                WHEN DinnerPrice IS NOT NULL AND DinnerPrice != ''
+                                     AND LunchPrice IS NOT NULL AND LunchPrice != ''
+                                THEN (CAST(REPLACE(REPLACE(DinnerPrice, '¥', ''), '~', '') AS REAL) +
+                                      CAST(REPLACE(REPLACE(LunchPrice, '¥', ''), '~', '') AS REAL)) / 2.0
+                                WHEN DinnerPrice IS NOT NULL AND DinnerPrice != ''
+                                THEN CAST(REPLACE(REPLACE(DinnerPrice, '¥', ''), '~', '') AS REAL)
+                                WHEN LunchPrice IS NOT NULL AND LunchPrice != ''
+                                THEN CAST(REPLACE(REPLACE(LunchPrice, '¥', ''), '~', '') AS REAL)
+                                ELSE 0
+                            END
                         ) BETWEEN ? AND ?
                     """)
                     params.extend([min_price, max_price])
                 else:
                     query_parts.append("""
                         AND (
-                            (CAST(REPLACE(REPLACE(DinnerPrice, '¥', ''), '~', '') AS REAL) +
-                             CAST(REPLACE(REPLACE(LunchPrice, '¥', ''), '~', '') AS REAL)) / 2.0
+                            CASE
+                                WHEN DinnerPrice IS NOT NULL AND DinnerPrice != ''
+                                     AND LunchPrice IS NOT NULL AND LunchPrice != ''
+                                THEN (CAST(REPLACE(REPLACE(DinnerPrice, '¥', ''), '~', '') AS REAL) +
+                                      CAST(REPLACE(REPLACE(LunchPrice, '¥', ''), '~', '') AS REAL)) / 2.0
+                                WHEN DinnerPrice IS NOT NULL AND DinnerPrice != ''
+                                THEN CAST(REPLACE(REPLACE(DinnerPrice, '¥', ''), '~', '') AS REAL)
+                                WHEN LunchPrice IS NOT NULL AND LunchPrice != ''
+                                THEN CAST(REPLACE(REPLACE(LunchPrice, '¥', ''), '~', '') AS REAL)
+                                ELSE 0
+                            END
                         ) >= ?
                     """)
                     params.append(min_price)
