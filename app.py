@@ -41,41 +41,39 @@ from utils.visualization import (
 ########################
 #### 資料載入與前處理 ####
 ########################
-# 加載欲分析的資料集
+# 導入數據庫工具
+from utils.database import (
+    get_all_restaurants,
+    get_random_top_restaurants as db_get_random_top_restaurants,
+    search_restaurants as db_search_restaurants,
+    get_unique_stations,
+    get_unique_cuisines,
+    get_restaurants_by_category
+)
+
+# === 數據庫模式（替代 CSV 加載）===
+# 注意：數據現在從 SQLite 數據庫加載，而不是 CSV 文件
+# 運行 migrate_to_db.py 來創建/更新數據庫
+
+# 加載所有餐廳數據（僅用於下拉菜單等靜態用途）
+# 搜索和篩選現在使用數據庫查詢而非 pandas 操作
+restaurants_df = get_all_restaurants()  # 從數據庫加載（用於選項列表）
+
+# Legacy 數據集（已停用）
 # travel_df = pd.read_csv('./data/Travel_dataset.csv')  # 旅遊資訊 (Legacy - 已停用)
 # country_info_df = pd.read_csv('./data/country_info.csv')  # 國家資訊 (Legacy - 已停用)
 # attractions_df = pd.read_csv('./data/Attractions.csv')  # 景點資訊 (Legacy - 已停用)
-restaurants_df = pd.read_csv('./data/Kyoto_Restaurant_Info_Full.csv')  # 餐廳資訊 (現行使用)
-
-# 進行資料前處理 (Legacy - 已停用)
-# travel_df = travel_data_clean(travel_df)
-# country_info_df = countryinfo_data_clean(country_info_df)
-
-# 合併 travel_df 和 country_info_df，方便後續分析 (Legacy - 已停用)
-# df_merged = data_merge(travel_df, country_info_df)
-
-# 呼叫 ./utils/const.py 中的 get_constants() 函式（畫面上方四格統計）(Legacy - 已停用)
-# num_of_country, num_of_traveler, num_of_nationality, avg_days = get_constants(travel_df)
-
-# 獲取國家名稱列表（景點頁使用）(Legacy - 已停用)
-# country_list = list(attractions_df['country'].unique())
-
-# 設定 Overview 頁面預設值 (Legacy - 已停用)
-# DEFAULTS = get_dashboard_default_values(df_merged)
 
 # 切換頁面（如有需要可以自行增加）
 def load_data(tab):
     if tab in ('travel', 'planner'):
         return df_merged
 
-# 隨機選擇4-5星餐廳
+# 隨機選擇4-5星餐廳（使用數據庫查詢）
 def get_random_top_restaurants(n=5):
-    """從4-5星餐廳中隨機選擇n個餐廳"""
-    top_restaurants = restaurants_df[restaurants_df['Rating_Category'] == '4~5 星餐廳'].copy()
-    if len(top_restaurants) >= n:
-        return top_restaurants.sample(n=n)
-    else:
-        return top_restaurants
+    """從4-5星餐廳中隨機選擇n個餐廳（數據庫版本）"""
+    # 使用數據庫查詢獲取隨機高評分餐廳
+    return db_get_random_top_restaurants(n=n, min_rating=4.0)
 
 # 移除類別名稱中的括號內容
 def remove_parentheses(text):
@@ -89,7 +87,7 @@ def remove_parentheses(text):
     return re.sub(r'\s*\([^)]*\)', '', str(text)).strip()
 
 def create_cuisine_options():
-    """創建料理類型選項列表（包含清除選項）"""
+    """創建料理類型選項列表（包含清除選項）- 使用數據庫數據"""
     options = []
     # 清除選擇選項
     options.append(
@@ -103,9 +101,9 @@ def create_cuisine_options():
         style={'borderBottom': '2px solid rgba(222, 181, 34, 0.3)', 'fontWeight': '500'})
     )
 
-    # 創建一個字典來追蹤已經顯示過的文本，避免重複
+    # 從數據庫獲取唯一的料理類型
     seen_labels = {}
-    all_categories = sorted(restaurants_df['FirstCategory'].dropna().unique())
+    all_categories = get_unique_cuisines()
 
     # 其他選項
     for cat in all_categories:
@@ -344,7 +342,7 @@ def create_compound_search_bar():
                     html.Label('Station/Area', style={'color': '#deb522', 'fontWeight': 'bold', 'marginBottom': '0.5rem'}),
                     dcc.Dropdown(
                         id='station-filter',
-                        options=[{'label': station, 'value': station} for station in sorted(restaurants_df['Station'].dropna().unique())],
+                        options=[{'label': station, 'value': station} for station in get_unique_stations()],
                         placeholder='All Stations',
                         multi=True,
                         className='search-input',
@@ -1064,158 +1062,77 @@ def populate_inspiration_grid(pathname):
 
     return dbc.Row(cards, style={'marginTop': '1rem'})
 
-# Enhanced search function with advanced filters
+# Enhanced search function with advanced filters (使用數據庫查詢)
 def search_restaurants(keyword=None, cuisine=None, rating=None, price_range=None,
                       min_reviews=None, stations=None, sort_by='rating_desc'):
     """
-    進階餐廳搜尋功能
+    進階餐廳搜尋功能（使用 SQL 數據庫查詢，替代 pandas 篩選）
     - keyword: 搜尋餐廳名稱（中英文）和料理類別
     - cuisine: 精確匹配料理類型
-    - rating: 最低評分
+    - rating: 評分範圍（例如 "4-5"）
     - price_range: 價格範圍 [min, max]
     - min_reviews: 最少評論數
     - stations: 車站列表（多選）
     - sort_by: 排序方式
     """
-    filtered_df = restaurants_df.copy()
+    # 使用數據庫查詢函數（從 utils/database.py）
+    return db_search_restaurants(
+        keyword=keyword,
+        cuisine=cuisine,
+        rating=rating,
+        price_range=price_range,
+        min_reviews=min_reviews,
+        stations=stations,
+        sort_by=sort_by
+    )
 
-    # Keyword search: 搜尋 Name, JapaneseName, FirstCategory, SecondCategory, Station
-    if keyword and keyword.strip():
-        keyword_lower = keyword.lower().strip()
-        # 支援模糊搜尋
-        mask = (
-            filtered_df['Name'].str.lower().str.contains(keyword_lower, na=False, regex=False) |
-            filtered_df['JapaneseName'].str.contains(keyword, na=False, regex=False) |
-            filtered_df['FirstCategory'].str.lower().str.contains(keyword_lower, na=False, regex=False) |
-            filtered_df['SecondCategory'].str.lower().str.contains(keyword_lower, na=False, regex=False) |
-            filtered_df['Station'].str.lower().str.contains(keyword_lower, na=False, regex=False)
-        )
-        filtered_df = filtered_df[mask]
-
-    # Cuisine filter
-    if cuisine:
-        filtered_df = filtered_df[filtered_df['FirstCategory'] == cuisine]
-
-    # Rating filter (区间筛选)
-    if rating:
-        if isinstance(rating, str) and '-' in rating:
-            # 解析区间字符串 (例如 "4-5" -> 4.0 到 5.0)
-            try:
-                min_rating, max_rating = rating.split('-')
-                min_rating = float(min_rating)
-                max_rating = float(max_rating)
-                filtered_df = filtered_df[
-                    (filtered_df['TotalRating'] >= min_rating) &
-                    (filtered_df['TotalRating'] < max_rating if max_rating < 5 else filtered_df['TotalRating'] <= max_rating)
-                ]
-            except (ValueError, AttributeError):
-                pass  # 如果解析失败，跳过评分筛选
-        else:
-            # 向后兼容：如果是数字，使用大于等于逻辑
-            try:
-                rating_num = float(rating)
-                filtered_df = filtered_df[filtered_df['TotalRating'] >= rating_num]
-            except (ValueError, TypeError):
-                pass
-
-    # Price range filter (using average of lunch and dinner prices)
-    if price_range and isinstance(price_range, (list, tuple)) and len(price_range) == 2:
-        try:
-            min_price, max_price = float(price_range[0]), float(price_range[1])
-            # Calculate average price (handle NaN values)
-            filtered_df['AvgPrice'] = filtered_df[['DinnerPrice', 'LunchPrice']].mean(axis=1)
-            if max_price < 30000:
-                filtered_df = filtered_df[
-                    (filtered_df['AvgPrice'] >= min_price) &
-                    (filtered_df['AvgPrice'] <= max_price)
-                ]
-            else:
-                # Max price is 30000+, so only filter minimum
-                filtered_df = filtered_df[filtered_df['AvgPrice'] >= min_price]
-        except (ValueError, TypeError):
-            pass  # Skip price filter if conversion fails
-
-    # Review count filter
-    if min_reviews:
-        try:
-            min_reviews_int = int(min_reviews)
-            if min_reviews_int > 0:
-                filtered_df = filtered_df[filtered_df['ReviewNum'] >= min_reviews_int]
-        except (ValueError, TypeError):
-            pass  # Skip review filter if conversion fails
-
-    # Station filter (multi-select)
-    if stations and len(stations) > 0:
-        filtered_df = filtered_df[filtered_df['Station'].isin(stations)]
-
-    # Sorting
-    if sort_by == 'rating_desc':
-        filtered_df = filtered_df.sort_values(by=['TotalRating', 'ReviewNum'], ascending=[False, False])
-    elif sort_by == 'reviews_desc':
-        filtered_df = filtered_df.sort_values(by=['ReviewNum', 'TotalRating'], ascending=[False, False])
-    elif sort_by == 'name_asc':
-        filtered_df = filtered_df.sort_values(by='Name', ascending=True)
-    elif sort_by == 'price_asc':
-        if 'AvgPrice' not in filtered_df.columns:
-            filtered_df['AvgPrice'] = filtered_df[['DinnerPrice', 'LunchPrice']].mean(axis=1)
-        filtered_df = filtered_df.sort_values(by='AvgPrice', ascending=True)
-    elif sort_by == 'price_desc':
-        if 'AvgPrice' not in filtered_df.columns:
-            filtered_df['AvgPrice'] = filtered_df[['DinnerPrice', 'LunchPrice']].mean(axis=1)
-        filtered_df = filtered_df.sort_values(by='AvgPrice', ascending=False)
-
-    return filtered_df
-
-# Get search suggestions based on keyword
+# Get search suggestions based on keyword (優化使用數據庫查詢)
 def get_search_suggestions(keyword, max_results=8):
     """
-    根據關鍵字生成搜尋建議
+    根據關鍵字生成搜尋建議（使用數據庫查詢以提高性能）
     返回餐廳名稱、料理類型、車站的匹配結果
     """
     if not keyword or len(keyword.strip()) < 2:
         return []
 
-    keyword_lower = keyword.lower().strip()
+    # 使用數據庫查詢獲取匹配的餐廳
+    # 這比 pandas 篩選更快
+    matched_restaurants = db_search_restaurants(keyword=keyword, sort_by='rating_desc')
+
     suggestions = []
 
-    # Search in restaurant names
-    name_matches = restaurants_df[
-        restaurants_df['Name'].str.lower().str.contains(keyword_lower, na=False, regex=False)
-    ]['Name'].head(3).tolist()
+    # 從結果中提取建議
+    if len(matched_restaurants) > 0:
+        # 餐廳名稱建議（前 3 個）
+        for _, row in matched_restaurants.head(3).iterrows():
+            suggestions.append({
+                'type': 'restaurant',
+                'value': row['Name'],
+                'label': row['Name'],
+                'icon': 'fa-utensils'
+            })
 
-    for name in name_matches:
-        suggestions.append({
-            'type': 'restaurant',
-            'value': name,
-            'label': name,
-            'icon': 'fa-utensils'
-        })
+        # 料理類型建議（唯一值，前 3 個）
+        unique_cuisines = matched_restaurants['FirstCategory'].unique()[:3]
+        for cuisine in unique_cuisines:
+            if len(suggestions) < max_results:
+                suggestions.append({
+                    'type': 'cuisine',
+                    'value': cuisine,
+                    'label': f"{cuisine} (Cuisine)",
+                    'icon': 'fa-utensils'
+                })
 
-    # Search in cuisine types (FirstCategory)
-    cuisine_matches = restaurants_df[
-        restaurants_df['FirstCategory'].str.lower().str.contains(keyword_lower, na=False, regex=False)
-    ]['FirstCategory'].unique()[:3]
-
-    for cuisine in cuisine_matches:
-        suggestions.append({
-            'type': 'cuisine',
-            'value': cuisine,
-            'label': f"{cuisine} (Cuisine)",
-            'icon': 'fa-utensils'
-        })
-
-    # Search in stations
-    station_matches = restaurants_df[
-        restaurants_df['Station'].str.lower().str.contains(keyword_lower, na=False, regex=False)
-    ]['Station'].unique()[:2]
-
-    for station in station_matches:
-        suggestions.append({
-            'type': 'station',
-            'value': station,
-            'label': f"{station} (Station)",
-            'icon': 'fa-map-marker-alt'
-        })
+        # 車站建議（唯一值，前 2 個）
+        unique_stations = matched_restaurants['Station'].unique()[:2]
+        for station in unique_stations:
+            if len(suggestions) < max_results:
+                suggestions.append({
+                    'type': 'station',
+                    'value': station,
+                    'label': f"{station} (Station)",
+                    'icon': 'fa-map-marker-alt'
+                })
 
     return suggestions[:max_results]
 

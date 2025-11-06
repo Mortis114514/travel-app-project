@@ -31,6 +31,18 @@ python app.py
 
 The app runs on default Dash port (usually http://127.0.0.1:8050). App automatically runs with `debug=True` (see line 649 in app.py).
 
+### Database Setup and Migration
+```bash
+# Migrate CSV data to SQLite database (one-time setup)
+python migrate_to_db.py               # Creates ./data/restaurants.db from CSV files
+
+# Test database functionality
+python test_database.py               # Verify all database queries work correctly
+python performance_test.py            # Compare CSV vs database performance
+```
+
+**Note**: The application now uses SQLite database instead of loading CSV files on every startup. This significantly improves loading speed and query performance.
+
 ### Testing and Utilities
 ```bash
 # Run test scripts (standalone Dash apps for testing components)
@@ -69,10 +81,9 @@ python restore_prices_and_add_price_category.py  # Process pricing data
 
 ### Main Application (`app.py`)
 - Initializes Dash app with Bootstrap styling and custom CSS (`voyage_styles.css`)
-- Loads CSV datasets from `./data/`:
-  - `Kyoto_Restaurant_Info_Full.csv`: Restaurant data with ratings, categories, locations, and stations
-  - `Travel_dataset.csv`, `country_info.csv`, `Attractions.csv`: Legacy travel analysis data (may be missing)
-  - `Reviews.csv`: User reviews for restaurants
+- **Loads data from SQLite database** (`./data/restaurants.db`) instead of CSV files for better performance
+  - Uses `utils/database.py` module for all data queries
+  - On first run, execute `python migrate_to_db.py` to create the database
 - Implements authentication system with login/logout/register callbacks
 - Uses `dcc.Store` for session management (`session-store`), page mode (`page-mode`), current page tracking, dropdown state
 - Creates modern homepage layout with hero section, search bar, restaurant cards, tabs, and inspiration grid
@@ -126,6 +137,18 @@ python restore_prices_and_add_price_category.py  # Process pricing data
 - Database location: `./data/users.db`
 - Auto-creates test accounts: `admin`/`admin123` and `demo`/`demo123`
 
+**`database.py`**: Restaurant data access layer (NEW - actively used)
+- `get_all_restaurants()`: Fetch all restaurants with optional sorting
+- `get_random_top_restaurants()`: Get random high-rated restaurants
+- `search_restaurants()`: Advanced search with keyword, cuisine, rating, price, station filters
+- `get_unique_stations()`: Get list of all unique station names
+- `get_unique_cuisines()`: Get list of all unique cuisine types
+- `get_restaurant_by_id()`: Fetch single restaurant by ID
+- `get_top_rated_restaurants()`: Get highest rated restaurants with minimum review threshold
+- `get_restaurants_by_category()`: Filter by rating category
+- Database location: `./data/restaurants.db`
+- All queries use SQL with proper indexing for optimal performance
+
 ### Pages Package (`pages/`)
 
 **`login_page.py`**: UI components for authentication
@@ -148,12 +171,17 @@ Contains static resources for the application:
 ### Data Files (`data/`)
 
 **Active Data Files:**
-- `Kyoto_Restaurant_Info_Full.csv`: Complete restaurant data with ratings, categories, stations, and price ranges
-  - Key columns: `Name`, `FirstCategory`, `SecondCategory`, `Station`, `TotalRating`, `Rating_Category`
-- `Reviews.csv`: User reviews for restaurants (generated via `generate_reviews.py`)
+- `restaurants.db`: SQLite database for restaurant data (created by `migrate_to_db.py`)
+  - Table: `restaurants` - All restaurant information with indexed columns for fast queries
+  - Table: `reviews` - User reviews linked to restaurants
+  - Indexes: `idx_name`, `idx_station`, `idx_first_category`, `idx_total_rating`, `idx_rating_category`, `idx_review_num`
 - `users.db`: SQLite database for authentication (auto-created on first run)
   - Tables: `users` (id, username, password_hash, email, created_at, last_login)
   - Tables: `sessions` (session_id, user_id, created_at, expires_at)
+
+**Source CSV Files (used for migration only):**
+- `Kyoto_Restaurant_Info_Full.csv`: Source data for restaurants (migrated to database)
+- `Reviews.csv`: Source data for reviews (migrated to database)
 
 **Missing/Legacy Data Files** (referenced in code but may not exist):
 - `Travel_dataset.csv`: Historical travel records (legacy)
@@ -184,9 +212,15 @@ Contains static resources for the application:
    - Logout: delete session from database → clear session storage → redirect to login
    - Register: validate inputs → hash password (SHA-256) → store in database → show success message
 
-2. **Data Loading**:
-   - Restaurant data: `Kyoto_Restaurant_Info_Full.csv` → `restaurants_df` (used for cards and search)
-   - Legacy travel data: CSVs → `travel_data_clean()` / `countryinfo_data_clean()` → `data_merge()` → `df_merged` (loaded but not actively used in current UI)
+2. **Data Loading** (NEW DATABASE ARCHITECTURE):
+   - **On first run**: Execute `migrate_to_db.py` to create `restaurants.db` from CSV files
+   - **App startup**: Import `utils/database.py` module (no CSV loading)
+   - **On-demand queries**: All data fetched via SQL queries with proper indexing
+   - **Benefits**:
+     - Faster startup (no CSV parsing)
+     - Efficient filtering (SQL WHERE clauses with indexes)
+     - Lower memory usage (query only what's needed)
+     - Better scalability (performance doesn't degrade with data size)
 
 3. **Restaurant Display** (Current Homepage):
    - On page load → `get_random_top_restaurants(10)` → filter 4-5 star restaurants → display in card grid
