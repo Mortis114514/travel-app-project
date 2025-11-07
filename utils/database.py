@@ -324,3 +324,76 @@ def get_restaurants_by_category(rating_category: str) -> pd.DataFrame:
         """
         df = pd.read_sql_query(query, conn, params=(rating_category,))
     return df
+
+def get_nearby_restaurants(lat: float, long: float, limit: int = 5, exclude_id: Optional[int] = None) -> List[Dict[str, Any]]:
+    """
+    获取附近的餐厅（使用 Haversine 距离计算）
+
+    Args:
+        lat: 中心纬度
+        long: 中心经度
+        limit: 返回数量
+        exclude_id: 排除的餐厅 ID（通常是当前餐厅）
+
+    Returns:
+        List[Dict]: 附近餐厅列表，包含距离信息
+    """
+    import math
+
+    def haversine_distance(lat1, lon1, lat2, lon2):
+        """
+        使用 Haversine 公式计算两点之间的距离（公里）
+        """
+        # 地球半径（公里）
+        R = 6371
+
+        # 转换为弧度
+        lat1_rad = math.radians(lat1)
+        lon1_rad = math.radians(lon1)
+        lat2_rad = math.radians(lat2)
+        lon2_rad = math.radians(lon2)
+
+        # 计算差值
+        dlat = lat2_rad - lat1_rad
+        dlon = lon2_rad - lon1_rad
+
+        # Haversine 公式
+        a = math.sin(dlat / 2) ** 2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2) ** 2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+        return R * c
+
+    with get_db_connection() as conn:
+        # 获取所有有坐标的餐厅
+        query = """
+            SELECT * FROM restaurants
+            WHERE Lat IS NOT NULL AND Long IS NOT NULL
+        """
+
+        params = []
+
+        # 如果需要排除当前餐厅
+        if exclude_id is not None:
+            query += " AND Restaurant_ID != ?"
+            params.append(exclude_id)
+
+        cursor = conn.cursor()
+        cursor.execute(query, params)
+
+        # 获取列名
+        columns = [description[0] for description in cursor.description]
+
+        # 计算所有餐厅的距离
+        restaurants_with_distance = []
+        for row in cursor.fetchall():
+            restaurant = dict(zip(columns, row))
+            # 计算距离
+            distance = haversine_distance(lat, long, restaurant['Lat'], restaurant['Long'])
+            restaurant['distance'] = distance
+            restaurants_with_distance.append(restaurant)
+
+        # 按距离排序并取前 N 个
+        restaurants_with_distance.sort(key=lambda x: x['distance'])
+        results = restaurants_with_distance[:limit]
+
+    return results

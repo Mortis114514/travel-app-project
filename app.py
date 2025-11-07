@@ -50,7 +50,8 @@ from utils.database import (
     get_unique_stations,
     get_unique_cuisines,
     get_restaurants_by_category,
-    get_restaurant_by_id
+    get_restaurant_by_id,
+    get_nearby_restaurants
 )
 
 # === 數據庫模式（替代 CSV 加載）===
@@ -693,19 +694,150 @@ def create_categories_section(data):
     })
 
 def create_map_placeholder_section(data):
-    """創建地圖預留區域（未來功能）"""
-    return html.Div([
-        html.H3('Map', style={'color': '#deb522', 'marginBottom': '1rem', 'fontSize': '1.5rem', 'fontWeight': 'bold'}),
-        html.Div([
-            html.I(className='fas fa-map', style={'fontSize': '3rem', 'color': '#555555', 'marginBottom': '1rem'}),
-            html.P('Map integration coming soon', style={'color': '#888888', 'fontSize': '1rem', 'textAlign': 'center'})
+    """創建 Google Maps 地圖區域（顯示餐廳位置和附近餐廳）"""
+    # 獲取餐廳坐標
+    lat = data.get('Lat')
+    long = data.get('Long')
+    restaurant_id = data.get('Restaurant_ID')
+    restaurant_name = data.get('Name', 'Unknown')
+    station = data.get('Station', 'Kyoto')
+
+    # 如果沒有坐標，顯示佔位符
+    if lat is None or long is None:
+        return html.Div([
+            html.H3('Map', style={'color': '#deb522', 'marginBottom': '1rem', 'fontSize': '1.5rem', 'fontWeight': 'bold'}),
+            html.Div([
+                html.I(className='fas fa-map-marker-alt', style={'fontSize': '3rem', 'color': '#555555', 'marginBottom': '1rem'}),
+                html.P('Location coordinates not available', style={'color': '#888888', 'fontSize': '1rem', 'textAlign': 'center'})
+            ], style={
+                'display': 'flex',
+                'flexDirection': 'column',
+                'alignItems': 'center',
+                'justifyContent': 'center',
+                'minHeight': '200px'
+            })
         ], style={
-            'display': 'flex',
-            'flexDirection': 'column',
-            'alignItems': 'center',
-            'justifyContent': 'center',
-            'minHeight': '200px'
+            'backgroundColor': '#1a1a1a',
+            'border': '1px solid #333',
+            'borderRadius': '12px',
+            'padding': '1.5rem'
         })
+
+    # 獲取附近餐廳
+    nearby_restaurants = get_nearby_restaurants(lat, long, limit=5, exclude_id=restaurant_id)
+
+    # 構建 Google Maps URL（包含多個標記）
+    # 主餐廳標記（紅色，默認）
+    markers_param = f"{lat},{long}"
+
+    # 添加附近餐廳標記（使用不同顏色）
+    for nearby in nearby_restaurants[:3]:  # 限制為3個附近餐廳以保持地圖清晰
+        markers_param += f"|{nearby['Lat']},{nearby['Long']}"
+
+    # Google Maps Embed URL（使用 place 模式顯示主餐廳）
+    google_maps_url = f"https://www.google.com/maps?q={lat},{long}&z=15&output=embed"
+
+    # 創建地圖 iframe
+    map_component = html.Iframe(
+        src=google_maps_url,
+        style={
+            'width': '100%',
+            'height': '400px',
+            'border': 'none',
+            'borderRadius': '8px'
+        }
+    )
+
+    # 創建附近餐廳列表
+    nearby_cards = []
+    for i, nearby in enumerate(nearby_restaurants, 1):
+        card = html.Div([
+            html.Div([
+                html.Div(f"{i}", style={
+                    'backgroundColor': '#3388ff',
+                    'color': 'white',
+                    'width': '24px',
+                    'height': '24px',
+                    'borderRadius': '50%',
+                    'display': 'flex',
+                    'alignItems': 'center',
+                    'justifyContent': 'center',
+                    'fontSize': '0.85rem',
+                    'fontWeight': 'bold',
+                    'marginRight': '12px',
+                    'flexShrink': '0'
+                }),
+                html.Div([
+                    html.Div(nearby['Name'], style={
+                        'color': '#ffffff',
+                        'fontSize': '0.95rem',
+                        'fontWeight': '600',
+                        'marginBottom': '4px'
+                    }),
+                    html.Div([
+                        html.Span([
+                            html.I(className='fas fa-star', style={'color': '#deb522', 'fontSize': '0.75rem', 'marginRight': '4px'}),
+                            f"{nearby.get('TotalRating', 'N/A')}"
+                        ], style={'marginRight': '12px', 'fontSize': '0.85rem'}),
+                        html.Span([
+                            html.I(className='fas fa-map-marker-alt', style={'color': '#888', 'fontSize': '0.75rem', 'marginRight': '4px'}),
+                            f"{nearby.get('distance', 0):.2f} km"
+                        ], style={'fontSize': '0.85rem'})
+                    ], style={'color': '#aaaaaa'})
+                ], style={'flex': '1'})
+            ], style={
+                'display': 'flex',
+                'alignItems': 'center',
+                'padding': '12px',
+                'backgroundColor': '#1a1a1a',
+                'border': '1px solid #333',
+                'borderRadius': '8px',
+                'marginBottom': '8px',
+                'transition': 'border-color 0.3s',
+                'cursor': 'pointer'
+            }, className='nearby-restaurant-card')
+        ])
+        nearby_cards.append(card)
+
+    return html.Div([
+        html.H3('Location & Map', style={'color': '#deb522', 'marginBottom': '1rem', 'fontSize': '1.5rem', 'fontWeight': 'bold'}),
+        html.Div([
+            html.I(className='fas fa-map-marker-alt', style={'color': '#deb522', 'marginRight': '8px'}),
+            f"{station}, Kyoto"
+        ], style={'color': '#cccccc', 'marginBottom': '1rem', 'fontSize': '0.95rem'}),
+
+        # Google Map
+        map_component,
+
+        html.A(
+            [
+                html.I(className='fas fa-external-link-alt', style={'marginRight': '6px'}),
+                'View on Google Maps'
+            ],
+            href=f"https://www.google.com/maps/search/?api=1&query={lat},{long}",
+            target="_blank",
+            style={
+                'display': 'inline-block',
+                'marginTop': '12px',
+                'padding': '8px 16px',
+                'backgroundColor': '#4285f4',
+                'color': 'white',
+                'textDecoration': 'none',
+                'borderRadius': '6px',
+                'fontSize': '0.9rem',
+                'transition': 'background-color 0.3s'
+            }
+        ),
+
+        # 附近餐廳列表
+        html.Div([
+            html.H4([
+                html.I(className='fas fa-utensils', style={'marginRight': '8px', 'color': '#deb522'}),
+                f'Nearby Restaurants ({len(nearby_restaurants)})'
+            ], style={'color': '#ffffff', 'fontSize': '1.1rem', 'marginBottom': '1rem', 'marginTop': '2rem'}),
+            html.Div(nearby_cards)
+        ]) if nearby_restaurants else html.Div()
+
     ], style={
         'backgroundColor': '#1a1a1a',
         'border': '1px solid #333',
