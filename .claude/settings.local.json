@@ -1,14 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python:*)",
-      "Bash(ping:*)",
-      "Bash(nul)",
-      "Bash(timeout 5 sleep:*)",
-      "Bash(exit 0)",
-      "Bash(sqlite3:*)",
-      "Bash(dir:*)",
-      "Bash(timeout 5 python:*)"
+      "Bash(powershell -Command \"Get-Content ''D:\\travel-app-project\\assets\\voyage_styles.css'' | Select-Object -Last 50\")",
+      "Bash(powershell -Command:*)"
     ],
     "deny": [],
     "ask": []

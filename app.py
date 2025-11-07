@@ -493,6 +493,102 @@ def create_detail_header():
         'zIndex': '1000'
     })
 
+def create_image_gallery():
+    """創建圖片畫廊輪播組件（交叉淡入淡出效果）"""
+    # Mujica文件夾中的圖片列表（使用前15張作為示例）
+    gallery_images = [
+        '/assets/Mujica/FB_IMG_1741782349578.jpg',
+        '/assets/Mujica/FB_IMG_1741782457313.jpg',
+        '/assets/Mujica/FB_IMG_1741782466354.jpg',
+        '/assets/Mujica/FB_IMG_1741782481779.jpg',
+        '/assets/Mujica/FB_IMG_1741782484895.jpg',
+        '/assets/Mujica/FB_IMG_1741782486450.jpg',
+        '/assets/Mujica/FB_IMG_1741782499553.jpg',
+        '/assets/Mujica/FB_IMG_1741782505028.jpg',
+        '/assets/Mujica/FB_IMG_1741782513961.jpg',
+        '/assets/Mujica/FB_IMG_1741782525678.jpg',
+        '/assets/Mujica/FB_IMG_1741782527528.jpg',
+        '/assets/Mujica/FB_IMG_1741782530270.jpg',
+        '/assets/Mujica/FB_IMG_1741782538112.jpg',
+        '/assets/Mujica/FB_IMG_1741885757345.jpg',
+        '/assets/Mujica/FB_IMG_1741885778449.jpg'
+    ]
+
+    return html.Div([
+        # 圖片容器 - 雙層結構實現交叉淡入淡出
+        html.Div([
+            # 背景層（淡出的圖片）
+            html.Div(
+                id='gallery-image-bg',
+                style={
+                    'width': '100%',
+                    'height': '100%',
+                    'backgroundImage': f'url({gallery_images[0]})',
+                    'backgroundSize': 'cover',
+                    'backgroundPosition': 'center',
+                    'position': 'absolute',
+                    'top': '0',
+                    'left': '0',
+                    'transition': 'opacity 1.8s ease-in-out'
+                }
+            ),
+            # 前景層（淡入的圖片）
+            html.Div(
+                id='gallery-image-fg',
+                style={
+                    'width': '100%',
+                    'height': '100%',
+                    'backgroundImage': f'url({gallery_images[0]})',
+                    'backgroundSize': 'cover',
+                    'backgroundPosition': 'center',
+                    'position': 'absolute',
+                    'top': '0',
+                    'left': '0',
+                    'opacity': '0',
+                    'transition': 'opacity 1.8s ease-in-out',
+                    'pointerEvents': 'none'
+                }
+            )
+        ], style={
+            'position': 'absolute',
+            'top': '0',
+            'left': '0',
+            'width': '100%',
+            'height': '100%',
+            'pointerEvents': 'none'  # 讓圖片不響應 hover
+        }),
+
+        # 左箭頭按鈕
+        html.Button([
+            html.I(className='fas fa-chevron-left')
+        ], id='gallery-prev-btn', n_clicks=0, className='gallery-nav-btn gallery-prev'),
+
+        # 右箭頭按鈕
+        html.Button([
+            html.I(className='fas fa-chevron-right')
+        ], id='gallery-next-btn', n_clicks=0, className='gallery-nav-btn gallery-next'),
+
+        # 圖片指示器（小圓點）
+        html.Div([
+            html.Div(
+                className=f'gallery-indicator {"active" if i == 0 else ""}',
+                id={'type': 'gallery-indicator', 'index': i},
+                n_clicks=0
+            ) for i in range(len(gallery_images))
+        ], className='gallery-indicators'),
+
+        # 自動播放定時器（每4秒切換一次）
+        dcc.Interval(
+            id='gallery-autoplay-interval',
+            interval=4000,  # 4秒
+            n_intervals=0
+        ),
+
+        # 存儲當前圖片索引和圖片列表
+        dcc.Store(id='gallery-current-index', data=0),
+        dcc.Store(id='gallery-images-list', data=gallery_images)
+    ])
+
 def create_detail_hero(data):
     """創建餐廳詳細頁面的 Hero 區域（大圖和主要資訊）"""
     # 生成星星評分
@@ -506,18 +602,9 @@ def create_detail_hero(data):
             stars.append(html.I(className='far fa-star', style={'color': '#555555', 'marginRight': '4px'}))
 
     return html.Div([
-        # 背景圖片
-        html.Img(
-            src='/assets/Roger.jpg',
-            style={
-                'width': '100%',
-                'height': '100%',
-                'objectFit': 'cover',
-                'position': 'absolute',
-                'top': '0',
-                'left': '0'
-            }
-        ),
+        # 圖片畫廊（替換原本的單一圖片）
+        create_image_gallery(),
+
         # 漸層遮罩
         html.Div(style={
             'position': 'absolute',
@@ -525,8 +612,10 @@ def create_detail_hero(data):
             'left': '0',
             'right': '0',
             'height': '70%',
-            'background': 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 70%, transparent 100%)'
+            'background': 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 70%, transparent 100%)',
+            'pointerEvents': 'none'  # 讓遮罩不阻擋按鈕點擊
         }),
+
         # Hero 內容
         html.Div([
             html.H1(data.get('Name', 'Restaurant'), style={
@@ -595,7 +684,8 @@ def create_detail_hero(data):
             'left': '2rem',
             'right': '2rem',
             'maxWidth': '1400px',
-            'margin': '0 auto'
+            'margin': '0 auto',
+            'pointerEvents': 'none'  # 讓文字不阻擋按鈕點擊
         })
     ], style={
         'position': 'relative',
@@ -2729,6 +2819,131 @@ def handle_reviews_interaction(clickData, show_all_n_clicks, restaurant_data):
             ], style={'padding': '8px 0', 'borderBottom': '1px solid #222'}))
 
         return html.Div(items)
+
+# ====== Image Gallery Carousel Callbacks ======
+
+# Callback 1: Update current image index based on navigation and autoplay
+@app.callback(
+    Output('gallery-current-index', 'data'),
+    [Input('gallery-prev-btn', 'n_clicks'),
+     Input('gallery-next-btn', 'n_clicks'),
+     Input({'type': 'gallery-indicator', 'index': ALL}, 'n_clicks'),
+     Input('gallery-autoplay-interval', 'n_intervals')],
+    [State('gallery-current-index', 'data'),
+     State('gallery-images-list', 'data')],
+    prevent_initial_call=True
+)
+def update_gallery_index(prev_clicks, next_clicks, indicator_clicks, n_intervals, current_index, images_list):
+    """更新圖片畫廊當前索引（自動播放+手動導航）"""
+    if not images_list:
+        raise PreventUpdate
+
+    ctx = callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
+
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    num_images = len(images_list)
+
+    # 處理自動播放（每4秒自動切換）
+    if triggered_id == 'gallery-autoplay-interval':
+        return (current_index + 1) % num_images
+
+    # 處理上一張按鈕
+    elif triggered_id == 'gallery-prev-btn':
+        return (current_index - 1) % num_images
+
+    # 處理下一張按鈕
+    elif triggered_id == 'gallery-next-btn':
+        return (current_index + 1) % num_images
+
+    # 處理指示器點擊
+    else:
+        try:
+            triggered_dict = json.loads(triggered_id)
+            if triggered_dict.get('type') == 'gallery-indicator':
+                return triggered_dict['index']
+        except:
+            pass
+
+    raise PreventUpdate
+
+# Callback 2: Update displayed images with crossfade effect
+@app.callback(
+    [Output('gallery-image-bg', 'style'),
+     Output('gallery-image-fg', 'style')],
+    [Input('gallery-current-index', 'data')],
+    [State('gallery-images-list', 'data')],
+    prevent_initial_call=True
+)
+def update_gallery_images_crossfade(current_index, images_list):
+    """更新圖片（交叉淡入淡出效果）"""
+    if not images_list or current_index is None:
+        raise PreventUpdate
+
+    # 確保索引在範圍內
+    if not (0 <= current_index < len(images_list)):
+        raise PreventUpdate
+
+    current_image = images_list[current_index]
+
+    # 背景層樣式（顯示當前圖片）
+    bg_style = {
+        'width': '100%',
+        'height': '100%',
+        'backgroundImage': f'url({current_image})',
+        'backgroundSize': 'cover',
+        'backgroundPosition': 'center',
+        'position': 'absolute',
+        'top': '0',
+        'left': '0',
+        'transition': 'opacity 1.8s ease-in-out',
+        'opacity': '1'
+    }
+
+    # 前景層樣式（準備顯示下一張）
+    next_index = (current_index + 1) % len(images_list)
+    next_image = images_list[next_index]
+
+    fg_style = {
+        'width': '100%',
+        'height': '100%',
+        'backgroundImage': f'url({next_image})',
+        'backgroundSize': 'cover',
+        'backgroundPosition': 'center',
+        'position': 'absolute',
+        'top': '0',
+        'left': '0',
+        'opacity': '0',
+        'transition': 'opacity 1.8s ease-in-out',
+        'pointerEvents': 'none'
+    }
+
+    return bg_style, fg_style
+
+# Callback 3: Update active indicator
+@app.callback(
+    [Output({'type': 'gallery-indicator', 'index': ALL}, 'className')],
+    [Input('gallery-current-index', 'data')],
+    [State('gallery-images-list', 'data')],
+    prevent_initial_call=True
+)
+def update_gallery_indicators(current_index, images_list):
+    """更新指示器的 active 狀態"""
+    if not images_list or current_index is None:
+        raise PreventUpdate
+
+    num_images = len(images_list)
+
+    # 為每個指示器生成className
+    classnames = []
+    for i in range(num_images):
+        if i == current_index:
+            classnames.append('gallery-indicator active')
+        else:
+            classnames.append('gallery-indicator')
+
+    return [classnames]
 
 if __name__ == '__main__':
     app.run(debug=True, port=8050)

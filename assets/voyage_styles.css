@@ -1301,3 +1301,143 @@ body {
 .nearby-restaurant-card {
     transition: all 0.3s ease;
 }
+
+/* ===== Image Gallery Carousel ===== */
+.gallery-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(222, 181, 34, 0.8);
+    color: #deb522;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.gallery-nav-btn:hover {
+    background-color: rgba(222, 181, 34, 0.9);
+    color: #000000;
+    border-color: #deb522;
+    transform: translateY(-50%) scale(1.1);
+}
+
+.gallery-prev {
+    left: 20px;
+}
+
+.gallery-next {
+    right: 20px;
+}
+
+/* Gallery Indicators */
+.gallery-indicators {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 10;
+}
+
+.gallery-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.gallery-indicator:hover {
+    background-color: rgba(222, 181, 34, 0.7);
+    border-color: #deb522;
+    transform: scale(1.2);
+}
+
+.gallery-indicator.active {
+    background-color: #deb522;
+    border-color: #deb522;
+    width: 14px;
+    height: 14px;
+}
+
+/* Mobile adjustments for gallery */
+@media (max-width: 768px) {
+    .gallery-nav-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+
+    .gallery-prev {
+        left: 10px;
+    }
+
+    .gallery-next {
+        right: 10px;
+    }
+
+    .gallery-indicators {
+        bottom: 10px;
+        gap: 8px;
+    }
+
+    .gallery-indicator {
+        width: 10px;
+        height: 10px;
+    }
+
+    .gallery-indicator.active {
+        width: 12px;
+        height: 12px;
+    }
+}
+
+
+/* Gallery Play/Pause Button */
+.gallery-play-pause-btn {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(222, 181, 34, 0.8);
+    color: #deb522;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.gallery-play-pause-btn:hover {
+    background-color: rgba(222, 181, 34, 0.9);
+    color: #000000;
+    border-color: #deb522;
+    transform: scale(1.1);
+}
+
+@media (max-width: 768px) {
+    .gallery-play-pause-btn {
+        width: 35px;
+        height: 35px;
+        font-size: 0.85rem;
+        bottom: 10px;
+        right: 10px;
+    }
+}
+
