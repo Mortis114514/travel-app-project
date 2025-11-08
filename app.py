@@ -843,6 +843,13 @@ def create_map_placeholder_section(data):
     # 創建附近餐廳列表
     nearby_cards = []
     for i, nearby in enumerate(nearby_restaurants, 1):
+        # 格式化評分為小數點一位
+        rating = nearby.get('TotalRating', 'N/A')
+        if rating != 'N/A' and rating is not None:
+            rating_display = f"{float(rating):.1f}"
+        else:
+            rating_display = 'N/A'
+
         card = html.Div([
             html.Div([
                 html.Div(f"{i}", style={
@@ -869,7 +876,7 @@ def create_map_placeholder_section(data):
                     html.Div([
                         html.Span([
                             html.I(className='fas fa-star', style={'color': '#deb522', 'fontSize': '0.75rem', 'marginRight': '4px'}),
-                            f"{nearby.get('TotalRating', 'N/A')}"
+                            rating_display
                         ], style={'marginRight': '12px', 'fontSize': '0.85rem'}),
                         html.Span([
                             html.I(className='fas fa-map-marker-alt', style={'color': '#888', 'fontSize': '0.75rem', 'marginRight': '4px'}),
@@ -887,7 +894,9 @@ def create_map_placeholder_section(data):
                 'marginBottom': '8px',
                 'transition': 'border-color 0.3s',
                 'cursor': 'pointer'
-            }, className='nearby-restaurant-card')
+            }, className='nearby-restaurant-card',
+            id={'type': 'nearby-restaurant-card', 'index': nearby['Restaurant_ID']},
+            n_clicks=0)
         ])
         nearby_cards.append(card)
 
@@ -2677,6 +2686,28 @@ def render_restaurant_detail(restaurant_data):
 )
 def handle_card_click(n_clicks_list, card_ids):
     """處理餐廳卡片點擊，導航到詳細頁面"""
+    ctx = callback_context
+
+    if not ctx.triggered or not any(n_clicks_list):
+        raise PreventUpdate
+
+    # 確定哪個卡片被點擊
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    triggered_dict = json.loads(triggered_id)
+    restaurant_id = triggered_dict['index']
+
+    # 導航到詳細頁面
+    return f'/restaurant/{restaurant_id}'
+
+# Callback 4b: Nearby Restaurant Card Click Handler - 處理附近餐廳卡片點擊事件
+@app.callback(
+    Output('url', 'pathname', allow_duplicate=True),
+    [Input({'type': 'nearby-restaurant-card', 'index': ALL}, 'n_clicks')],
+    [State({'type': 'nearby-restaurant-card', 'index': ALL}, 'id')],
+    prevent_initial_call=True
+)
+def handle_nearby_card_click(n_clicks_list, card_ids):
+    """處理附近餐廳卡片點擊，導航到該餐廳詳細頁面"""
     ctx = callback_context
 
     if not ctx.triggered or not any(n_clicks_list):
