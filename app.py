@@ -14,30 +14,8 @@ import json
 from datetime import datetime, timedelta
 
 # 從./utils導入所有自定義函數
-from utils.const import get_constants, TAB_STYLE, ALL_COMPARE_METRICS
-from utils.data_clean import travel_data_clean, countryinfo_data_clean, data_merge
 from utils.auth import verify_user, create_user, get_session, create_session, delete_session, clean_expired_sessions
 from pages.login_page import create_login_layout, create_register_layout
-from utils.data_transform import (
-    prepare_country_compare_data, 
-    get_dashboard_default_values, 
-    get_alert_rank, 
-    sanitize_cost_bounds, 
-    filter_by_cost_and_types, 
-    preprocess_travel_df,
-    pick_country_level,
-    filter_by_alert_and_visa,
-    compute_scores,
-)
-from utils.visualization import (
-    build_compare_figure, 
-    generate_stats_card, 
-    generate_bar, 
-    generate_pie, 
-    generate_map, 
-    generate_box,
-    build_table_component
-)
 
 ########################
 #### 資料載入與前處理 ####
@@ -1140,6 +1118,10 @@ app.layout = html.Div([
     dcc.Store(id='selected-restaurant-id', storage_type='memory'),  # 選中的餐廳 ID
     dcc.Store(id='previous-page-location', storage_type='memory'),  # 上一頁位置 (用於返回導航)
     dcc.Store(id='restaurant-detail-data', storage_type='memory'),  # 餐廳詳細資料
+    # Stores for restaurant list page
+    dcc.Store(id='search-results-store', storage_type='memory'),
+    dcc.Store(id='current-page-store', data=1, storage_type='memory'),
+    dcc.Store(id='search-params-store', storage_type='memory'),
     html.Div(id='page-content', style={'minHeight': '100vh'})
 ], style={'backgroundColor': '#1a1a1a', 'minHeight': '100vh'})
 
@@ -1351,10 +1333,6 @@ def create_restaurant_list_page():
             'backgroundColor': '#0a0a0a'
         }),
 
-        # Stores for search results and pagination state
-        dcc.Store(id='search-results-store', storage_type='memory'),
-        dcc.Store(id='current-page-store', data=1, storage_type='memory'),
-        dcc.Store(id='search-params-store', storage_type='memory')
     ], style={'backgroundColor': '#0a0a0a', 'minHeight': '100vh'})
 
 # 創建分頁按鈕
@@ -2385,24 +2363,6 @@ def handle_restaurant_list_search(n_clicks, cuisine, rating, sort_by, destinatio
 
     return search_results, 1, search_params  # Reset to page 1
 
-# Initialize restaurant list page with all restaurants
-@app.callback(
-    [Output('search-results-store', 'data', allow_duplicate=True),
-     Output('current-page-store', 'data', allow_duplicate=True)],
-    [Input('view-mode', 'data')],
-    prevent_initial_call=True
-)
-def initialize_restaurant_list(view_mode):
-    """初始化餐廳列表頁（顯示所有餐廳）"""
-    if view_mode == 'restaurant-list':
-        # Show all restaurants sorted by rating
-        all_restaurants = restaurants_df.sort_values(
-            by=['TotalRating', 'ReviewNum'],
-            ascending=[False, False]
-        ).to_dict('records')
-        return all_restaurants, 1
-    raise PreventUpdate
-
 # Update restaurant grid and pagination based on current page
 @app.callback(
     [Output('restaurant-grid', 'children'),
@@ -2414,6 +2374,11 @@ def initialize_restaurant_list(view_mode):
 )
 def update_restaurant_grid(search_results, current_page):
     """更新餐廳網格和分頁控制"""
+    if search_results is None:
+        # Initial load, fetch default results
+        df = search_restaurants(sort_by='rating_desc')
+        search_results = df.to_dict('records')
+
     if not search_results:
         return (
             html.Div([
