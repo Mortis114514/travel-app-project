@@ -1122,6 +1122,7 @@ app.layout = html.Div([
     dcc.Store(id='search-results-store', storage_type='memory'),
     dcc.Store(id='current-page-store', data=1, storage_type='memory'),
     dcc.Store(id='search-params-store', storage_type='memory'),
+    html.Div(id='scroll-trigger', style={'display': 'none'}),  # 隱藏的滾動觸發器
     html.Div(id='page-content', style={'minHeight': '100vh'})
 ], style={'backgroundColor': '#1a1a1a', 'minHeight': '100vh'})
 
@@ -2963,6 +2964,25 @@ def update_gallery_indicators(current_index, images_list):
             classnames.append('gallery-indicator')
 
     return [classnames]
+
+# ===== Clientside Callback: Scroll to Top on Page Change =====
+app.clientside_callback(
+    """
+    function(currentPage) {
+        if (currentPage !== undefined && currentPage !== null && currentPage > 0) {
+            setTimeout(function() {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            }, 50);
+        }
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output('scroll-trigger', 'children'),
+    Input('current-page-store', 'data')
+)
 
 if __name__ == '__main__':
     app.run(debug=True, port=8050)
