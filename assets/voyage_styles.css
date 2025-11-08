@@ -1303,6 +1303,17 @@ body {
 }
 
 /* ===== Image Gallery Carousel ===== */
+
+/* Gallery Background and Foreground Layers - Optimized for smooth transitions */
+#gallery-image-bg,
+#gallery-image-fg {
+    will-change: opacity;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
 .gallery-nav-btn {
     position: absolute;
     top: 50%;
@@ -1441,3 +1452,10 @@ body {
     }
 }
 
+/* ===== Dropdown Menu Initial State ===== */
+/* 確保下拉菜單初始狀態為隱藏，防止自動彈出 */
+/* 不使用 !important，讓 inline style 可以正常覆蓋 */
+#cuisine-dropdown-menu,
+#rating-dropdown-menu {
+    display: none;
+}

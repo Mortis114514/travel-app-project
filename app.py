@@ -586,7 +586,9 @@ def create_image_gallery():
 
         # 存儲當前圖片索引和圖片列表
         dcc.Store(id='gallery-current-index', data=0),
-        dcc.Store(id='gallery-images-list', data=gallery_images)
+        dcc.Store(id='gallery-images-list', data=gallery_images),
+        # 存儲圖層切換狀態（用於交叉淡入淡出）
+        dcc.Store(id='gallery-layer-toggle', data=False)
     ])
 
 def create_detail_hero(data):
@@ -841,6 +843,13 @@ def create_map_placeholder_section(data):
     # 創建附近餐廳列表
     nearby_cards = []
     for i, nearby in enumerate(nearby_restaurants, 1):
+        # 格式化評分為小數點一位
+        rating = nearby.get('TotalRating', 'N/A')
+        if rating != 'N/A' and rating is not None:
+            rating_display = f"{float(rating):.1f}"
+        else:
+            rating_display = 'N/A'
+
         card = html.Div([
             html.Div([
                 html.Div(f"{i}", style={
@@ -867,7 +876,7 @@ def create_map_placeholder_section(data):
                     html.Div([
                         html.Span([
                             html.I(className='fas fa-star', style={'color': '#deb522', 'fontSize': '0.75rem', 'marginRight': '4px'}),
-                            f"{nearby.get('TotalRating', 'N/A')}"
+                            rating_display
                         ], style={'marginRight': '12px', 'fontSize': '0.85rem'}),
                         html.Span([
                             html.I(className='fas fa-map-marker-alt', style={'color': '#888', 'fontSize': '0.75rem', 'marginRight': '4px'}),
@@ -885,7 +894,9 @@ def create_map_placeholder_section(data):
                 'marginBottom': '8px',
                 'transition': 'border-color 0.3s',
                 'cursor': 'pointer'
-            }, className='nearby-restaurant-card')
+            }, className='nearby-restaurant-card',
+            id={'type': 'nearby-restaurant-card', 'index': nearby['Restaurant_ID']},
+            n_clicks=0)
         ])
         nearby_cards.append(card)
 
@@ -1692,7 +1703,7 @@ def logout_from_dropdown(n_clicks, session_data):
 def populate_destinations_cards(pathname):
     """填充餐廳卡片（橫向滾動）"""
     # Get random 4-5 star restaurants
-    top_restaurants = get_random_top_restaurants(10)
+    top_restaurants = get_random_top_restaurants(4)
 
     cards = []
     for _, restaurant in top_restaurants.iterrows():
@@ -1977,6 +1988,10 @@ def clear_all_filters(n_clicks):
 )
 def toggle_cuisine_menu(trigger_clicks, icon_clicks, active_dropdown):
     """切換料理類型下拉菜單，並確保評分菜單關閉（互斥性）"""
+    # 檢查是否真的有點擊事件（防止初始化觸發）
+    if not trigger_clicks and not icon_clicks:
+        raise PreventUpdate
+
     # 如果 cuisine 已經是活動狀態，則關閉它
     if active_dropdown == 'cuisine':
         return (
@@ -2004,6 +2019,10 @@ def toggle_cuisine_menu(trigger_clicks, icon_clicks, active_dropdown):
 )
 def toggle_rating_menu(trigger_clicks, icon_clicks, active_dropdown):
     """切換評分下拉菜單，並確保料理類型菜單關閉（互斥性）"""
+    # 檢查是否真的有點擊事件（防止初始化觸發）
+    if not trigger_clicks and not icon_clicks:
+        raise PreventUpdate
+
     # 如果 rating 已經是活動狀態，則關閉它
     if active_dropdown == 'rating':
         return (
@@ -2127,7 +2146,8 @@ def select_rating_option(n_clicks_list, option_ids, option_labels):
      Input('search-rating', 'data'),
      Input('price-range-filter', 'value'),
      Input('review-count-filter', 'value'),
-     Input('station-filter', 'value')]
+     Input('station-filter', 'value')],
+    prevent_initial_call=True
 )
 def display_active_filters(keyword, cuisine, rating, price_range, min_reviews, stations):
     """顯示當前激活的篩選條件標籤"""
@@ -2679,6 +2699,28 @@ def handle_card_click(n_clicks_list, card_ids):
     # 導航到詳細頁面
     return f'/restaurant/{restaurant_id}'
 
+# Callback 4b: Nearby Restaurant Card Click Handler - 處理附近餐廳卡片點擊事件
+@app.callback(
+    Output('url', 'pathname', allow_duplicate=True),
+    [Input({'type': 'nearby-restaurant-card', 'index': ALL}, 'n_clicks')],
+    [State({'type': 'nearby-restaurant-card', 'index': ALL}, 'id')],
+    prevent_initial_call=True
+)
+def handle_nearby_card_click(n_clicks_list, card_ids):
+    """處理附近餐廳卡片點擊，導航到該餐廳詳細頁面"""
+    ctx = callback_context
+
+    if not ctx.triggered or not any(n_clicks_list):
+        raise PreventUpdate
+
+    # 確定哪個卡片被點擊
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    triggered_dict = json.loads(triggered_id)
+    restaurant_id = triggered_dict['index']
+
+    # 導航到詳細頁面
+    return f'/restaurant/{restaurant_id}'
+
 # Callback 5: Back Button Handler - 處理返回按鈕
 @app.callback(
     [Output('url', 'pathname', allow_duplicate=True),
@@ -2822,19 +2864,21 @@ def handle_reviews_interaction(clickData, show_all_n_clicks, restaurant_data):
 
 # ====== Image Gallery Carousel Callbacks ======
 
-# Callback 1: Update current image index based on navigation and autoplay
+# Callback 1: Update current image index and toggle layer based on navigation and autoplay
 @app.callback(
-    Output('gallery-current-index', 'data'),
+    [Output('gallery-current-index', 'data'),
+     Output('gallery-layer-toggle', 'data')],
     [Input('gallery-prev-btn', 'n_clicks'),
      Input('gallery-next-btn', 'n_clicks'),
      Input({'type': 'gallery-indicator', 'index': ALL}, 'n_clicks'),
      Input('gallery-autoplay-interval', 'n_intervals')],
     [State('gallery-current-index', 'data'),
-     State('gallery-images-list', 'data')],
+     State('gallery-images-list', 'data'),
+     State('gallery-layer-toggle', 'data')],
     prevent_initial_call=True
 )
-def update_gallery_index(prev_clicks, next_clicks, indicator_clicks, n_intervals, current_index, images_list):
-    """更新圖片畫廊當前索引（自動播放+手動導航）"""
+def update_gallery_index(prev_clicks, next_clicks, indicator_clicks, n_intervals, current_index, images_list, layer_toggle):
+    """更新圖片畫廊當前索引（自動播放+手動導航）並切換圖層"""
     if not images_list:
         raise PreventUpdate
 
@@ -2847,22 +2891,22 @@ def update_gallery_index(prev_clicks, next_clicks, indicator_clicks, n_intervals
 
     # 處理自動播放（每4秒自動切換）
     if triggered_id == 'gallery-autoplay-interval':
-        return (current_index + 1) % num_images
+        return (current_index + 1) % num_images, not layer_toggle
 
     # 處理上一張按鈕
     elif triggered_id == 'gallery-prev-btn':
-        return (current_index - 1) % num_images
+        return (current_index - 1) % num_images, not layer_toggle
 
     # 處理下一張按鈕
     elif triggered_id == 'gallery-next-btn':
-        return (current_index + 1) % num_images
+        return (current_index + 1) % num_images, not layer_toggle
 
     # 處理指示器點擊
     else:
         try:
             triggered_dict = json.loads(triggered_id)
             if triggered_dict.get('type') == 'gallery-indicator':
-                return triggered_dict['index']
+                return triggered_dict['index'], not layer_toggle
         except:
             pass
 
@@ -2872,12 +2916,13 @@ def update_gallery_index(prev_clicks, next_clicks, indicator_clicks, n_intervals
 @app.callback(
     [Output('gallery-image-bg', 'style'),
      Output('gallery-image-fg', 'style')],
-    [Input('gallery-current-index', 'data')],
+    [Input('gallery-current-index', 'data'),
+     Input('gallery-layer-toggle', 'data')],
     [State('gallery-images-list', 'data')],
     prevent_initial_call=True
 )
-def update_gallery_images_crossfade(current_index, images_list):
-    """更新圖片（交叉淡入淡出效果）"""
+def update_gallery_images_crossfade(current_index, layer_toggle, images_list):
+    """更新圖片（交叉淡入淡出效果）- 使用圖層切換實現流暢過渡"""
     if not images_list or current_index is None:
         raise PreventUpdate
 
@@ -2887,37 +2932,46 @@ def update_gallery_images_crossfade(current_index, images_list):
 
     current_image = images_list[current_index]
 
-    # 背景層樣式（顯示當前圖片）
-    bg_style = {
+    # 基礎樣式
+    base_style = {
         'width': '100%',
         'height': '100%',
-        'backgroundImage': f'url({current_image})',
         'backgroundSize': 'cover',
         'backgroundPosition': 'center',
         'position': 'absolute',
         'top': '0',
         'left': '0',
-        'transition': 'opacity 1.8s ease-in-out',
-        'opacity': '1'
+        'transition': 'opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1)',  # 使用更流暢的緩動函數
     }
 
-    # 前景層樣式（準備顯示下一張）
-    next_index = (current_index + 1) % len(images_list)
-    next_image = images_list[next_index]
-
-    fg_style = {
-        'width': '100%',
-        'height': '100%',
-        'backgroundImage': f'url({next_image})',
-        'backgroundSize': 'cover',
-        'backgroundPosition': 'center',
-        'position': 'absolute',
-        'top': '0',
-        'left': '0',
-        'opacity': '0',
-        'transition': 'opacity 1.8s ease-in-out',
-        'pointerEvents': 'none'
-    }
+    # 根據toggle狀態決定哪一層顯示在前面
+    if layer_toggle:
+        # 前景層顯示當前圖片（淡入）
+        bg_style = {
+            **base_style,
+            'backgroundImage': f'url({images_list[(current_index - 1) % len(images_list)]})',
+            'opacity': '0',
+            'pointerEvents': 'none'
+        }
+        fg_style = {
+            **base_style,
+            'backgroundImage': f'url({current_image})',
+            'opacity': '1',
+            'pointerEvents': 'none'
+        }
+    else:
+        # 背景層顯示當前圖片（淡入）
+        bg_style = {
+            **base_style,
+            'backgroundImage': f'url({current_image})',
+            'opacity': '1'
+        }
+        fg_style = {
+            **base_style,
+            'backgroundImage': f'url({images_list[(current_index - 1) % len(images_list)]})',
+            'opacity': '0',
+            'pointerEvents': 'none'
+        }
 
     return bg_style, fg_style
 
