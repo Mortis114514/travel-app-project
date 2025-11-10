@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python:*)"
+      "Bash(powershell -Command \"Get-Content ''D:\\travel-app-project\\assets\\voyage_styles.css'' | Select-Object -Last 50\")",
+      "Bash(powershell -Command:*)",
+      "Bash(python app.py:*)"
     ],
     "deny": [],
     "ask": []
