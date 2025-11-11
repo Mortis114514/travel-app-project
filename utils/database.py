@@ -88,11 +88,11 @@ def search_restaurants(
         DataFrame: 筛选后的餐厅数据
     """
     with get_db_connection() as conn:
-        # 构建 SQL 查询
+        # 建構 SQL 查询
         query_parts = ["SELECT * FROM restaurants WHERE 1=1"]
         params = []
 
-        # 关键词搜索
+        # 關鍵字搜索
         if keyword and keyword.strip():
             query_parts.append("""
                 AND (
@@ -106,7 +106,7 @@ def search_restaurants(
             keyword_pattern = f"%{keyword.strip()}%"
             params.extend([keyword_pattern] * 5)
 
-        # 料理类型筛选
+        # 料理類型篩選
         if cuisine:
             query_parts.append("AND SecondCategory = ?")
             params.append(cuisine)
@@ -134,12 +134,12 @@ def search_restaurants(
                 except (ValueError, TypeError):
                     pass
 
-        # 价格范围筛选
+        # 價格範圍篩選
         if price_range and isinstance(price_range, (list, tuple)) and len(price_range) == 2:
             try:
                 min_price, max_price = float(price_range[0]), float(price_range[1])
-                # 使用 SQL 计算平均价格（使用 COALESCE 处理 NULL 值）
-                # 如果只有一个价格，使用该价格；如果两个都有，使用平均值
+                # 使用 SQL 計算average（使用 COALESCE 處理 NULL 值）
+                # 如果只有一個價格，使用該價格；如果兩個都有，使用平均值
                 if max_price < 30000:
                     query_parts.append("""
                         AND (
@@ -177,7 +177,7 @@ def search_restaurants(
             except (ValueError, TypeError):
                 pass
 
-        # 评论数筛选
+        # 評論數筛选
         if min_reviews:
             try:
                 min_reviews_int = int(min_reviews)
@@ -187,7 +187,7 @@ def search_restaurants(
             except (ValueError, TypeError):
                 pass
 
-        # 车站筛选
+        # 車站筛选
         if stations and len(stations) > 0:
             placeholders = ','.join(['?'] * len(stations))
             query_parts.append(f"AND Station IN ({placeholders})")
@@ -209,7 +209,7 @@ def search_restaurants(
         if order_clauses:
             query_parts.append(f"ORDER BY {', '.join(order_clauses)}")
 
-        # 执行查询
+        # 執行查询
         query = ' '.join(query_parts)
         df = pd.read_sql_query(query, conn, params=params)
 
@@ -217,10 +217,10 @@ def search_restaurants(
 
 def get_unique_stations() -> List[str]:
     """
-    获取所有唯一的车站名称
+    獲取所有唯一車站的名稱
 
     Returns:
-        List[str]: 车站名称列表（已排序）
+        List[str]: 車站名稱列表
     """
     with get_db_connection() as conn:
         query = """
@@ -236,10 +236,10 @@ def get_unique_stations() -> List[str]:
 
 def get_unique_cuisines() -> List[str]:
     """
-    获取所有唯一的料理类型
+    獲取料理類型
 
     Returns:
-        List[str]: 料理类型列表（已排序）
+        List[str]: 料理類型表（已排序）
     """
     with get_db_connection() as conn:
         query = """
@@ -274,10 +274,10 @@ def get_restaurant_by_id(restaurant_id: int) -> Optional[Dict[str, Any]]:
 
 def get_restaurant_count() -> int:
     """
-    获取餐厅总数
+    獲取餐厅总数
 
     Returns:
-        int: 餐厅数量
+        int: 餐廳数量
     """
     with get_db_connection() as conn:
         cursor = conn.cursor()
@@ -287,14 +287,14 @@ def get_restaurant_count() -> int:
 
 def get_top_rated_restaurants(limit: int = 10, min_reviews: int = 10) -> pd.DataFrame:
     """
-    获取评分最高的餐厅（需要最少评论数）
+    獲取評分最高的餐廳（需要最少評論数）
 
     Args:
         limit: 返回数量
-        min_reviews: 最少评论数
+        min_reviews: 最少評論数
 
     Returns:
-        DataFrame: 高评分餐厅
+        DataFrame: 高評分餐廳
     """
     with get_db_connection() as conn:
         query = """
@@ -308,13 +308,13 @@ def get_top_rated_restaurants(limit: int = 10, min_reviews: int = 10) -> pd.Data
 
 def get_restaurants_by_category(rating_category: str) -> pd.DataFrame:
     """
-    根据评分类别获取餐厅
+    根据評分類別獲取餐廳
 
     Args:
-        rating_category: 评分类别（例如 "4~5 星餐廳"）
+        rating_category: 評分類別（例如 "4~5 星餐廳"）
 
     Returns:
-        DataFrame: 该类别的餐厅
+        DataFrame: 該類別的餐廳
     """
     with get_db_connection() as conn:
         query = """
@@ -327,33 +327,33 @@ def get_restaurants_by_category(rating_category: str) -> pd.DataFrame:
 
 def get_nearby_restaurants(lat: float, long: float, limit: int = 5, exclude_id: Optional[int] = None) -> List[Dict[str, Any]]:
     """
-    获取附近的餐厅（使用 Haversine 距离计算）
+    獲取附近的餐廳（使用 Haversine 距離計算）
 
     Args:
-        lat: 中心纬度
-        long: 中心经度
-        limit: 返回数量
-        exclude_id: 排除的餐厅 ID（通常是当前餐厅）
+        lat: 中心緯度
+        long: 中心經度
+        limit: 返回數量
+        exclude_id: 排除的餐廳 ID（通常是當前餐廳）
 
     Returns:
-        List[Dict]: 附近餐厅列表，包含距离信息
+        List[Dict]: 附近餐廳列表，包含距離訊息
     """
     import math
 
     def haversine_distance(lat1, lon1, lat2, lon2):
         """
-        使用 Haversine 公式计算两点之间的距离（公里）
+        使用 Haversine 公式計算两點之间的距離（公里）
         """
         # 地球半径（公里）
         R = 6371
 
-        # 转换为弧度
+        # 轉換為弧度
         lat1_rad = math.radians(lat1)
         lon1_rad = math.radians(lon1)
         lat2_rad = math.radians(lat2)
         lon2_rad = math.radians(lon2)
 
-        # 计算差值
+        # 計算差值
         dlat = lat2_rad - lat1_rad
         dlon = lon2_rad - lon1_rad
 
@@ -364,7 +364,7 @@ def get_nearby_restaurants(lat: float, long: float, limit: int = 5, exclude_id: 
         return R * c
 
     with get_db_connection() as conn:
-        # 获取所有有坐标的餐厅
+        # 獲取所有有坐標的餐廳
         query = """
             SELECT * FROM restaurants
             WHERE Lat IS NOT NULL AND Long IS NOT NULL
@@ -372,7 +372,7 @@ def get_nearby_restaurants(lat: float, long: float, limit: int = 5, exclude_id: 
 
         params = []
 
-        # 如果需要排除当前餐厅
+        # 如果需要排除當前餐廳
         if exclude_id is not None:
             query += " AND Restaurant_ID != ?"
             params.append(exclude_id)
@@ -380,19 +380,19 @@ def get_nearby_restaurants(lat: float, long: float, limit: int = 5, exclude_id: 
         cursor = conn.cursor()
         cursor.execute(query, params)
 
-        # 获取列名
+        # 獲取列名
         columns = [description[0] for description in cursor.description]
 
-        # 计算所有餐厅的距离
+        # 計算所有餐廳的距離
         restaurants_with_distance = []
         for row in cursor.fetchall():
             restaurant = dict(zip(columns, row))
-            # 计算距离
+            # 計算距離
             distance = haversine_distance(lat, long, restaurant['Lat'], restaurant['Long'])
             restaurant['distance'] = distance
             restaurants_with_distance.append(restaurant)
 
-        # 按距离排序并取前 N 个
+        # 按距離排序並取前 N 個
         restaurants_with_distance.sort(key=lambda x: x['distance'])
         results = restaurants_with_distance[:limit]
 
