@@ -1125,7 +1125,7 @@ def create_main_layout():
         html.Div([
             html.Div([
                 # Logo
-                html.Div('Roger', className='header-logo'),
+                html.Div('Trip', className='header-logo'),
 
                 # Navigation
                 html.Div([
@@ -1172,7 +1172,7 @@ def create_main_layout():
             html.Img(src='/assets/food_dirtyrice.png', className='hero-background'),
             html.Div(className='hero-overlay'),
             html.Div([
-                html.H1('欸欸發瘋啦嚴厲斥責', className='hero-title'),
+                html.H1('旅遊平台', className='hero-title'),
                 html.P('自己設計想要的旅遊阿，底迪', className='hero-subtitle'),
                 create_compound_search_bar()
             ], className='hero-content')
