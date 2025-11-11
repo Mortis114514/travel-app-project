@@ -111,7 +111,7 @@ def search_restaurants(
             query_parts.append("AND SecondCategory = ?")
             params.append(cuisine)
 
-        # 评分范围筛选
+        # 評分篩選
         if rating:
             if isinstance(rating, str) and '-' in rating:
                 try:

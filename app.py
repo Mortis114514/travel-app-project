@@ -32,18 +32,10 @@ from utils.database import (
     get_nearby_restaurants
 )
 
-# === 數據庫模式（替代 CSV 加載）===
-# 注意：數據現在從 SQLite 數據庫加載，而不是 CSV 文件
-# 運行 migrate_to_db.py 來創建/更新數據庫
 
-# 加載所有餐廳數據（僅用於下拉菜單等靜態用途）
-# 搜索和篩選現在使用數據庫查詢而非 pandas 操作
 restaurants_df = get_all_restaurants()  # 從數據庫加載（用於選項列表）
 
-# Legacy 數據集（已停用）
-# travel_df = pd.read_csv('./data/Travel_dataset.csv')  # 旅遊資訊 (Legacy - 已停用)
-# country_info_df = pd.read_csv('./data/country_info.csv')  # 國家資訊 (Legacy - 已停用)
-# attractions_df = pd.read_csv('./data/Attractions.csv')  # 景點資訊 (Legacy - 已停用)
+
 
 # 切換頁面（如有需要可以自行增加）
 def load_data(tab):
