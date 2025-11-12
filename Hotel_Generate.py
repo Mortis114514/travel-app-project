@@ -2,55 +2,72 @@ import requests
 import pandas as pd
 import time
 
-API_KEY = "AIzaSyAMc4KPATogfZlGj7qpir34DyHFWjszKwU"  # ← 請貼上剛剛拿到的金鑰
+API_KEY = "AIzaSyAMc4KPATogfZlGj7qpir34DyHFWjszKwU"
 
-# 京都市中心（四条通附近）
-latitude = 35.0116
-longitude = 135.7681
-radius = 3000  # 3公里範圍內搜尋飯店
+# 京都中心座標（四条通附近）
+center_lat, center_lng = 35.0116, 135.7681
 
-url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
+# 分區設定（約 2 公里一格）
+lat_steps = [-0.04, -0.02, 0, 0.02, 0.04]
+lng_steps = [-0.04, -0.02, 0, 0.02, 0.04]
 
-params = {
-    "location": f"{latitude},{longitude}",
-    "radius": radius,
-    "type": "lodging",  # 尋找住宿類型
-    "key": API_KEY,
-    "language": "ja"  # 回傳日文名稱
-}
+radius = 2000  # 2 公里
+base_url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
 
-hotels = []
-page = 1
+all_hotels = {}
+req_count = 0
 
-while True:
-    print(f"📍 抓取第 {page} 頁資料...")
-    res = requests.get(url, params=params)
-    data = res.json()
+for dlat in lat_steps:
+    for dlng in lng_steps:
+        lat = center_lat + dlat
+        lng = center_lng + dlng
 
-    for result in data.get("results", []):
-        hotels.append({
-            "HotelName": result.get("name", ""),
-            "Address": result.get("vicinity", ""),
-            "Rating": result.get("rating", ""),
-            "UserRatingsTotal": result.get("user_ratings_total", ""),
-            "Types": ", ".join(result.get("types", [])),  # 類型清單
-            "Lat": result["geometry"]["location"]["lat"],
-            "Long": result["geometry"]["location"]["lng"],
-            "Place_ID": result.get("place_id", "")
-        })
+        params = {
+            "location": f"{lat},{lng}",
+            "radius": radius,
+            "type": "lodging",
+            "key": API_KEY,
+            "language": "ja"
+        }
 
-    # 檢查是否有下一頁
-    if "next_page_token" in data:
-        next_token = data["next_page_token"]
-        params["pagetoken"] = next_token
-        page += 1
-        time.sleep(2)  # 等待 token 生效
-    else:
-        break
+        page = 1
+        while True:
+            req_count += 1
+            print(f"📍 抓取區塊 ({lat:.4f},{lng:.4f}) 第 {page} 頁，已用 {req_count} 次 API...")
+
+            res = requests.get(base_url, params=params)
+            data = res.json()
+
+            if "results" not in data:
+                print("⚠️ 發生錯誤：", data)
+                break
+
+            for r in data["results"]:
+                pid = r.get("place_id")
+                if pid not in all_hotels:  # 避免重複
+                    all_hotels[pid] = {
+                        "HotelName": r.get("name", ""),
+                        "Address": r.get("vicinity", ""),
+                        "Rating": r.get("rating", ""),
+                        "UserRatingsTotal": r.get("user_ratings_total", ""),
+                        "Types": ", ".join(r.get("types", [])),
+                        "Lat": r["geometry"]["location"]["lat"],
+                        "Lng": r["geometry"]["location"]["lng"],
+                        "Place_ID": pid
+                    }
+
+            # 是否有下一頁
+            if "next_page_token" in data:
+                params["pagetoken"] = data["next_page_token"]
+                page += 1
+                time.sleep(2)  # token 延遲生效
+            else:
+                break
+
+        time.sleep(1)  # 降低請求頻率避免配額問題
 
 # 匯出 CSV
-df = pd.DataFrame(hotels)
+df = pd.DataFrame(list(all_hotels.values()))
 df.to_csv("Kyoto_Hotels_Google.csv", index=False, encoding="utf-8-sig")
 
-print(f"✅ 匯出完成，共 {len(df)} 筆資料。已儲存為 Kyoto_Hotels_Google.csv")
-
+print(f"✅ 匯出完成，共 {len(df)} 筆資料。總共使用 API {req_count} 次。")
