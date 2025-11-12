@@ -1,6 +1,6 @@
 ﻿HotelName,Address,Rating,UserRatingsTotal,Types,Lat,Lng,Place_ID
 町家 東寺あけぼの庵,京都市南区八条内田町２−１,4.8,15,"lodging, point_of_interest, establishment",34.9795965,135.7455845,ChIJx_JJOAQGAWARzm1G-Hxo4qE
-京庵 東寺 紫音 -SHION-,京都市南区四ツ塚町３２−１,4.3,4,"lodging, travel_agency, real_estate_agency, point_of_interest, establishment",34.9794241,135.7437079,ChIJt6DZNwQGAWARugs9DEiyn-0
+京庵 東寺 紫音 -SHION-,京都市南区四ツ塚町３２−１,4.3,4,"real_estate_agency, travel_agency, lodging, point_of_interest, establishment",34.9794241,135.7437079,ChIJt6DZNwQGAWARugs9DEiyn-0
 梟月庵,京都市南区吉祥院九条町４４−７,4.4,7,"lodging, point_of_interest, establishment",34.977673,135.73392,ChIJ91aCWA0GAWARDxAF9_MnqxI
 京の宿西大路,京都市下京区七条御所ノ内北町４７−１,4.4,16,"lodging, point_of_interest, establishment",34.9866913,135.7302544,ChIJYW6er0EGAWARdYIoWsHheZU
 ゲストハウス 古都音 京都,京都市右京区西京極芝ノ下町１０−１,4.6,19,"lodging, point_of_interest, establishment",34.98613879999999,135.7185774,ChIJBTm_eFkGAWARWeULCxqg-qk
@@ -79,24 +79,24 @@ Tabist スパークリングドルフィンズイン 京都,京都市南区東�
 アパホテル〈京都駅堀川通〉,京都市下京区 油小路通塩小路西油小路町1番地,3.7,2754,"lodging, point_of_interest, establishment",34.986512,135.7536717,ChIJC9zDdagIAWARtJV4CjMuX98
 アパホテル〈京都駅前〉,京都市下京区南不動堂町８０６ 西洞院通塩小路下ル,3.8,1843,"lodging, point_of_interest, establishment",34.9864192,135.7549834,ChIJ6V8-jagIAWARm9dUeM6cWM8
 京都第一ホテル,京都市南区東九条下殿田町45,3.8,801,"lodging, point_of_interest, establishment",34.9796556,135.7569847,ChIJmxZjqawIAWARyFrmvcWcbwo
-ダイワロイネットホテル京都八条口,京都市南区東九条北烏丸町９−２,4.2,1279,"lodging, restaurant, food, point_of_interest, establishment",34.981626,135.760024,ChIJ-aRTPK0IAWARkDLcRbtDIsI
+ダイワロイネットホテル京都八条口,京都市南区東九条北烏丸町９−２,4.2,1279,"lodging, restaurant, point_of_interest, food, establishment",34.981626,135.760024,ChIJ-aRTPK0IAWARkDLcRbtDIsI
 ワシントンR＆Bホテル京都駅八条口,京都市南区東九条上殿田町４１−１,3.7,842,"lodging, point_of_interest, establishment",34.9830287,135.759511,ChIJLyhFrK0IAWARF8iIiOqZFV4
 ゲストハウス 和／Guest House WA／便捷青旅 和,京都市下京区西八百屋町１５４ 七条通猪熊東入西八百屋町152 猪熊東入,3.8,69,"lodging, point_of_interest, establishment",34.9890608,135.7514864,ChIJv4Vc7R0GAWARVNvP6-ma-68
 Hotel JIDAI,京都市下京区油小路町２９５,4.6,48,"lodging, point_of_interest, establishment",34.98864630000001,135.7536937,ChIJs-lHsKcIAWARJMgPzXvFzGs
-ホテルグランヴィア京都,京都市下京区JR京都駅 中央口 烏丸通塩小路下ル,4.3,4610,"cafe, lodging, restaurant, food, point_of_interest, establishment",34.98585850000001,135.7589822,ChIJaVi89K4IAWAR4vsxLc_WnbM
+ホテルグランヴィア京都,京都市下京区JR京都駅 中央口 烏丸通塩小路下ル,4.3,4610,"cafe, lodging, restaurant, point_of_interest, food, establishment",34.98585850000001,135.7589822,ChIJaVi89K4IAWAR4vsxLc_WnbM
 ホテルエクセレンス・京都駅西,京都市南区西九条寺ノ前町８,3.4,454,"lodging, point_of_interest, establishment",34.98492589999999,135.7533699,ChIJ1UcSOKgIAWARCDzRaJErEiU
 ランドーレジデンス京都クラシック,京都市南区東九条上御霊町５８−１,4.3,223,"lodging, point_of_interest, establishment",34.98004299999999,135.762525,ChIJjb3Ic00PAWARmWlayC8EjNE
 Inarian TOBA,京都市東山区福稲下高松町４２−５,,,"lodging, point_of_interest, establishment",34.9736884,135.7676408,ChIJ___WQkYPAWAR10WpkbO-ZBM
 Zen Kyoto Apartment Hotel,京都市伏見区竹田段川原町２３９,4.5,172,"lodging, point_of_interest, establishment",34.95809749999999,135.75738,ChIJX_ZdrmYPAWARyo4VjU8ySqQ
-都シティ 近鉄京都駅,京都市下京区東塩小路釜殿町１−９,4.2,1993,"lodging, restaurant, food, point_of_interest, establishment",34.9848169,135.7575091,ChIJI9DHta4IAWARDmbkNQVFOlI
+都シティ 近鉄京都駅,京都市下京区東塩小路釜殿町１−９,4.2,1993,"lodging, restaurant, point_of_interest, food, establishment",34.9848169,135.7575091,ChIJI9DHta4IAWARDmbkNQVFOlI
 SAKURA TERRACE,京都市南区東九条烏丸町１−１,4.2,2068,"lodging, point_of_interest, establishment",34.97975900000001,135.759492,ChIJJVGF2VIPAWARq3tLCzPqHdE
 Stay SAKURA Kyoto 祭,京都市下京区伊勢松町１１５,4.4,69,"lodging, point_of_interest, establishment",34.98751710000001,135.7514368,ChIJAQBAcR0GAWARFH5fAmwYi1U
 相鉄フレッサイン 京都駅八条口,京都市南区東九条西山王町１１番地,4.4,1077,"lodging, point_of_interest, establishment",34.9828676,135.7610043,ChIJ19SvEq0IAWARLD6V_uVxg_8
-京都タワーホテルアネックス,京都市下京区東塩小路町５９５−１,4,1084,"cafe, lodging, restaurant, food, point_of_interest, establishment",34.9880935,135.7565816,ChIJw3b2AaYIAWAR7RoLRIxjKQw
+京都タワーホテルアネックス,京都市下京区東塩小路町５９５−１,4,1084,"cafe, lodging, restaurant, point_of_interest, food, establishment",34.9880935,135.7565816,ChIJw3b2AaYIAWAR7RoLRIxjKQw
 MIMARU京都 STATION,京都市南区東九条東山王町１５−１,4.8,409,"lodging, point_of_interest, establishment",34.98431109999999,135.7617109,ChIJSa6Rd7IIAWAR0VNhyWD2uMw
 PREMIUM TOJI,京都市南区西九条比永城町119番地,4.5,70,"lodging, point_of_interest, establishment",34.97914319999999,135.7490514,ChIJq9L6lY0HAWARGjeyPKnaUEs
 Nagomi-an Hachijyoutei,京都市南区東九条北烏丸町８−９ 和庵八条亭,4.8,9,"lodging, point_of_interest, establishment",34.9813823,135.7593955,ChIJn8EUIa0IAWARGBIFIiY8KCI
-メルキュール 京都ステーション,京都市下京区油小路町２８８,4.4,1379,"bar, restaurant, lodging, food, point_of_interest, establishment",34.9884343,135.7535903,ChIJVbimhTQJAWARtXpd8c69fzs
+メルキュール 京都ステーション,京都市下京区油小路町２８８,4.4,1379,"bar, lodging, restaurant, food, point_of_interest, establishment",34.9884343,135.7535903,ChIJVbimhTQJAWARtXpd8c69fzs
 カモンイン 相深 1,京都市伏見区深草相深町９−６,4.2,5,"lodging, point_of_interest, establishment",34.9725655,135.7691649,ChIJH09NI0cPAWARRQZzeDfn3xQ
 Shiki Suites京都梅小路,京都市下京区上夷町１５７,4.4,104,"lodging, point_of_interest, establishment",34.9862796,135.750935,ChIJpwFSz70HAWARSY7S7KuN4mY
 Moco hostel,京都市南区西九条御幸田町２４番地３,4.4,16,"lodging, point_of_interest, establishment",34.97554799999999,135.74957,ChIJkYRWLP4FAWAR5UEO8ANVn08
@@ -158,7 +158,7 @@ NISHIKIEN YAMASHINA VILLA,京都市山科区西野山桜ノ馬場町９０,,,"lo
 民泊 稲荷山,京都市伏見区深草坊山町３５−７,4.9,9,"lodging, point_of_interest, establishment",34.9637728,135.7805912,ChIJQU9wet8PAWARYZiUn5qXEng
 Kyoto Share House 『田舎〜INAKA〜』,京都市山科区山科区川田菱尾田１７−１３１,5,8,"lodging, point_of_interest, establishment",34.9774869,135.7988431,ChIJIYIfPeYOAWARWsTgO50sB1U
 パルコ,京都市山科区上花山坂尻１０７−１４,3.3,20,"lodging, point_of_interest, establishment",34.9819168,135.7957006,ChIJwQ5VNtwOAWARJhMTabZe-Bo
-京町家ステイ 和華 伏見稲荷邸,京都市伏見区深草開土町５１,4.1,8,"real_estate_agency, travel_agency, lodging, point_of_interest, establishment",34.9686293,135.7724846,ChIJa7OB4D8PAWARRbQ9ceOnjj0
+京町家ステイ 和華 伏見稲荷邸,京都市伏見区深草開土町５１,4.1,8,"real_estate_agency, lodging, travel_agency, point_of_interest, establishment",34.9686293,135.7724846,ChIJa7OB4D8PAWARRbQ9ceOnjj0
 Loc Kyoto,京都市東山区泉涌寺東林町３２,1,1,"lodging, point_of_interest, establishment",34.9801731,135.7758242,ChIJpZiEcQAPAWARE9fIMblj4qI
 シェアハウスYADOKARI 深草開土町,京都市伏見区深草開土町９６−１ 96番地1,5,2,"lodging, point_of_interest, establishment",34.9709828,135.7719262,ChIJb6fEyZkPAWAR0gkOe8p8pwc
 shared house Imakumano,京都市東山区今熊野南日吉町３８,,,"lodging, point_of_interest, establishment",34.9838331,135.7814012,ChIJH7zVBF0PAWARpwCwXKUg8l4
@@ -192,8 +192,8 @@ Kyoto inn higashiyama,京都市東山区今熊野南日吉町３０−２１,4,5
 HOTEL キュテラ,京都市山科区東野中井ノ上町１３−３３,3.3,34,"lodging, point_of_interest, establishment",34.98081560000001,135.8214493,ChIJZ5Xz54QOAWARM4oCsPIUs8M
 シェアハウスYADOKARI 椥辻,京都市山科区椥辻番所ケ口町２番地１,5,1,"lodging, point_of_interest, establishment",34.9710422,135.8107139,ChIJrT8d4E4PAWARMgtL3rq-sMs
 Connections合同会社,京都市山科区椥辻番所ケ口町４５−１２ インサイトコート椥辻,1,1,"real_estate_agency, travel_agency, lodging, point_of_interest, establishment",34.9715459,135.8108,ChIJe0qCDYsOAWARuwtRifaDGBM
-キャンプバーT-BASE,京都市山科区東野森野町２−５２ サワダビル 1F西館,4.6,5,"bar, campground, lodging, park, store, restaurant, food, point_of_interest, establishment",34.9746214,135.8081409,ChIJMTKWY3YPAWARANopkeGKlJI
-レンタルルームLair,京都市山科区椥辻中在家町21−２３ 三興レジデンス 203,5,1,"school, lodging, point_of_interest, establishment",34.97472,135.8161733,ChIJwdbx-TEPAWAR5NR-b7NTk-U
+キャンプバーT-BASE,京都市山科区東野森野町２−５２ サワダビル 1F西館,4.6,5,"bar, campground, park, lodging, restaurant, food, store, point_of_interest, establishment",34.9746214,135.8081409,ChIJMTKWY3YPAWARANopkeGKlJI
+レンタルルームLair,京都市山科区椥辻中在家町21−２３ 三興レジデンス 203,5,1,"lodging, school, point_of_interest, establishment",34.97472,135.8161733,ChIJwdbx-TEPAWAR5NR-b7NTk-U
 Tripinn,京都市山科区西野岸ノ下町８−９ 8番地9,3.8,5,"lodging, point_of_interest, establishment",34.98704529999999,135.8064177,ChIJk03yHMEOAWARfm3kABt1ObA
 Hostel 8,京都市山科区西野楳本町８−１６,,,"lodging, point_of_interest, establishment",34.986694,135.802515,ChIJo9AK7C4PAWARFOLe8E1dd8w
 乃斯NICE京都民宿,京都市山科区竹鼻地蔵寺南町３−１,4.1,17,"lodging, point_of_interest, establishment",34.987238,135.8152725,ChIJtcYmOZYOAWARUmyN0rshkhM
@@ -209,8 +209,8 @@ Oyado nishishichijyo,京都市下京区西七条北西野町,4.1,7,"lodging, poi
 京都西院料理好きの家 (My Pavilion to Arashiyama嵐山 & Gion祇園),京都市中京区壬生東淵田町１８−６,5,3,"lodging, point_of_interest, establishment",35.0052696,135.7351158,ChIJ20MQ0coHAWARup3eKNCbCug
 花築・青楓ハウス,京都市右京区西院西三蔵町２５,4.6,38,"lodging, point_of_interest, establishment",35.00194119999999,135.7313453,ChIJJYQc4q0HAWAR52iReIXpYXI
 ホテルインテル京都五条,京都市右京区西院南高田町１６ インテル,1.8,4,"lodging, point_of_interest, establishment",34.9965685,135.7319207,ChIJVVVpSkgGAWARM1MgXAwMxZk
-エスペリアホテル京都 サウナ 大浴場,京都市下京区中堂寺壬生川町２２,4.2,684,"spa, lodging, restaurant, food, point_of_interest, health, establishment",34.99648829999999,135.744918,ChIJC9-9hyQGAWARMCoz289YqEM
-トランクルーム GoodBox西京極,京都市右京区西京極東大丸町１０−１ 宏和運輸倉庫,,,"moving_company, campground, storage, park, lodging, point_of_interest, establishment",34.995055,135.7209904,ChIJ4SffyVMGAWARSBWC_JJhv_M
+エスペリアホテル京都 サウナ 大浴場,京都市下京区中堂寺壬生川町２２,4.2,684,"spa, lodging, health, restaurant, food, point_of_interest, establishment",34.99648829999999,135.744918,ChIJC9-9hyQGAWARMCoz289YqEM
+トランクルーム GoodBox西京極,京都市右京区西京極東大丸町１０−１ 宏和運輸倉庫,,,"moving_company, campground, park, lodging, storage, point_of_interest, establishment",34.995055,135.7209904,ChIJ4SffyVMGAWARSBWC_JJhv_M
 五条ホール,京都市下京区中堂寺北町４４,3,1,"lodging, point_of_interest, establishment",34.9964473,135.739816,ChIJNXSiWToGAWAROzR8hJq3kGg
 Guesthouse KYOTO COMPASS ～京町家の小さなお宿～,京都市下京区西七条市部町１１５,4.9,171,"lodging, point_of_interest, establishment",34.99040350000001,135.7353468,ChIJX0b6Hj8GAWARpYv9EMhwhys
 Nishishichijō Nishihattandachō,京都市下京区西七条西八反田町６３,5,4,"lodging, point_of_interest, establishment",34.9932778,135.7369596,ChIJ-XZQQTkGAWARJBp0BiWRCB8
@@ -232,7 +232,7 @@ FUJITAYA Kyoto,京都市下京区中堂寺藪ノ内町２２−５,4.6,101,"lodg
 京都マイペンション,京都市右京区西院小米町３４−１２,3.6,38,"lodging, point_of_interest, establishment",35.00404450000001,135.7243245,ChIJ6Y04G7IHAWARXC6-k-kHbpM
 京町家小宿 ｎａｏ炬乃座 別邸 梅小路,京都市下京区朱雀内畑町８−３３,4.7,29,"lodging, point_of_interest, establishment",34.98822639999999,135.7414354,ChIJfxCaohcGAWARNrz8X_mzJOc
 民泊コンシュルジュ 京都Visitors,京都市中京区壬生神明町１−１３５,3,2,"home_goods_store, lodging, store, point_of_interest, establishment",35.0066285,135.7383943,ChIJBaA_pcsHAWARvTCRkh_1tnY
-きんせ旅館,京都市下京区西新屋敷太夫町７９,4.4,143,"cafe, bakery, lodging, store, food, point_of_interest, establishment",34.99248900000001,135.7439337,ChIJDb9X6iIGAWARFbTLt3-neZ0
+きんせ旅館,京都市下京区西新屋敷太夫町７９,4.4,143,"cafe, bakery, lodging, store, point_of_interest, food, establishment",34.99248900000001,135.7439337,ChIJDb9X6iIGAWARFbTLt3-neZ0
 やまと旅館,京都市下京区朱雀正会町１５,2.8,29,"lodging, point_of_interest, establishment",34.990147,135.7431536,ChIJEZ18ERgGAWAR0lGfxEWldjI
 旅館 さんき,京都市下京区西新屋敷下之町２９ 旅館さんき,4.2,33,"lodging, point_of_interest, establishment",34.992687,135.7437132,ChIJHY3FwiIGAWARaKRJ7fWgPic
 藏や 大宮島原,京都市下京区 大宮通花屋町下がル大宮二丁目575番地,4.7,7,"lodging, point_of_interest, establishment",34.992613,135.7490255,ChIJy1C6bR8GAWARJvSjWlQhPt0
@@ -250,7 +250,7 @@ KYOSAKURA,京都市下京区西七条東石ケ坪町16,4.5,4,"lodging, point_of_
 ゲストハウス金魚/GuestHouse Kingyo,京都市下京区西七条市部町80番地,,,"lodging, point_of_interest, establishment",34.9912243,135.7360677,ChIJW12KQP4HAWAR_1p93ReDfq0
 京都東急ホテル,京都市下京区柿本町５８０ 堀川通五条下ル,4.2,3440,"lodging, point_of_interest, establishment",34.9951315,135.7516374,ChIJNVg1AyAGAWARce4JCgb-RyE
 東横INN京都四条大宮,京都市中京区壬生坊城町６−２,3.8,810,"lodging, point_of_interest, establishment",35.0040224,135.7473717,ChIJQ2Ks1C4GAWAR_jNbYyI_-5E
-ホテルカンラ京都,京都市下京区北町１９０ 烏丸通六条下る,4.5,844,"art_gallery, restaurant, lodging, food, point_of_interest, establishment",34.9936736,135.7594668,ChIJqWarf6MIAWARxWFweS3QtZc
+ホテルカンラ京都,京都市下京区北町１９０ 烏丸通六条下る,4.5,844,"art_gallery, lodging, restaurant, food, point_of_interest, establishment",34.9936736,135.7594668,ChIJqWarf6MIAWARxWFweS3QtZc
 Kyoto Hana Hostel - 京都花宿 -,京都市下京区粉川町２２９,4.4,427,"lodging, point_of_interest, establishment",34.9896989,135.7605558,ChIJtU9Q9a8IAWARwIvyuKVm_wU
 松葉家旅館,京都市下京区上珠数屋町 通東洞院西入,4.6,356,"lodging, point_of_interest, establishment",34.9922222,135.7608333,ChIJoSAKJ6UIAWARV2r-8-MLfIc
 K's House Kyoto - Backpackers Hostel,京都市下京区納屋町４２１,4.5,1462,"lodging, point_of_interest, establishment",34.989786,135.7648534,ChIJJQML4bAIAWARftLKAhi1sTc
@@ -279,7 +279,7 @@ The 別荘 そそ【京都の貸切宿】,京都市下京区若宮町４６５ �
 Le studio Gojo takakura,"五条高倉上る, 165-2 亀屋町, 下京区 京都市",4.4,119,"lodging, point_of_interest, establishment",34.9967279,135.7625737,ChIJWT2Zw7wIAWAR8ZIIK5VziRQ
 花籠京都,京都市下京区平岡町３８３,5,6,"lodging, point_of_interest, establishment",34.99211939999999,135.7665862,ChIJ8QIaUrcIAWARC2GvhXEN3q8
 旅館 中島家,京都市下京区西前町３６９,4.3,45,"lodging, point_of_interest, establishment",35.00177900000001,135.762455,ChIJkYXXnZcIAWAR0Pp5O1DXfC0
-中国料理 翡翠苑／ホテル日航プリンセス京都,京都市下京区高橋町630番地 2F 烏丸高辻東入,4.2,81,"meal_takeaway, lodging, restaurant, food, point_of_interest, establishment",35.0004604,135.760628,ChIJF7FjtZsIAWARuvZsJHt5WZQ
+中国料理 翡翠苑／ホテル日航プリンセス京都,京都市下京区高橋町630番地 2F 烏丸高辻東入,4.2,81,"meal_takeaway, lodging, restaurant, point_of_interest, food, establishment",35.0004604,135.760628,ChIJF7FjtZsIAWARuvZsJHt5WZQ
 旅館 京らく Ryokan Kyoraku,京都市下京区粉川町２３１ 不明門通七条上る,4.7,84,"lodging, point_of_interest, establishment",34.989765,135.760412,ChIJd4Gpiq8IAWAR3tpTgFJLO7k
 なごみ旅館 悠,京都市下京区上若宮町94,3.8,174,"lodging, point_of_interest, establishment",34.99420200000001,135.7557977,ChIJU63wdKEIAWARO6_rPxFutpc
 京いすけ,京都市中京区百足屋町３７８−３,4.9,73,"lodging, point_of_interest, establishment",35.0058577,135.7570858,ChIJoSNGUZsIAWAR0dVqn7qR73I
@@ -349,7 +349,7 @@ COCORO ( Kyoto Misasagi stationTraditional Entire House) 京都 山科御陵駅�
 Guest House Kyoto-Yamashina,京都市山科区竹鼻竹ノ街道町６５ ６５－１－２,5,4,"lodging, point_of_interest, establishment",34.990717,135.8158598,ChIJCVVb6uYPAWARdClInorwtg0
 COCORO HOTEL KYOTO,京都市山科区御陵鴨戸町５５,4.5,23,"lodging, point_of_interest, establishment",34.9959471,135.8016961,ChIJlTM2WvwPAWAR9NAz-00Q9vE
 (株)ケン・ホテルマネジメント京都,京都市山科区安朱桟敷町２３−２３ 23番地,,,"lodging, point_of_interest, establishment",34.99140559999999,135.8167402,ChIJPzziUjEPAWARlGr_PdbmKiY
-京都山科 ホテル山楽,京都市山科区安朱桟敷町２３−２３ 23番地,4.3,458,"spa, restaurant, lodging, food, point_of_interest, health, establishment",34.99140559999999,135.8167402,ChIJfUA5pV0PAWAROhaM8NZ2bqE
+京都山科 ホテル山楽,京都市山科区安朱桟敷町２３−２３ 23番地,4.3,458,"spa, lodging, health, restaurant, food, point_of_interest, establishment",34.99140559999999,135.8167402,ChIJfUA5pV0PAWAROhaM8NZ2bqE
 Jacky's House,京都市山科区竹鼻立原町２４−１２,5,2,"lodging, point_of_interest, establishment",34.98874189999999,135.8192432,ChIJkzpnbAkPAWARk8kFcPhAF4w
 カーサ―坂脇,京都市山科区日ノ岡坂脇町３２,1,5,"lodging, point_of_interest, establishment",34.9963096,135.797381,ChIJr4lVffQPAWAR1uhASi8t52E
 源ヴィラ 京都日ノ岡,京都市山科区日ノ岡朝田町３０−１１ 源ヴィラ,,,"lodging, point_of_interest, establishment",34.9971234,135.7969679,ChIJJZwRgFYPAWAR7eolzHjZi_o
@@ -363,7 +363,7 @@ Come on UP Share house Yamashina - カモンアップ 山科シェアハウス,�
 二条椿や,京都市中京区西ノ京池ノ内町１６−２０ 京燃ガレージ,4.5,6,"lodging, point_of_interest, establishment",35.0105324,135.7464816,ChIJVYfUTtMHAWARx4EB6EPX-yA
 ANA Crowne Plaza Kyoto by IHG,"Nijojo-Mae, Horikawa-Dori, 中京区 京都市",4,2682,"lodging, point_of_interest, establishment",35.0140901,135.7491371,ChIJbWJTDoAIAWARCJAJWDq832o
 ゲストハウス 二条庵,京都市中京区聚楽廻東町３１−９,4.5,4,"lodging, point_of_interest, establishment",35.0191027,135.7416004,ChIJnZ8B38QHAWARuFSdwECnJl8
-ウサギノネドコ京都店,京都市中京区西ノ京南原町３７,4.2,322,"cafe, lodging, store, food, point_of_interest, establishment",35.0108633,135.7338086,ChIJcWKZzckHAWARg4cx-SWu9FY
+ウサギノネドコ京都店,京都市中京区西ノ京南原町３７,4.2,322,"cafe, lodging, food, point_of_interest, store, establishment",35.0108633,135.7338086,ChIJcWKZzckHAWARg4cx-SWu9FY
 Stay SAKURA Kyoto 二条城西Ⅰ,京都市中京区聚楽廻中町５１番地１０,4.3,12,"lodging, point_of_interest, establishment",35.0166941,135.7411349,ChIJDQvZY8UHAWARMn3QC3XIJ5w
 Miro Kyoto Nijo Hotel,"２０-1 西ノ京勧学院町, 中京区 京都市",4.2,200,"lodging, point_of_interest, establishment",35.00899899999999,135.7444649,ChIJD06WLS0GAWARlp2PInqRjUk
 弁天庵,京都市上京区弁天町305番地9,4.5,4,"lodging, point_of_interest, establishment",35.0219045,135.7437728,ChIJXTj9XdsHAWARtEROZEAIpm4
@@ -386,7 +386,7 @@ Guest House Oumi 近江,京都市中京区西ノ京永本町１９−１１,4.6,
 桂倶楽部,京都市北区大将軍東鷹司町３８,4.8,4,"lodging, point_of_interest, establishment",35.022876,135.730089,ChIJHVrgTZQHAWARzAFeXiRMXss
 "Guesthouse ""Ogawatei""",京都市右京区 26 Hanazono Imachi,4.2,9,"lodging, point_of_interest, establishment",35.0199938,135.7185521,ChIJO769BZwHAWAR_MfvPcXIuTY
 二条じゅらく庵,京都市中京区聚楽廻松下町１１−３１,3.8,4,"lodging, point_of_interest, establishment",35.0196296,135.7387011,ChIJQYJHCcQHAWAR5Hqw4azNgiU
-アーバンホテル京都二条プレミアム,京都市中京区聚楽廻南町２５−５,4.1,1560,"lodging, restaurant, food, point_of_interest, establishment",35.0151662,135.7421578,ChIJxcG-0c8HAWAR4sL--wKR4u4
+アーバンホテル京都二条プレミアム,京都市中京区聚楽廻南町２５−５,4.1,1560,"lodging, restaurant, point_of_interest, food, establishment",35.0151662,135.7421578,ChIJxcG-0c8HAWAR4sL--wKR4u4
 雲町屋 小楽 KumoMachiya KORAKU,京都市中京区聚楽廻南町３０−５,5,1,"lodging, point_of_interest, establishment",35.0145227,135.7433906,ChIJrSvpw9EHAWARBtF2KzPFkOE
 蔵や 千本三条,京都市中京区西ノ京南聖町２１−１５ 中京,4.8,6,"lodging, point_of_interest, establishment",35.0088855,135.7435483,ChIJwYGItNIHAWARK8fLV7g0tVo
 福家・四季二条,京都市中京区聚楽廻西町１６３−１３,4.5,4,"lodging, point_of_interest, establishment",35.019707,135.740962,ChIJn78Z7cQHAWARhgVSBOAJJmQ
@@ -404,8 +404,8 @@ Shiki Homes | NENE 音々,京都市上京区 ９４ 94 百万遍町 上京区,4.
 ホテルモントレ京都,京都市中京区饅頭屋町６０４ 烏丸通三条下ル,4.1,3083,"lodging, point_of_interest, establishment",35.0078486,135.7594248,ChIJEdzLq-0GAWARfUpevjWDfcE
 ハートンホテル京都,京都市中京区船屋町４０５ ハートンホテル京都 1F,4,1772,"lodging, point_of_interest, establishment",35.0116946,135.7609035,ChIJlakf5IUIAWARRkz_eK81n2E
 NISHIYAMA RYOKAN,京都市中京区山本町４３３,4.6,240,"lodging, point_of_interest, establishment",35.013105,135.766303,ChIJaaPzJ4wIAWARpNHs1WVqmTc
-京都ブライトンホテル,京都市上京区仕丁町３３０,4.4,2912,"cafe, bar, lodging, restaurant, food, point_of_interest, establishment",35.0243557,135.7557497,ChIJSdpNdnQIAWARDdhcmpKx0ec
-ホテルオークラ京都,京都市中京区 河原町御池,4.3,4845,"bar, lodging, restaurant, food, point_of_interest, establishment",35.01184819999999,135.7694265,ChIJLS3WZJIIAWARqQv8aoODVqs
+京都ブライトンホテル,京都市上京区仕丁町３３０,4.4,2912,"cafe, lodging, bar, restaurant, point_of_interest, food, establishment",35.0243557,135.7557497,ChIJSdpNdnQIAWARDdhcmpKx0ec
+ホテルオークラ京都,京都市中京区 河原町御池,4.3,4845,"lodging, bar, restaurant, point_of_interest, food, establishment",35.01184819999999,135.7694265,ChIJLS3WZJIIAWARqQv8aoODVqs
 松井別館 花かんざし Matsui Bekkan Hanakanzashi,京都市中京区堀之上町１２６ 高倉東入,4.2,260,"lodging, point_of_interest, establishment",35.007479,135.7627743,ChIJZwoDQJAIAWARKXhAcOYyGQ0
 シティーペンション トミーリッチイン京都,京都市中京区福長町１０９−２ シティペンショントミーリッチイン京都 富小路通三条上る,3.7,43,"lodging, point_of_interest, establishment",35.0093254,135.7648575,ChIJ8ywE3JEIAWARLSie0fhSHUY
 ホテル本能寺,京都市中京区下本能寺前町５２２,4.1,226,"lodging, point_of_interest, establishment",35.0105831,135.7683275,ChIJg4LAZJIIAWAR846tP-P5HGo
@@ -418,9 +418,9 @@ Grace Villa Nijo-jo castle,京都市中京区宮木町４６０ 姉小路通小�
 ゲストハウスhannari,京都市上京区櫛笥町６９３ 693番地 日暮通下立売下る,4.3,81,"lodging, point_of_interest, establishment",35.01975290000001,135.7476902,ChIJ3Syq_tkHAWARceVpnWr7-e0
 旅館三賀 【中京区店】,京都市中京区中之町 富小路通三条下ル,3.8,90,"lodging, point_of_interest, establishment",35.008444,135.7650636,ChIJaTxNvpEIAWARVjHkyhzzWzE
 日昇別荘,京都市中京区中之町１３ 富小路西入る,3.8,176,"lodging, point_of_interest, establishment",35.008473,135.7647169,ChIJE3p9x5EIAWARQeFb5vQ5efE
-要庵西富家,京都市中京区骨屋之町５６２,4.7,87,"lodging, store, point_of_interest, establishment",35.0066265,135.7647797,ChIJ06EAXoMIAWARJSzSIXIrZtU
+要庵西富家,京都市中京区骨屋之町５６２,4.7,87,"lodging, point_of_interest, store, establishment",35.0066265,135.7647797,ChIJ06EAXoMIAWARJSzSIXIrZtU
 Hostel MUNDO (月土),京都市上京区天秤町５９６,3.7,104,"lodging, point_of_interest, establishment",35.0204225,135.7478737,ChIJJS6N8dkHAWARIEN2Ey1ENbE
-からすま京都ホテル,京都市下京区からすま 京都ホテル 烏丸通り四条下ル,3.9,2204,"bar, lodging, restaurant, food, point_of_interest, establishment",35.0019147,135.7592402,ChIJJZA8nJkIAWAR7LtIJBnqbA4
+からすま京都ホテル,京都市下京区からすま 京都ホテル 烏丸通り四条下ル,3.9,2204,"lodging, bar, restaurant, food, point_of_interest, establishment",35.0019147,135.7592402,ChIJJZA8nJkIAWAR7LtIJBnqbA4
 ホテルビスタプレミオ京都［河原町通］,京都市中京区松ケ枝町４５７ ホテルビスタプレミオ京都河原町通 河原町通六角西入ル,4.3,734,"lodging, point_of_interest, establishment",35.0079208,135.7682044,ChIJh-aPopMIAWARiHVjSN-Qz8g
 ヴィアイン京都四条室町,京都市中京区山伏山町５５１−２,3.9,1028,"lodging, point_of_interest, establishment",35.005569,135.7578909,ChIJMw2jRpsIAWARBe0_OM5UH6A
 EN HOTEL Kyoto（エンホテル京都）,京都市下京区妙伝寺町６９８ 西洞院通四条下る,3.5,794,"lodging, point_of_interest, establishment",35.00316489999999,135.7556246,ChIJWaGwJR8JAWAR0fdjZzIG3FA
@@ -442,8 +442,8 @@ KKR 京都くに荘,京都市上京区河原町通 荒神口上る東入東桜�
 京都 花ホテル,京都市東山区二町目53番1号,4.3,270,"lodging, point_of_interest, establishment",35.0096245,135.7750535,ChIJwW3m7-sIAWARAZDvSbDp0Dw
 ジャムホステル京都祇園,京都市東山区常磐町 １７０ 四条通 川端通上ル,3.6,115,"lodging, point_of_interest, establishment",35.00494559999999,135.7724552,ChIJZbcol-oIAWARqufr8bQNlDM
 ゲストハウス 雅順,京都市東山区夷町１６５,4.7,221,"lodging, point_of_interest, establishment",35.0091887,135.7833321,ChIJ2yCeh90IAWARIn7JWFrH_t0
-ホテル平安の森京都,京都市左京区岡崎東天王町51,3.6,1205,"restaurant, lodging, food, point_of_interest, establishment",35.01715059999999,135.7895176,ChIJqeJAF-IIAWARtVg0F27vkas
-吉田山荘,京都市左京区吉田下大路町５９−１,4.5,140,"cafe, restaurant, lodging, food, point_of_interest, establishment",35.0228238,135.7866358,ChIJA02SQPwIAWARpKYP20HSFFE
+ホテル平安の森京都,京都市左京区岡崎東天王町51,3.6,1205,"lodging, restaurant, food, point_of_interest, establishment",35.01715059999999,135.7895176,ChIJqeJAF-IIAWARtVg0F27vkas
+吉田山荘,京都市左京区吉田下大路町５９−１,4.5,140,"cafe, lodging, restaurant, food, point_of_interest, establishment",35.0228238,135.7866358,ChIJA02SQPwIAWARpKYP20HSFFE
 ますや旅館,京都市左京区大菊町１４５,3.9,59,"lodging, point_of_interest, establishment",35.0105403,135.7741333,ChIJEcrSaewIAWARWRKZ-ESLxCA
 京町家の宿 ぎおんの宿,京都市東山区西之町２３１,4.3,17,"lodging, point_of_interest, establishment",35.0063464,135.7742579,ChIJNbiyQ-oIAWARo-SkzSDJjN4
 祇園 吉今,京都市東山区西之町２２９,4.6,180,"lodging, point_of_interest, establishment",35.006333,135.7740123,ChIJi_-3XOoIAWARyTUnGc-Ttmg
@@ -518,7 +518,7 @@ JURAKU RO プチ ホテル アッラ セタ,京都市上京区北新在家町３
 京の宿-華-西陣 Guest house HANA nishijin,京都市上京区西柳町５７２−１,4.8,51,"lodging, clothing_store, point_of_interest, store, establishment",35.0309123,135.7380987,ChIJp0V_LeEHAWARYgvZEf59fCs
 京町家ゲストハウス K-style金閣寺,京都市北区紫野上柏野町46−２２,4.3,25,"lodging, point_of_interest, establishment",35.036737,135.736933,ChIJhe3L9fMHAWARUZfnVMD0l14
 Theatre and Library Residence -Kyoto Murasakino-,京都市北区北区紫野上柏野町３２−１２,3,1,"lodging, point_of_interest, establishment",35.0362731,135.7379963,ChIJbYTSX_EHAWARmTnpF6RZKHs
-花ノ坊 金閣寺道,京都市北区紫野南花ノ坊町４１−３,4.7,19,"travel_agency, lodging, real_estate_agency, point_of_interest, establishment",35.0384864,135.73759,ChIJhd79I_QHAWARYRySBqIwxiI
+花ノ坊 金閣寺道,京都市北区紫野南花ノ坊町４１−３,4.7,19,"lodging, travel_agency, real_estate_agency, point_of_interest, establishment",35.0384864,135.73759,ChIJhd79I_QHAWARYRySBqIwxiI
 笹舟庵,京都市北区紫野北舟岡町１８−１０,5,2,"lodging, real_estate_agency, point_of_interest, establishment",35.0368644,135.741207,ChIJwevl8_AHAWARZVef8RCoF6A
 東籬,京都市上京区笹屋町三丁目６３９,4.9,167,"lodging, point_of_interest, establishment",35.0281484,135.7426779,ChIJS0Z11ecHAWARg29nUjbG_Uk
 好运屋 lucky house,京都市上京区西富仲町６８５−１９,3.5,2,"lodging, point_of_interest, establishment",35.024307,135.7433502,ChIJVemmJ90HAWAR_IKMmvAACQo
@@ -544,7 +544,7 @@ Eikohsya,京都市北区平野八丁柳町６４−５,,,"spa, lodging, point_of
 宿屋 西陣荘,京都市上京区西町４５８ 元誓願寺通り堀川東入,3.5,46,"lodging, point_of_interest, establishment",35.0285994,135.7528752,ChIJX8ihCsAHAWAR3CXpL1bxcSI
 ビーアンドビー きおと,京都市北区紫野石龍町４２,5,6,"lodging, point_of_interest, establishment",35.0432884,135.7503144,ChIJ_6v9ef4HAWAR9AGzBC3gpOE
 西陣 米田邸,京都市上京区竪神明町４７２−１,,,"lodging, point_of_interest, establishment",35.0275879,135.7504512,ChIJTf1dFNIHAWAR8i0WjUNyEKs
-ザ グラン リゾート エレガンテ京都,"中立売通堀川東入る, ６６−３ 東橋詰町, 京都市上京区上京区",4,92,"restaurant, lodging, food, point_of_interest, establishment",35.0251878,135.752408,ChIJ-XIsGXYIAWARGETubHBM5S0
+ザ グラン リゾート エレガンテ京都,"中立売通堀川東入る, ６６−３ 東橋詰町, 京都市上京区上京区",4,92,"lodging, restaurant, point_of_interest, food, establishment",35.0251878,135.752408,ChIJ-XIsGXYIAWARGETubHBM5S0
 京町家の宿 中乃庵,京都市上京区中之町５１９−２３,4,2,"lodging, point_of_interest, establishment",35.0165562,135.751015,ChIJE_TsCtYHAWARVDXmUNRTRfo
 ホテル リオンドール,京都市中京区八町目５３８ シティペンションリオンドール 東堀川通夷川上る,4,103,"lodging, point_of_interest, establishment",35.0153159,135.752333,ChIJtVIWfH8IAWARzVLP8Cgj5W8
 五月庵,京都市北区紫野上御所田町１６,4.9,23,"lodging, point_of_interest, establishment",35.0418865,135.7513619,ChIJ21BWkP0HAWARIo4HOR-iN1A
@@ -557,7 +557,7 @@ Ichijo Premium,京都市上京区如水町７０,4.8,5,"lodging, point_of_intere
 Shiki Homes | AKI 秋,京都市上京区,4.4,14,"lodging, point_of_interest, establishment",35.0273208,135.7530333,ChIJVVXs63UIAWAR8RPKqcaZdLM
 Shiki Homes | Haru 春,京都市上京区革堂西町５３０−１９,4.3,16,"lodging, point_of_interest, establishment",35.0273086,135.753173,ChIJa6uI6XUIAWAR58QeuasQzpA
 30 USD - guesthouse kyoto,京都市上京区上京区一条横町５６３,,,"lodging, point_of_interest, establishment",35.0264107,135.7538896,ChIJJSR5enYIAWARjLN939DCUw4
-ゲストハウス 百万遍 Cross,京都市左京区左京区田中大堰町１５７,4.4,81,"restaurant, lodging, food, point_of_interest, establishment",35.02945680000001,135.7777583,ChIJyTFeuFsIAWAR4R9LidVuNFU
+ゲストハウス 百万遍 Cross,京都市左京区左京区田中大堰町１５７,4.4,81,"lodging, restaurant, food, point_of_interest, establishment",35.02945680000001,135.7777583,ChIJyTFeuFsIAWAR4R9LidVuNFU
 RAKUCHO RYOKAN,京都市左京区下鴨東半木町６７,4.8,76,"lodging, point_of_interest, establishment",35.0448767,135.7674589,ChIJ6cd-IhcIAWARRSWCY3qCbHs
 ザ ホーム,京都市上京区東桜町２１−１１ いずみビル 河原町通荒神口上る,,,"lodging, point_of_interest, establishment",35.0221948,135.7690452,ChIJV_eZUWAIAWARdS3xh1qfN94
 京都楓ホテル鴨川,京都市左京区田中下柳町１０−５,3.9,19,"lodging, point_of_interest, establishment",35.0284379,135.7733767,ChIJS5wxzaoJAWARPMVWeH-XTA8
@@ -610,7 +610,7 @@ Tanaka Nishihinokuchicho Hagiwara,京都市左京区田中西樋ノ口町Hagiwar
 旧里の前荘,京都市左京区田中里ノ前町８０,,,"lodging, point_of_interest, establishment",35.032844,135.7813618,ChIJl6fmVmUJAWARkgnyGBBIuow
 うたひ ーUTAHIー,京都市左京区浄土寺石橋町２９,,,"lodging, point_of_interest, establishment",35.0271671,135.7925588,ChIJaX7J6mUJAWARu73fKty_wTs
 Shared House Satolet | さとれ,京都市左京区田中里ノ内町１１３,,,"lodging, point_of_interest, establishment",35.0339906,135.7814332,ChIJGQB3WQMJAWARC5ciRWrAOQE
-三休荘町家 MIYACO,京都市左京区浄土寺東田町１７,,,"travel_agency, lodging, real_estate_agency, point_of_interest, establishment",35.0262922,135.791892,ChIJN7NYKAIJAWAR6euwPlV3EpI
+三休荘町家 MIYACO,京都市左京区浄土寺東田町１７,,,"lodging, travel_agency, real_estate_agency, point_of_interest, establishment",35.0262922,135.791892,ChIJN7NYKAIJAWAR6euwPlV3EpI
 洛水コーポ,京都市左京区田中高原町１９,3.5,2,"lodging, point_of_interest, establishment",35.037673,135.78663,ChIJpyJ9jE0IAWARab761pcO0Qw
 ゲストハウス茶山,"Kyoto-shi, Kyoto-fu, Sakyo-ku, Tanaka Nishitakaharachou 14-6, Kyoto",5,16,"lodging, point_of_interest, establishment",35.0373707,135.7853324,ChIJU8iR4k0IAWARZ3IVokjrxRQ
 Ginkakuji Vacation Home 銀閣寺ﾊﾞｹｰｼｮﾝﾎｰﾑ,京都市左京区銀閣寺前町１７,,,"cafe, lodging, food, point_of_interest, establishment",35.0278173,135.7949638,ChIJD07qAQQJAWARrZTLbAwuhUQ
@@ -619,7 +619,7 @@ Ginkakuji Vacation Home 銀閣寺ﾊﾞｹｰｼｮﾝﾎｰﾑ,京都市左京�
 シェアハウス 倉橋キッチン＆プラス,京都市左京区吉田神楽岡町4番地 倉橋マンション 新館2階3階,,,"lodging, point_of_interest, establishment",35.0243312,135.7879803,ChIJ1WnnTB8JAWARSpKMg4964ok
 エクセレント マキ,京都市左京区田中野神町３０,3,3,"lodging, point_of_interest, establishment",35.0344131,135.7798324,ChIJY8NrOUYJAWARVVa9fCYt8xc
 北白川天然ラジウム温泉 えいせん京,京都市左京区北白川地蔵谷町１−１２５,4.3,153,"lodging, point_of_interest, establishment",35.037795,135.809078,ChIJhXEcS3UJAWARU8LXUoP4Aac
-まこと苑吉川,京都市左京区北白川琵琶町４４−３,4.3,4,"restaurant, lodging, food, point_of_interest, establishment",35.031554,135.7997125,ChIJWcPznAgJAWARDblSirYeeX0
+まこと苑吉川,京都市左京区北白川琵琶町４４−３,4.3,4,"lodging, restaurant, food, point_of_interest, establishment",35.031554,135.7997125,ChIJWcPznAgJAWARDblSirYeeX0
 京別邸 銀閣寺,京都市左京区銀閣寺町７２−４,,,"lodging, point_of_interest, establishment",35.0276328,135.7961598,ChIJHdVDPAQJAWAR5lSA9p1Icz0
 シェアハウス NAKAZONOSO-京都銀閣寺,京都市左京区吉田神楽岡町１５５−４,,,"lodging, point_of_interest, establishment",35.0232761,135.7896689,ChIJMQf4Ab0JAWARvZUDvYOO5Y4
 Yoshida house,京都市左京区浄土寺真如町１８−６,,,"lodging, point_of_interest, establishment",35.0235198,135.7884741,ChIJ2SxmjjIJAWAReUjplRe2MR0
@@ -633,10 +633,10 @@ monthly apartment Haulu,京都市北区大宮玄琢北町２８−４ ハウル,
 光悦荘,京都市北区鷹峯北鷹峯町４６,4,8,"lodging, point_of_interest, establishment",35.0543461,135.7288612,ChIJ__8DST-oAWARLAwrdTt2HQQ
 しょうざんリゾート 西門,京都市北区衣笠鏡石町４７,4,3,"lodging, point_of_interest, establishment",35.0499586,135.73281,ChIJQyvERgCpAWAR-UGwvosXAEc
 東急ハーヴェストクラブ京都鷹峯&VIALA,京都市北区鷹峯土天井町２２ 東急ハーヴェストクラブ京都鷹峯,5,1,"lodging, point_of_interest, establishment",35.050449,135.7337676,ChIJJ222JQCpAWARsjePBI2pPbI
-ROKU KYOTO、LXRホテルズ＆リゾーツ,京都市北区衣笠鏡石町４４−１,4.5,1064,"spa, lodging, point_of_interest, establishment",35.0476127,135.7346805,ChIJe5gElQGpAWARvTkIO-v6H8I
+ROKU KYOTO、LXRホテルズ＆リゾーツ,京都市北区衣笠鏡石町４４−１,4.5,1064,"lodging, spa, point_of_interest, establishment",35.0476127,135.7346805,ChIJe5gElQGpAWARvTkIO-v6H8I
 S長谷川,"６-6 鷹峯藤林町, 北区 京都市",,,"lodging, point_of_interest, establishment",35.0490688,135.7359942,ChIJtzE8VLupAWARoS-xGg7RDdQ
 SOMEYA 嶋田くみこ (染織家),京都市北区大北山原谷乾町42 番 20,,,"lodging, point_of_interest, establishment",35.0479483,135.7180784,ChIJWYyZ7jSpAWAR__sx08VTbdQ
-RAKUMANKAN洛曼館,京都市北区紫野泉堂町３１,5,3,"cafe, lodging, food, point_of_interest, establishment",35.0477004,135.7407906,ChIJTUhP5f6pAWARTM1MFxsA1v0
+RAKUMANKAN洛曼館,京都市北区紫野泉堂町３１,5,3,"cafe, lodging, point_of_interest, food, establishment",35.0477004,135.7407906,ChIJTUhP5f6pAWARTM1MFxsA1v0
 侘寂-雅,京都市北区衣笠赤阪町１−１１６,5,2,"lodging, point_of_interest, establishment",35.0404341,135.7238744,ChIJqSz7TACpAWARMwtGEBLuk60
 栄庵SAKAEAN,京都市北区衣笠西御所ノ内町２９,5,3,"lodging, point_of_interest, establishment",35.0405052,135.7326639,ChIJf9vDf3ipAWAR_LiDZXLt3g8
 ＳＴＨ紫野,Japan,,,"lodging, point_of_interest, establishment",35.0435399,135.7388291,ChIJvZ-2xh2oAWARJuYQ-7GCwQM
@@ -726,7 +726,7 @@ Daisenji Lodge Ing Red,京都市上京区森之木町４７５−２,,,"lodging,
 Kyoto Kurama inn（京都鞍馬INN）,京都市上京区上御霊前町４１２ ３,5,2,"lodging, point_of_interest, establishment",35.0362521,135.7594307,ChIJV2iecX8JAWARTRJRvKlvmks
 ブリリア京都松ヶ崎,京都市左京区松ケ崎小竹藪町３−３,3.7,3,"lodging, point_of_interest, establishment",35.0520204,135.7890682,ChIJqwRFBQMJAWARNc99sTq6Ujw
 平八茶屋,京都市左京区山端川岸町８−１,4.4,317,"lodging, restaurant, food, point_of_interest, establishment",35.0540129,135.7911324,ChIJeZzsxMwJAWARMgQ8lujT0Tw
-ホテル ハノハノ モザイク,京都市左京区上高野上荒蒔町８−８ ＳＡＫＵＲＡＨＯＴＥＬＭＯＳＡＩＣ,2.1,7,"travel_agency, lodging, point_of_interest, establishment",35.0585436,135.7913978,ChIJFe9W6tIJAWARlGLRsg5_AVE
+ホテル ハノハノ モザイク,京都市左京区上高野上荒蒔町８−８ ＳＡＫＵＲＡＨＯＴＥＬＭＯＳＡＩＣ,2.1,7,"lodging, travel_agency, point_of_interest, establishment",35.0585436,135.7913978,ChIJFe9W6tIJAWARlGLRsg5_AVE
 関西セミナーハウス,京都市左京区一乗寺竹ノ内町２３,3.9,96,"lodging, point_of_interest, establishment",35.050572,135.8033086,ChIJGSVbP7kJAWARZFGtn8ELtpE
 いるや宿コンドミニアム,京都市左京区修学院北沮沢町２−８,4.7,3,"lodging, point_of_interest, establishment",35.0569,135.7991031,ChIJM6RqUc8JAWARIrk8rouLElc
 いろり庵 宿ya,京都市左京区山端川端町７−７,4.4,8,"lodging, point_of_interest, establishment",35.0510712,135.789941,ChIJocaYyjQIAWARlf1BSfGkQF4
