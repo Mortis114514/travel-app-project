@@ -1887,16 +1887,6 @@ def create_pagination_buttons(current_page, total_pages):
      Input('selected-restaurant-id', 'data')],
     prevent_initial_call=False
 )
-@app.callback(
-    [Output('page-content', 'children'),
-     Output('page-mode', 'data')],
-    [Input('url', 'pathname'),
-     Input('session-store', 'data'),
-     Input('page-mode', 'data'),
-     Input('view-mode', 'data'),
-     Input('selected-restaurant-id', 'data')],
-    prevent_initial_call=False
-)
 def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_data):
     """根據 session 狀態、view_mode 和 pathname 顯示對應頁面"""
     # 清理過期 sessions
