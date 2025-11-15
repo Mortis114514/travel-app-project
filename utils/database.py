@@ -6,6 +6,7 @@ import sqlite3
 import pandas as pd
 from typing import List, Optional, Tuple, Dict, Any
 from contextlib import contextmanager
+import math
 
 # 数据库路径
 DB_PATH = './data/restaurants.db'
@@ -397,3 +398,170 @@ def get_nearby_restaurants(lat: float, long: float, limit: int = 5, exclude_id: 
         results = restaurants_with_distance[:limit]
 
     return results
+
+def get_all_hotels():
+    """從資料庫獲取所有旅館資料"""
+    try:
+        hotels_df = pd.read_csv('data/Hotels.csv')
+        hotel_types_df = pd.read_csv('data/HotelTypes.csv')
+        types_df = pd.read_csv('data/Types.csv')
+        
+        # 合併旅館類型資訊
+        hotels_with_types = hotels_df.merge(
+            hotel_types_df, 
+            on='Hotel_ID', 
+            how='left'
+        ).merge(
+            types_df, 
+            on='Type_ID', 
+            how='left'
+        )
+        
+        # 將同一旅館的多個類型合併為列表
+        hotels_aggregated = hotels_with_types.groupby('Hotel_ID').agg({
+            'HotelName': 'first',
+            'Address': 'first',
+            'Rating': 'first',
+            'UserRatingsTotal': 'first',
+            'Lat': 'first',
+            'Long': 'first',
+            'Place_ID': 'first',
+            'TypeName': lambda x: list(x.dropna().unique()) if x.notna().any() else []
+        }).reset_index()
+        
+        # 重命名欄位以保持一致性
+        hotels_aggregated.rename(columns={'TypeName': 'Types'}, inplace=True)
+        
+        return hotels_aggregated
+    except Exception as e:
+        print(f"Error loading hotels: {e}")
+        return pd.DataFrame()
+
+def get_hotel_by_id(hotel_id: int) -> Optional[dict]:
+    """根據 ID 獲取單一旅館資料"""
+    try:
+        hotels_df = get_all_hotels()
+        hotel = hotels_df[hotels_df['Hotel_ID'] == hotel_id]
+        
+        if hotel.empty:
+            return None
+        
+        return hotel.iloc[0].to_dict()
+    except Exception as e:
+        print(f"Error getting hotel by ID: {e}")
+        return None
+
+def get_random_top_hotels(n: int = 5, min_rating: float = 4.0) -> pd.DataFrame:
+    """隨機選擇高評分旅館"""
+    try:
+        hotels_df = get_all_hotels()
+        
+        # 篩選高評分旅館
+        top_hotels = hotels_df[hotels_df['Rating'] >= min_rating]
+        
+        # 隨機選擇
+        if len(top_hotels) > n:
+            return top_hotels.sample(n=n, random_state=None)
+        else:
+            return top_hotels
+    except Exception as e:
+        print(f"Error getting random top hotels: {e}")
+        return pd.DataFrame()
+
+def search_hotels(
+    keyword: Optional[str] = None,
+    hotel_type: Optional[str] = None,
+    min_rating: Optional[float] = None,
+    sort_by: str = 'rating_desc'
+) -> pd.DataFrame:
+    """搜尋旅館 (支援多種篩選條件)"""
+    try:
+        hotels_df = get_all_hotels()
+        
+        # 關鍵字搜尋 (名稱或地址)
+        if keyword:
+            keyword_lower = keyword.lower()
+            mask = (
+                hotels_df['HotelName'].str.lower().str.contains(keyword_lower, na=False) |
+                hotels_df['Address'].str.lower().str.contains(keyword_lower, na=False)
+            )
+            hotels_df = hotels_df[mask]
+        
+        # 類型篩選
+        if hotel_type:
+            hotels_df = hotels_df[
+                hotels_df['Types'].apply(lambda types: hotel_type in types if isinstance(types, list) else False)
+            ]
+        
+        # 評分篩選
+        if min_rating:
+            hotels_df = hotels_df[hotels_df['Rating'] >= min_rating]
+        
+        # 排序
+        if sort_by == 'rating_desc':
+            hotels_df = hotels_df.sort_values('Rating', ascending=False)
+        elif sort_by == 'rating_asc':
+            hotels_df = hotels_df.sort_values('Rating', ascending=True)
+        elif sort_by == 'reviews_desc':
+            hotels_df = hotels_df.sort_values('UserRatingsTotal', ascending=False)
+        elif sort_by == 'name_asc':
+            hotels_df = hotels_df.sort_values('HotelName', ascending=True)
+        
+        return hotels_df
+    except Exception as e:
+        print(f"Error searching hotels: {e}")
+        return pd.DataFrame()
+
+def get_unique_hotel_types() -> List[str]:
+    """獲取所有唯一的旅館類型"""
+    try:
+        types_df = pd.read_csv('data/Types.csv')
+        return sorted(types_df['TypeName'].unique().tolist())
+    except Exception as e:
+        print(f"Error getting hotel types: {e}")
+        return []
+
+def get_nearby_hotels(lat: float, lon: float, limit: int = 5, exclude_id: Optional[int] = None) -> List[dict]:
+    """獲取附近的旅館 (基於經緯度計算距離)"""
+    try:
+        hotels_df = get_all_hotels()
+        
+        # 排除指定的旅館
+        if exclude_id:
+            hotels_df = hotels_df[hotels_df['Hotel_ID'] != exclude_id]
+        
+        # 計算距離 (使用 Haversine 公式)
+        def haversine_distance(lat1, lon1, lat2, lon2):
+            R = 6371  # 地球半徑 (公里)
+            dlat = math.radians(lat2 - lat1)
+            dlon = math.radians(lon2 - lon1)
+            a = (math.sin(dlat / 2) ** 2 + 
+                 math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * 
+                 math.sin(dlon / 2) ** 2)
+            c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+            return R * c
+        
+        hotels_df['distance'] = hotels_df.apply(
+            lambda row: haversine_distance(lat, lon, row['Lat'], row['Long']),
+            axis=1
+        )
+        
+        # 排序並限制數量
+        nearby = hotels_df.nsmallest(limit, 'distance')
+        
+        return nearby.to_dict('records')
+    except Exception as e:
+        print(f"Error getting nearby hotels: {e}")
+        return []
+
+def get_hotels_by_type(type_name: str) -> pd.DataFrame:
+    """根據類型獲取旅館列表"""
+    try:
+        hotels_df = get_all_hotels()
+        filtered = hotels_df[
+            hotels_df['Types'].apply(lambda types: type_name in types if isinstance(types, list) else False)
+        ]
+        return filtered.sort_values('Rating', ascending=False)
+    except Exception as e:
+        print(f"Error getting hotels by type: {e}")
+        return pd.DataFrame()

@@ -29,18 +29,20 @@ from utils.database import (
     get_unique_cuisines,
     get_restaurants_by_category,
     get_restaurant_by_id,
-    get_nearby_restaurants
+    get_nearby_restaurants,
+    get_all_hotels,
+    get_hotel_by_id,
+    get_random_top_hotels,
+    search_hotels,
+    get_unique_hotel_types,
+    get_nearby_hotels,
+    get_hotels_by_type
 )
 
 
 restaurants_df = get_all_restaurants()  # 從數據庫加載（用於選項列表）
+hotels_df = get_all_hotels()
 
-
-
-# 切換頁面（如有需要可以自行增加）
-def load_data(tab):
-    if tab in ('travel', 'planner'):
-        return df_merged
 
 # 隨機選擇4-5星餐廳（使用數據庫查詢）
 def get_random_top_restaurants(n=5):
@@ -1083,6 +1085,319 @@ def create_restaurant_detail_content(data):
         })
     ])
 
+def create_hotel_card(hotel):
+    """創建旅館卡片 (類似餐廳卡片)"""
+    # 處理類型列表
+    types_text = ', '.join(hotel['Types'][:2]) if isinstance(hotel['Types'], list) and hotel['Types'] else 'Hotel'
+    
+    card_content = html.Div([
+        html.Img(
+            src='/assets/food_dirtyrice.png',  # 可以替換為旅館圖片
+            className='card-image'
+        ),
+        html.Div([
+            html.Div(hotel['HotelName'], className='card-title'),
+            html.Div(types_text, className='card-subtitle'),
+            html.Div([
+                html.I(className='fas fa-star'),
+                html.I(className='fas fa-star'),
+                html.I(className='fas fa-star'),
+                html.I(className='fas fa-star'),
+                html.I(className='fas fa-star'),
+                html.Span(f"{hotel['Rating']:.1f}")
+            ], className='card-rating'),
+            html.Div([
+                html.I(className='fas fa-map-marker-alt', style={'marginRight': '5px', 'fontSize': '0.8rem'}),
+                html.Span(hotel['Address'][:30] + '...' if len(hotel['Address']) > 30 else hotel['Address'],
+                         style={'fontSize': '0.75rem', 'color': '#888'})
+            ], style={'marginTop': '5px'})
+        ], className='card-overlay')
+    ], className='destination-card')
+    
+    return html.Div(
+        card_content,
+        id={'type': 'hotel-card', 'index': hotel['Hotel_ID']},
+        n_clicks=0,
+        style={'cursor': 'pointer'}
+    )
+
+def create_hotel_type_options():
+    """創建旅館類型選項列表"""
+    options = []
+    
+    # 清除選擇選項
+    options.append(
+        html.Div([
+            html.I(className='fas fa-times', style={'marginRight': '8px'}),
+            'Clear Selection'
+        ],
+        className='custom-dropdown-item',
+        id={'type': 'hotel-type-option', 'index': '__CLEAR__'},
+        n_clicks=0,
+        style={'borderBottom': '2px solid rgba(222, 181, 34, 0.3)', 'fontWeight': '500'})
+    )
+    
+    # 獲取所有旅館類型
+    hotel_types = get_unique_hotel_types()
+    
+    for hotel_type in hotel_types:
+        options.append(
+            html.Div(hotel_type,
+                    className='custom-dropdown-item',
+                    id={'type': 'hotel-type-option', 'index': hotel_type},
+                    n_clicks=0)
+        )
+    
+    return options
+
+def create_hotel_search_bar():
+    """創建旅館搜尋欄 (類似餐廳搜尋)"""
+    return html.Div([
+        html.Div([
+            html.Div([
+                html.I(className='fas fa-search'),
+                dcc.Input(
+                    id='search-hotel',
+                    type='text',
+                    placeholder='Search hotels by name or location...',
+                    className='search-input',
+                    debounce=False
+                )
+            ], className='search-input-group', style={'position': 'relative', 'flex': '2'}),
+            
+            html.Div([
+                html.Div([
+                    html.I(className='fas fa-hotel', id='hotel-type-icon',
+                           style={'cursor': 'pointer', 'color': '#deb522'}, n_clicks=0),
+                    html.Span(id='hotel-type-selected-text',
+                             children='Hotel Type',
+                             style={'cursor': 'pointer', 'marginLeft': '10px', 'color': '#888888'})
+                ], id='hotel-type-trigger', style={'display': 'flex', 'alignItems': 'center'}, n_clicks=0),
+                
+                html.Div([
+                    html.Div(create_hotel_type_options(),
+                            style={'maxHeight': '300px', 'overflowY': 'auto'})
+                ], id='hotel-type-dropdown-menu', className='custom-dropdown-menu',
+                   style={'display': 'none'})
+            ], className='search-input-group', style={'flex': '1.3', 'minWidth': '200px', 'position': 'relative'}),
+            
+            html.Button([
+                html.I(className='fas fa-search', style={'marginRight': '8px'}),
+                'Search'
+            ], id='search-hotel-btn', className='search-btn', n_clicks=0)
+        ], className='search-container')
+    ], style={'width': '100%'})
+
+def create_hotel_detail_page(hotel_id):
+    """創建旅館詳情頁面框架"""
+    return html.Div([
+        # 頁首
+        html.Div([
+            html.Div([
+                html.Button([
+                    html.I(className='fas fa-arrow-left', style={'marginRight': '8px'}),
+                    'Back'
+                ], id='hotel-detail-back-btn', className='btn-secondary', n_clicks=0,
+                   style={'marginRight': 'auto'}),
+                
+                # 用戶頭像
+                html.Div([
+                    html.Div([
+                        html.I(className='fas fa-user-circle', style={'fontSize': '2rem', 'color': '#deb522'})
+                    ], id='user-avatar-hotel-detail', className='user-avatar', n_clicks=0,
+                       style={'cursor': 'pointer', 'display': 'flex', 'alignItems': 'center'}),
+                ], style={'position': 'relative'})
+            ], style={
+                'maxWidth': '1400px',
+                'margin': '0 auto',
+                'padding': '1rem 2rem',
+                'display': 'flex',
+                'alignItems': 'center',
+                'justifyContent': 'space-between'
+            })
+        ], style={
+            'backgroundColor': '#1a1a1a',
+            'borderBottom': '1px solid #333',
+            'position': 'sticky',
+            'top': '0',
+            'zIndex': '1000'
+        }),
+        
+        # 主要內容容器
+        html.Div(id='hotel-detail-content', children=[
+            create_loading_state()
+        ])
+    ], style={'backgroundColor': '#1a1a1a', 'minHeight': '100vh'})
+
+def create_hotel_detail_content(hotel_data):
+    """根據旅館數據創建詳細頁面內容"""
+    if not hotel_data:
+        return create_loading_state()
+    
+    if 'error' in hotel_data:
+        return create_error_state(hotel_data.get('error', 'An error occurred'))
+    
+    # 生成星星評分
+    rating = hotel_data.get('Rating', 0)
+    full_stars = int(rating)
+    stars = []
+    for i in range(5):
+        if i < full_stars:
+            stars.append(html.I(className='fas fa-star', style={'color': '#deb522', 'marginRight': '4px'}))
+        else:
+            stars.append(html.I(className='far fa-star', style={'color': '#555555', 'marginRight': '4px'}))
+    
+    # 處理類型列表
+    types = hotel_data.get('Types', [])
+    if isinstance(types, list):
+        types_text = ', '.join(types)
+    else:
+        types_text = 'Hotel'
+    
+    return html.Div([
+        # Hero 區域
+        html.Div([
+            html.Img(src='/assets/food_dirtyrice.png', style={
+                'width': '100%',
+                'height': '100%',
+                'objectFit': 'cover',
+                'position': 'absolute',
+                'top': '0',
+                'left': '0'
+            }),
+            html.Div(style={
+                'position': 'absolute',
+                'bottom': '0',
+                'left': '0',
+                'right': '0',
+                'height': '70%',
+                'background': 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 70%, transparent 100%)'
+            }),
+            html.Div([
+                html.H1(hotel_data.get('HotelName', 'Hotel'), style={
+                    'color': '#ffffff',
+                    'fontSize': '3rem',
+                    'fontWeight': 'bold',
+                    'marginBottom': '0.5rem',
+                    'textShadow': '2px 2px 4px rgba(0,0,0,0.5)'
+                }),
+                html.Div([
+                    html.Div(stars + [
+                        html.Span(f"{rating:.1f}", style={
+                            'color': '#deb522',
+                            'fontSize': '1.8rem',
+                            'fontWeight': 'bold',
+                            'marginLeft': '12px'
+                        })
+                    ], style={'marginBottom': '1rem'}),
+                    html.Div([
+                        html.Span([
+                            html.I(className='fas fa-hotel', style={'marginRight': '6px'}),
+                            types_text
+                        ], style={
+                            'backgroundColor': 'rgba(222, 181, 34, 0.2)',
+                            'border': '1px solid #deb522',
+                            'color': '#deb522',
+                            'padding': '8px 16px',
+                            'borderRadius': '20px',
+                            'marginRight': '10px',
+                            'fontSize': '1rem'
+                        }),
+                        html.Span([
+                            html.I(className='fas fa-comment', style={'marginRight': '6px'}),
+                            f"{int(hotel_data.get('UserRatingsTotal', 0))} reviews"
+                        ], style={
+                            'backgroundColor': 'rgba(222, 181, 34, 0.2)',
+                            'border': '1px solid #deb522',
+                            'color': '#deb522',
+                            'padding': '8px 16px',
+                            'borderRadius': '20px',
+                            'fontSize': '1rem'
+                        })
+                    ])
+                ])
+            ], style={
+                'position': 'absolute',
+                'bottom': '3rem',
+                'left': '2rem',
+                'right': '2rem',
+                'maxWidth': '1400px',
+                'margin': '0 auto'
+            })
+        ], style={
+            'position': 'relative',
+            'height': '50vh',
+            'minHeight': '400px',
+            'overflow': 'hidden'
+        }),
+        
+        # 詳細資訊區域
+        html.Div([
+            html.Div([
+                # 左側：地址和地圖
+                html.Div([
+                    html.Div([
+                        html.H3('Location', style={'color': '#deb522', 'marginBottom': '1rem'}),
+                        html.Div([
+                            html.I(className='fas fa-map-marker-alt', style={'marginRight': '12px', 'color': '#deb522'}),
+                            html.Span(hotel_data.get('Address', 'N/A'))
+                        ], style={'color': '#ffffff', 'marginBottom': '1rem'}),
+                        # Google Map
+                        html.Iframe(
+                            src=f"https://www.google.com/maps?q={hotel_data.get('Lat')},{hotel_data.get('Long')}&z=15&output=embed",
+                            style={
+                                'width': '100%',
+                                'height': '300px',
+                                'border': 'none',
+                                'borderRadius': '8px',
+                                'marginTop': '1rem'
+                            }
+                        )
+                    ], style={
+                        'backgroundColor': '#1a1a1a',
+                        'border': '1px solid #333',
+                        'borderRadius': '12px',
+                        'padding': '1.5rem',
+                        'marginBottom': '1.5rem'
+                    })
+                ], style={'flex': '1'}),
+                
+                # 右側：評分和附近旅館
+                html.Div([
+                    html.Div([
+                        html.H3('Rating Details', style={'color': '#deb522', 'marginBottom': '1rem'}),
+                        html.Div([
+                            html.Div(f"{rating:.1f}", style={
+                                'fontSize': '3rem',
+                                'fontWeight': 'bold',
+                                'color': '#deb522'
+                            }),
+                            html.Div(f"Based on {int(hotel_data.get('UserRatingsTotal', 0))} reviews", 
+                                    style={'color': '#888', 'marginTop': '0.5rem'})
+                        ])
+                    ], style={
+                        'backgroundColor': '#1a1a1a',
+                        'border': '1px solid #333',
+                        'borderRadius': '12px',
+                        'padding': '1.5rem',
+                        'marginBottom': '1.5rem'
+                    }),
+                    
+                    # 附近旅館
+                    html.Div(id='nearby-hotels-section')
+                ], style={'flex': '1'})
+            ], style={
+                'maxWidth': '1400px',
+                'margin': '0 auto',
+                'padding': '3rem 2rem',
+                'display': 'grid',
+                'gridTemplateColumns': '1fr 1fr',
+                'gap': '2rem'
+            })
+        ])
+    ])
+
+
 ##########################
 ####   初始化應用程式   ####
 ##########################
@@ -1114,6 +1429,10 @@ app.layout = html.Div([
     dcc.Store(id='search-results-store', storage_type='memory'),
     dcc.Store(id='current-page-store', data=1, storage_type='memory'),
     dcc.Store(id='search-params-store', storage_type='memory'),
+    #新增旅館相關 Stores (3個)
+    dcc.Store(id='search-hotel-type', storage_type='memory'),  # 👈 存儲選中的旅館類型
+    dcc.Store(id='hotel-search-results-store', storage_type='memory'),  # 👈 存儲旅館搜尋結果
+    dcc.Store(id='hotel-current-page-store', data=1, storage_type='memory'),  # 👈 存儲旅館列表分頁狀態
     html.Div(id='scroll-trigger', style={'display': 'none'}),  # 隱藏的滾動觸發器
     html.Div(id='page-content', style={'minHeight': '100vh'})
 ], style={'backgroundColor': '#1a1a1a', 'minHeight': '100vh'})
@@ -1178,22 +1497,30 @@ def create_main_layout():
             ], className='hero-content')
         ], className='hero-section'),
 
-        # ===== Curated Content Section - Destinations You'll Love =====
+        # ===== Restaurants Section (現有) =====
         html.Div([
             html.Div([
                 html.H2('Restaurants You\'ll Love', className='section-title'),
-                html.A([
-                    'View All',
-                    html.I(className='fas fa-arrow-right')
-                ], className='view-all-link', id='view-all-restaurants', n_clicks=0)
+                html.A(['View All', html.I(className='fas fa-arrow-right')], 
+                      className='view-all-link', id='view-all-restaurants', n_clicks=0)
             ], className='section-header'),
-
-            # Horizontal scrolling container
             html.Div([
                 html.Div(id='destinations-card-container', className='card-row')
             ], className='card-scroll-container')
         ], className='content-section'),
-
+        
+        # ===== Hotels Section (新增) =====
+        html.Div([
+            html.Div([
+                html.H2('Hotels You\'ll Love', className='section-title'),
+                html.A(['View All', html.I(className='fas fa-arrow-right')], 
+                      className='view-all-link', id='view-all-hotels', n_clicks=0)
+            ], className='section-header'),
+            html.Div([
+                html.Div(id='hotels-card-container', className='card-row')
+            ], className='card-scroll-container')
+        ], className='content-section'),
+        
         # ===== Personalized Content Section - Your Saved Trips & Favorites =====
         html.Div([
             html.H2('Your Saved Trips & Favorites', className='section-title'),
@@ -1328,6 +1655,109 @@ def create_restaurant_list_page():
 
     ], style={'backgroundColor': '#0a0a0a', 'minHeight': '100vh'})
 
+def create_hotel_list_page():
+    """創建旅館列表頁面（類似餐廳列表頁）"""
+    return html.Div([
+        # ===== Header with back button =====
+        html.Div([
+            html.Div([
+                # Back button and title
+                html.Div([
+                    html.Button([
+                        html.I(className='fas fa-arrow-left'),
+                        html.Span('Back', style={'marginLeft': '8px'})
+                    ], id={'type': 'back-btn', 'index': 'hotel-list'}, className='btn-secondary', n_clicks=0),
+                    html.H1('Hotel Directory', style={
+                        'color': '#deb522',
+                        'marginLeft': '2rem',
+                        'fontSize': '2rem',
+                        'fontWeight': 'bold'
+                    })
+                ], style={'display': 'flex', 'alignItems': 'center'}),
+
+                # User Avatar
+                html.Div([
+                    html.Div([
+                        html.I(className='fas fa-user')
+                    ], className='user-avatar', id='user-avatar-hotel-list', n_clicks=0),
+
+                    # Dropdown Menu
+                    html.Div([
+                        html.Div([
+                            html.I(className='fas fa-user-circle'),
+                            html.Span('Profile')
+                        ], className='dropdown-item', id='dropdown-profile-hotel-list', n_clicks=0),
+                        html.Div([
+                            html.I(className='fas fa-cog'),
+                            html.Span('Settings')
+                        ], className='dropdown-item', id='dropdown-settings-hotel-list', n_clicks=0),
+                        html.Div([
+                            html.I(className='fas fa-sign-out-alt'),
+                            html.Span('Logout')
+                        ], className='dropdown-item', id='menu-logout-hotel-list', n_clicks=0),
+                    ], id='user-dropdown-hotel-list', className='user-dropdown')
+                ], style={'position': 'relative'})
+            ], style={
+                'display': 'flex',
+                'justifyContent': 'space-between',
+                'alignItems': 'center',
+                'maxWidth': '1400px',
+                'margin': '0 auto',
+                'padding': '1.5rem 2rem'
+            })
+        ], style={
+            'backgroundColor': '#1a1a1a',
+            'borderBottom': '1px solid #333',
+            'position': 'sticky',
+            'top': '0',
+            'zIndex': '1000'
+        }),
+
+        # Store for dropdown state
+        dcc.Store(id='dropdown-open-hotel-list', data=False, storage_type='memory'),
+
+        # ===== Search and Filter Section =====
+        html.Div([
+            html.Div([
+                # Search bar
+                create_hotel_search_bar(),
+
+                # Search stats
+                html.Div(id='hotel-search-stats', style={
+                    'color': '#888888',
+                    'fontSize': '0.95rem',
+                    'marginTop': '1rem'
+                })
+            ], style={
+                'maxWidth': '1000px',
+                'margin': '0 auto'
+            })
+        ], style={
+            'backgroundColor': '#0a0a0a',
+            'padding': '2rem',
+            'borderBottom': '1px solid #222'
+        }),
+
+        # ===== Hotel Grid =====
+        html.Div([
+            html.Div(id='hotel-grid', className='restaurant-list-grid')
+        ], style={
+            'backgroundColor': '#0a0a0a',
+            'padding': '2rem',
+            'minHeight': '60vh'
+        }),
+
+        # ===== Pagination Controls =====
+        html.Div(id='hotel-pagination-controls', style={
+            'display': 'flex',
+            'justifyContent': 'center',
+            'alignItems': 'center',
+            'gap': '0.5rem',
+            'padding': '2rem',
+            'backgroundColor': '#0a0a0a'
+        })
+    ], style={'backgroundColor': '#0a0a0a', 'minHeight': '100vh'})
+
 # 創建分頁按鈕
 def create_pagination_buttons(current_page, total_pages):
     """創建數字分頁按鈕 (1 2 3 4 5 ...)"""
@@ -1457,6 +1887,16 @@ def create_pagination_buttons(current_page, total_pages):
      Input('selected-restaurant-id', 'data')],
     prevent_initial_call=False
 )
+@app.callback(
+    [Output('page-content', 'children'),
+     Output('page-mode', 'data')],
+    [Input('url', 'pathname'),
+     Input('session-store', 'data'),
+     Input('page-mode', 'data'),
+     Input('view-mode', 'data'),
+     Input('selected-restaurant-id', 'data')],
+    prevent_initial_call=False
+)
 def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_data):
     """根據 session 狀態、view_mode 和 pathname 顯示對應頁面"""
     # 清理過期 sessions
@@ -1468,13 +1908,25 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
         if user_id:
             # 已登入，根據 pathname 和 view_mode 顯示不同頁面
 
+            # === 🆕 新增：檢查是否為旅館詳細頁面路由 ===
+            if pathname and pathname.startswith('/hotel/'):
+                try:
+                    hotel_id = int(pathname.split('/')[-1])
+                    return create_hotel_detail_page(hotel_id), 'main'
+                except (ValueError, IndexError):
+                    # 無效的旅館 ID，重定向到首頁
+                    return create_main_layout(), 'main'
+
             # 檢查是否為餐廳詳細頁面路由
-            if pathname and pathname.startswith('/restaurant/'):
+            elif pathname and pathname.startswith('/restaurant/'):
                 if restaurant_id_data and restaurant_id_data.get('id'):
                     return create_restaurant_detail_page(restaurant_id_data['id']), 'main'
                 else:
-                    # 無效的餐廳 ID，重定向到餐廳列表
                     return create_restaurant_list_page(), 'main'
+
+            # === 🆕 新增：檢查旅館列表頁面 ===
+            elif view_mode == 'hotel-list':
+                return create_hotel_list_page(), 'main'
 
             # 檢查餐廳列表頁面
             elif view_mode == 'restaurant-list':
@@ -1489,6 +1941,7 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
         return create_register_layout(), 'register'
 
     return create_login_layout(), 'login'
+
 
 # 切換到註冊頁面
 @app.callback(
@@ -1682,6 +2135,58 @@ def populate_destinations_cards(pathname):
         cards.append(card)
 
     return cards
+
+@app.callback(
+    Output('hotels-card-container', 'children'),
+    [Input('url', 'pathname')]
+)
+def populate_hotels_cards(pathname):
+    """填充旅館卡片（橫向滾動）"""
+    top_hotels = get_random_top_hotels(10, min_rating=4.0)
+    
+    if len(top_hotels) > 0:
+        cards = [create_hotel_card(row) for _, row in top_hotels.iterrows()]
+        return cards
+    else:
+        return [html.Div("No hotels found", style={'color': '#888', 'padding': '2rem'})]
+
+@app.callback(
+    Output('hotels-card-container', 'children', allow_duplicate=True),
+    [Input('search-hotel-btn', 'n_clicks'),
+     Input('search-hotel-type', 'data')],
+    [State('search-hotel', 'value')],
+    prevent_initial_call=True
+)
+def handle_hotel_search(n_clicks, hotel_type, keyword):
+    """處理旅館搜尋（主頁預覽）"""
+    filtered_hotels = search_hotels(
+        keyword=keyword,
+        hotel_type=hotel_type,
+        sort_by='rating_desc'
+    )
+    
+    if len(filtered_hotels) > 0:
+        preview = filtered_hotels.head(10)
+        cards = [create_hotel_card(row) for _, row in preview.iterrows()]
+        return cards
+    else:
+        return [html.Div([
+            html.I(className='fas fa-hotel', style={'fontSize': '3rem', 'color': '#deb522', 'marginBottom': '1rem'}),
+            html.H3('No hotels found', style={'color': '#ffffff'}),
+            html.P('Try adjusting your search criteria', style={'color': '#888888'})
+        ], style={'textAlign': 'center', 'padding': '4rem', 'width': '100%'})]
+    
+@app.callback(
+    Output('view-mode', 'data', allow_duplicate=True),
+    [Input('view-all-hotels', 'n_clicks')],
+    prevent_initial_call=True
+)
+def navigate_to_hotel_list(n_clicks):
+    """導航到旅館列表頁面"""
+    if n_clicks:
+        print(f"🔍 DEBUG: View All Hotels clicked! n_clicks={n_clicks}")  # Debug 訊息
+        return 'hotel-list'
+    raise PreventUpdate
 
 # Handle Tab Navigation
 @app.callback(
@@ -2297,6 +2802,58 @@ def handle_search(n_clicks, cuisine, rating, destination, price_range, min_revie
             html.P('Try adjusting your search criteria', style={'color': '#888888'})
         ], style={'textAlign': 'center', 'padding': '4rem', 'width': '100%'})]
 
+# Toggle hotel type dropdown menu
+@app.callback(
+    [Output('hotel-type-dropdown-menu', 'style'),
+     Output('active-dropdown', 'data', allow_duplicate=True)],
+    [Input('hotel-type-trigger', 'n_clicks'),
+     Input('hotel-type-icon', 'n_clicks')],
+    [State('active-dropdown', 'data')],
+    prevent_initial_call=True
+)
+def toggle_hotel_type_menu(trigger_clicks, icon_clicks, active_dropdown):
+    """切換旅館類型下拉菜單"""
+    if not trigger_clicks and not icon_clicks:
+        raise PreventUpdate
+    
+    if active_dropdown == 'hotel-type':
+        return {'display': 'none'}, None
+    else:
+        return {'display': 'block'}, 'hotel-type'
+
+# Handle hotel type selection
+@app.callback(
+    [Output('search-hotel-type', 'data'),
+     Output('hotel-type-selected-text', 'children'),
+     Output('hotel-type-selected-text', 'style'),
+     Output('hotel-type-dropdown-menu', 'style', allow_duplicate=True),
+     Output('active-dropdown', 'data', allow_duplicate=True)],
+    [Input({'type': 'hotel-type-option', 'index': ALL}, 'n_clicks')],
+    [State({'type': 'hotel-type-option', 'index': ALL}, 'id')],
+    prevent_initial_call=True
+)
+def select_hotel_type_option(n_clicks_list, option_ids):
+    """選擇旅館類型選項"""
+    if not any(n_clicks_list):
+        raise PreventUpdate
+    
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
+    
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    triggered_dict = json.loads(triggered_id)
+    selected_value = triggered_dict['index']
+    
+    if selected_value == '__CLEAR__':
+        return (None, 'Hotel Type',
+                {'cursor': 'pointer', 'marginLeft': '10px', 'color': '#888888'},
+                {'display': 'none'}, None)
+    
+    return (selected_value, selected_value,
+            {'cursor': 'pointer', 'marginLeft': '10px', 'color': '#ffffff'},
+            {'display': 'none'}, None)
+
 # ====== Restaurant List Page Callbacks ======
 
 # Handle search in restaurant list page with advanced filters
@@ -2530,6 +3087,179 @@ def logout_from_dropdown_list(n_clicks, session_data):
         delete_session(session_data['session_id'])
 
     return None
+
+# Toggle user dropdown in hotel list page
+@app.callback(
+    [Output('user-dropdown-hotel-list', 'className'),
+     Output('dropdown-open-hotel-list', 'data')],
+    [Input('user-avatar-hotel-list', 'n_clicks')],
+    [State('dropdown-open-hotel-list', 'data')],
+    prevent_initial_call=True
+)
+def toggle_user_dropdown_hotel_list(n_clicks, is_open):
+    """切換旅館列表頁的使用者下拉選單"""
+    if n_clicks:
+        new_state = not is_open
+        className = 'user-dropdown show' if new_state else 'user-dropdown'
+        return className, new_state
+    raise PreventUpdate
+
+# Handle logout from hotel list page dropdown
+@app.callback(
+    Output('session-store', 'data', allow_duplicate=True),
+    [Input('menu-logout-hotel-list', 'n_clicks')],
+    [State('session-store', 'data')],
+    prevent_initial_call=True
+)
+def logout_from_dropdown_hotel_list(n_clicks, session_data):
+    """從旅館列表頁下拉選單登出"""
+    if not n_clicks:
+        raise PreventUpdate
+
+    if session_data and 'session_id' in session_data:
+        delete_session(session_data['session_id'])
+
+    return None
+
+# ====== Hotel List Page Callbacks ======
+
+# Display hotel list page
+@app.callback(
+    Output('page-content', 'children', allow_duplicate=True),
+    [Input('view-mode', 'data')],
+    [State('session-store', 'data')],
+    prevent_initial_call=True
+)
+def display_hotel_list_page(view_mode, session_data):
+    """顯示旅館列表頁面"""
+    if not (session_data and 'session_id' in session_data):
+        raise PreventUpdate
+    
+    if view_mode == 'hotel-list':
+        return create_hotel_list_page()
+    
+    raise PreventUpdate
+
+# Handle hotel list search
+@app.callback(
+    [Output('hotel-search-results-store', 'data'),
+     Output('hotel-current-page-store', 'data')],
+    [Input('search-hotel-btn', 'n_clicks'),
+     Input('search-hotel-type', 'data')],
+    [State('search-hotel', 'value'),
+     State('view-mode', 'data')],
+    prevent_initial_call=True
+)
+def handle_hotel_list_search(n_clicks, hotel_type, keyword, view_mode):
+    """處理旅館列表頁搜尋"""
+    if view_mode != 'hotel-list':
+        raise PreventUpdate
+    
+    filtered_hotels = search_hotels(
+        keyword=keyword,
+        hotel_type=hotel_type,
+        sort_by='rating_desc'
+    )
+    
+    search_results = filtered_hotels.to_dict('records') if len(filtered_hotels) > 0 else []
+    return search_results, 1
+
+# Update hotel grid
+@app.callback(
+    [Output('hotel-grid', 'children'),
+     Output('hotel-pagination-controls', 'children'),
+     Output('hotel-search-stats', 'children')],
+    [Input('hotel-search-results-store', 'data'),
+     Input('hotel-current-page-store', 'data')],
+    prevent_initial_call=False
+)
+def update_hotel_grid(search_results, current_page):
+    """更新旅館網格和分頁"""
+    if search_results is None:
+        df = search_hotels(sort_by='rating_desc')
+        search_results = df.to_dict('records')
+    
+    if not search_results:
+        return (
+            html.Div([
+                html.I(className='fas fa-hotel', style={'fontSize': '4rem', 'color': '#deb522', 'marginBottom': '2rem'}),
+                html.H3('No hotels found', style={'color': '#ffffff'}),
+                html.P('Try adjusting your search criteria', style={'color': '#888888'})
+            ], style={'textAlign': 'center', 'padding': '4rem'}),
+            html.Div(),
+            ''
+        )
+    
+    # 分頁邏輯
+    items_per_page = 15
+    total_items = len(search_results)
+    total_pages = (total_items + items_per_page - 1) // items_per_page
+    
+    start_idx = (current_page - 1) * items_per_page
+    end_idx = min(start_idx + items_per_page, total_items)
+    current_items = search_results[start_idx:end_idx]
+    
+    # 創建旅館卡片
+    cards = []
+    for hotel in current_items:
+        types_text = ', '.join(hotel['Types'][:2]) if isinstance(hotel['Types'], list) and hotel['Types'] else 'Hotel'
+        
+        card_content = html.Div([
+            html.Img(
+                src='/assets/food_dirtyrice.png',
+                style={'width': '100%', 'height': '200px', 'objectFit': 'cover', 'borderRadius': '8px 8px 0 0'}
+            ),
+            html.Div([
+                html.Div(hotel['HotelName'], style={'color': '#ffffff', 'fontSize': '1.2rem', 'fontWeight': 'bold', 'marginBottom': '0.5rem'}),
+                html.Div(types_text, style={'color': '#deb522', 'fontSize': '0.9rem', 'marginBottom': '0.5rem'}),
+                html.Div([
+                    html.Span([
+                        html.I(className='fas fa-star', style={'color': '#deb522', 'marginRight': '5px'}),
+                        f"{hotel['Rating']:.1f}"
+                    ], style={'marginRight': '1rem'}),
+                    html.Span([
+                        html.I(className='fas fa-comment', style={'color': '#888', 'marginRight': '5px'}),
+                        f"{int(hotel.get('UserRatingsTotal', 0))} reviews"
+                    ])
+                ], style={'color': '#aaaaaa', 'fontSize': '0.85rem', 'marginBottom': '0.5rem'}),
+                html.Div([
+                    html.I(className='fas fa-map-marker-alt', style={'marginRight': '5px'}),
+                    hotel['Address'][:40] + '...' if len(hotel['Address']) > 40 else hotel['Address']
+                ], style={'color': '#888888', 'fontSize': '0.85rem'})
+            ], style={'padding': '1rem'})
+        ], style={
+            'backgroundColor': '#1a1a1a',
+            'borderRadius': '8px',
+            'overflow': 'hidden',
+            'border': '1px solid #333',
+            'transition': 'transform 0.2s, border-color 0.2s',
+            'cursor': 'pointer'
+        })
+        
+        card_wrapper = html.Div(
+            card_content,
+            id={'type': 'hotel-card', 'index': hotel['Hotel_ID']},
+            n_clicks=0
+        )
+        cards.append(card_wrapper)
+    
+    # 創建網格
+    grid = html.Div(cards, style={
+        'display': 'grid',
+        'gridTemplateColumns': 'repeat(auto-fill, minmax(300px, 1fr))',
+        'gap': '1.5rem',
+        'maxWidth': '1400px',
+        'margin': '0 auto'
+    })
+    
+    # 創建分頁按鈕 (複用餐廳的函數)
+    pagination = create_pagination_buttons(current_page, total_pages)
+    
+    stats_text = f"Showing {start_idx + 1}-{end_idx} of {total_items} hotels"
+    
+    return grid, pagination, stats_text
+
+
 
 ##########################################################
 ####  餐廳詳細頁面 Callbacks (Restaurant Detail Page)  ####
@@ -2819,6 +3549,164 @@ def handle_reviews_interaction(clickData, show_all_n_clicks, restaurant_data):
             ], style={'padding': '8px 0', 'borderBottom': '1px solid #222'}))
 
         return html.Div(items)
+    
+##########################################################
+####  旅館詳細頁面 Callbacks (Hotel Detail Page)  ####
+##########################################################
+
+# Callback 1: Handle hotel card click
+@app.callback(
+    Output('url', 'pathname', allow_duplicate=True),
+    [Input({'type': 'hotel-card', 'index': ALL}, 'n_clicks')],
+    [State({'type': 'hotel-card', 'index': ALL}, 'id')],
+    prevent_initial_call=True
+)
+def handle_hotel_card_click(n_clicks_list, card_ids):
+    """處理旅館卡片點擊，導航到詳細頁面"""
+    ctx = callback_context
+    
+    if not ctx.triggered or not any(n_clicks_list):
+        raise PreventUpdate
+    
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    triggered_dict = json.loads(triggered_id)
+    hotel_id = triggered_dict['index']
+    
+    print(f"🔍 DEBUG: Hotel card clicked! hotel_id={hotel_id}")  # Debug 訊息
+    
+    return f'/hotel/{hotel_id}'
+
+# Callback 3: Load hotel detail content
+@app.callback(
+    Output('hotel-detail-content', 'children'),
+    [Input('url', 'pathname')],
+    prevent_initial_call=True
+)
+def load_hotel_detail_content(pathname):
+    """從資料庫載入旅館詳細資料並渲染內容"""
+    if pathname and pathname.startswith('/hotel/'):
+        try:
+            hotel_id = int(pathname.split('/')[-1])
+            hotel_data = get_hotel_by_id(hotel_id)
+            
+            if not hotel_data:
+                return create_error_state('Hotel not found')
+            
+            return create_hotel_detail_content(hotel_data)
+        except Exception as e:
+            return create_error_state(str(e))
+    
+    raise PreventUpdate
+
+# Callback 4: Load nearby hotels
+@app.callback(
+    Output('nearby-hotels-section', 'children'),
+    [Input('url', 'pathname')],
+    prevent_initial_call=True
+)
+def load_nearby_hotels(pathname):
+    """載入附近旅館列表"""
+    if pathname and pathname.startswith('/hotel/'):
+        try:
+            hotel_id = int(pathname.split('/')[-1])
+            hotel_data = get_hotel_by_id(hotel_id)
+            
+            if not hotel_data:
+                raise PreventUpdate
+            
+            lat = hotel_data.get('Lat')
+            lon = hotel_data.get('Long')
+            
+            if lat is None or lon is None:
+                return html.Div()
+            
+            nearby_hotels = get_nearby_hotels(lat, lon, limit=5, exclude_id=hotel_id)
+            
+            if not nearby_hotels:
+                return html.Div()
+            
+            nearby_cards = []
+            for i, nearby in enumerate(nearby_hotels, 1):
+                card = html.Div([
+                    html.Div([
+                        html.Div(f"{i}", style={
+                            'backgroundColor': '#deb522',
+                            'color': '#000',
+                            'width': '24px',
+                            'height': '24px',
+                            'borderRadius': '50%',
+                            'display': 'flex',
+                            'alignItems': 'center',
+                            'justifyContent': 'center',
+                            'fontSize': '0.85rem',
+                            'fontWeight': 'bold',
+                            'marginRight': '12px'
+                        }),
+                        html.Div([
+                            html.Div(nearby['HotelName'], style={'color': '#ffffff', 'fontWeight': '600'}),
+                            html.Div([
+                                html.Span([
+                                    html.I(className='fas fa-star', style={'color': '#deb522', 'marginRight': '4px'}),
+                                    f"{nearby['Rating']:.1f}"
+                                ], style={'marginRight': '12px'}),
+                                html.Span(f"{nearby['distance']:.2f} km", style={'color': '#888'})
+                            ], style={'fontSize': '0.85rem', 'marginTop': '4px'})
+                        ])
+                    ], style={'display': 'flex', 'alignItems': 'center', 'padding': '12px',
+                             'backgroundColor': '#1a1a1a', 'border': '1px solid #333',
+                             'borderRadius': '8px', 'marginBottom': '8px', 'cursor': 'pointer'})
+                ], id={'type': 'nearby-hotel-card', 'index': nearby['Hotel_ID']}, n_clicks=0)
+                nearby_cards.append(card)
+            
+            return html.Div([
+                html.H4([
+                    html.I(className='fas fa-hotel', style={'marginRight': '8px', 'color': '#deb522'}),
+                    f'Nearby Hotels ({len(nearby_hotels)})'
+                ], style={'color': '#ffffff', 'fontSize': '1.1rem', 'marginBottom': '1rem'}),
+                html.Div(nearby_cards)
+            ], style={
+                'backgroundColor': '#1a1a1a',
+                'border': '1px solid #333',
+                'borderRadius': '12px',
+                'padding': '1.5rem'
+            })
+        except:
+            return html.Div()
+    
+    raise PreventUpdate
+
+# Callback 5: Handle nearby hotel click
+@app.callback(
+    Output('url', 'pathname', allow_duplicate=True),
+    [Input({'type': 'nearby-hotel-card', 'index': ALL}, 'n_clicks')],
+    [State({'type': 'nearby-hotel-card', 'index': ALL}, 'id')],
+    prevent_initial_call=True
+)
+def handle_nearby_hotel_click(n_clicks_list, card_ids):
+    """處理附近旅館卡片點擊"""
+    ctx = callback_context
+    
+    if not ctx.triggered or not any(n_clicks_list):
+        raise PreventUpdate
+    
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    triggered_dict = json.loads(triggered_id)
+    hotel_id = triggered_dict['index']
+    
+    return f'/hotel/{hotel_id}'
+
+# Callback 6: Handle back button
+@app.callback(
+    Output('url', 'pathname', allow_duplicate=True),
+    [Input('hotel-detail-back-btn', 'n_clicks')],
+    prevent_initial_call=True
+)
+def handle_hotel_back_button(n_clicks):
+    """處理旅館詳情頁返回按鈕"""
+    if n_clicks:
+        return '/'
+    raise PreventUpdate
+##########################################################
 
 # ====== Image Gallery Carousel Callbacks ======
 
