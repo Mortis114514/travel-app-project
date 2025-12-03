@@ -1397,6 +1397,31 @@ def create_hotel_detail_content(hotel_data):
         ])
     ])
 
+def create_restaurant_map_chart():
+    """Creates a mapbox scatter plot of all restaurants."""
+    df = get_all_restaurants()
+    # Filter out entries without coordinates
+    df = df.dropna(subset=['Lat', 'Long'])
+
+    fig = px.scatter_mapbox(
+        df,
+        lat="Lat",
+        lon="Long",
+        hover_name="Name",
+        hover_data={"TotalRating": True, "FirstCategory": True},
+        color_discrete_sequence=["#deb522"],
+        zoom=11,
+        center={"lat": 35.0116, "lon": 135.7681}, # Center on Kyoto
+        height=600,
+    )
+
+    fig.update_layout(
+        mapbox_style="carto-darkmatter",
+        margin={"r":0,"t":0,"l":0,"b":0},
+        showlegend=False
+    )
+    return dcc.Graph(figure=fig)
+
 
 ##########################
 ####   初始化應用程式   ####
@@ -1548,6 +1573,13 @@ def create_main_layout():
 
             # Article Grid
             html.Div(id='inspiration-grid-container', className='card-grid')
+        ], className='content-section'),
+
+        # ===== NEW: Restaurant Map Section =====
+        html.Div([
+            html.H2('Restaurant Distribution in Kyoto', className='section-title'),
+            html.P('A map showing the location of all restaurants in the dataset.', style={'textAlign': 'center', 'color': '#aaa', 'marginBottom': '2rem'}),
+            create_restaurant_map_chart()
         ], className='content-section')
     ], style={'backgroundColor': '#0a0a0a', 'minHeight': '100vh'})
 
