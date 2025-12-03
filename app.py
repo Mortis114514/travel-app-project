@@ -1364,25 +1364,9 @@ def create_hotel_detail_content(hotel_data):
                 
                 # 右側：評分和附近旅館
                 html.Div([
-                    html.Div([
-                        html.H3('Rating Details', style={'color': '#deb522', 'marginBottom': '1rem'}),
-                        html.Div([
-                            html.Div(f"{rating:.1f}", style={
-                                'fontSize': '3rem',
-                                'fontWeight': 'bold',
-                                'color': '#deb522'
-                            }),
-                            html.Div(f"Based on {int(hotel_data.get('UserRatingsTotal', 0))} reviews", 
-                                    style={'color': '#888', 'marginTop': '0.5rem'})
-                        ])
-                    ], style={
-                        'backgroundColor': '#1a1a1a',
-                        'border': '1px solid #333',
-                        'borderRadius': '12px',
-                        'padding': '1.5rem',
-                        'marginBottom': '1.5rem'
-                    }),
-                    
+                    # Reviews only (we removed Ratings Breakdown and Statistics for hotels)
+                    create_reviews_section(hotel_data),
+
                     # 附近旅館
                     html.Div(id='nearby-hotels-section')
                 ], style={'flex': '1'})
@@ -1458,6 +1442,7 @@ app.layout = html.Div([
     dcc.Store(id='search-hotel-type', storage_type='memory'),  # 👈 存儲選中的旅館類型
     dcc.Store(id='hotel-search-results-store', storage_type='memory'),  # 👈 存儲旅館搜尋結果
     dcc.Store(id='hotel-current-page-store', data=1, storage_type='memory'),  # 👈 存儲旅館列表分頁狀態
+    dcc.Store(id='hotel-detail-data', storage_type='memory'),  # 旅館詳細資料（包含 reviews）
     html.Div(id='scroll-trigger', style={'display': 'none'}),  # 隱藏的滾動觸發器
     html.Div(id='page-content', style={'minHeight': '100vh'})
 ], style={'backgroundColor': '#1a1a1a', 'minHeight': '100vh'})
@@ -1993,15 +1978,26 @@ def switch_to_login(n_clicks):
 @app.callback(
     [Output('session-store', 'data'),
      Output('login-error-message', 'children')],
-    [Input('login-button', 'n_clicks')],
+    [Input('login-button', 'n_clicks'),
+     Input('login-username', 'n_submit'),  # Add n_submit for username field
+     Input('login-password', 'n_submit')],  # Add n_submit for password field
     [State('login-username', 'value'),
      State('login-password', 'value'),
      State('login-remember', 'value')],
     prevent_initial_call=True
 )
-def login(n_clicks, username, password, remember):
+def login(n_clicks, username_n_submit, password_n_submit, username, password, remember):
     """處理使用者登入"""
-    if not n_clicks:
+    # 檢查是哪個輸入觸發了回調
+    ctx = callback_context
+
+    if not ctx.triggered:
+        raise PreventUpdate
+
+    trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
+
+    # 只有當登入按鈕被點擊，或者在使用者名稱/密碼字段中按下了 Enter 鍵時才執行登入邏輯
+    if trigger_id not in ['login-button', 'login-username', 'login-password']:
         raise PreventUpdate
 
     # 驗證輸入
@@ -3387,6 +3383,71 @@ def render_restaurant_detail(restaurant_data):
     # 渲染完整的詳細頁面
     return create_restaurant_detail_content(restaurant_data)
 
+
+# ====== Hotel detail data loader (attach reviews) ======
+@app.callback(
+    Output('hotel-detail-data', 'data'),
+    [Input('url', 'pathname')],
+    prevent_initial_call=True
+)
+def load_hotel_detail_data(pathname):
+    """從資料庫獲取旅館詳細資料並附帶所有評論（若存在）"""
+    if not (pathname and pathname.startswith('/hotel/')):
+        raise PreventUpdate
+
+    try:
+        hotel_id = int(pathname.split('/')[-1])
+    except Exception:
+        return {'error': 'Invalid hotel id', 'id': None}
+
+    print(f"🔍 DEBUG: load_hotel_detail_data triggered for pathname={pathname}, hotel_id={hotel_id}")
+
+    try:
+        hotel_data = get_hotel_by_id(hotel_id)
+        if not hotel_data:
+            return {'error': 'Hotel not found', 'id': hotel_id}
+
+        # ensure dict
+        try:
+            if not isinstance(hotel_data, dict):
+                hotel_data = dict(hotel_data)
+        except Exception:
+            hotel_data = {'error': 'Invalid hotel data format', 'id': hotel_id}
+
+        # Load hotel reviews CSV if present
+        reviews_list = []
+        try:
+            reviews_df = pd.read_csv('data/HotelReviews.csv', encoding='utf-8-sig')
+            # detect hotel id column name
+            id_cols = [c for c in reviews_df.columns if c.lower().replace('-', '_') in ('hotel_id', 'hotelid')]
+            if id_cols:
+                id_col = id_cols[0]
+                filt = reviews_df[reviews_df[id_col] == hotel_id]
+            else:
+                filt = pd.DataFrame()
+
+            for _, row in filt.iterrows():
+                rating = None
+                for rc in ('Review_Rating', 'ReviewRating', 'Rating', 'rating', 'review_rating'):
+                    if rc in row.index:
+                        rating = row[rc]
+                        break
+                comment = None
+                for cc in ('Review_Text', 'ReviewText', 'Comment', 'comment', 'Review'):
+                    if cc in row.index:
+                        comment = row[cc]
+                        break
+                reviews_list.append({'rating': rating, 'comment': comment})
+        except FileNotFoundError:
+            reviews_list = []
+        except Exception:
+            reviews_list = []
+
+        hotel_data['reviews'] = reviews_list
+        return hotel_data
+    except Exception as e:
+        return {'error': str(e), 'id': hotel_id}
+
 # Callback 4: Card Click Handler - 處理餐廳卡片點擊事件
 @app.callback(
     Output('url', 'pathname', allow_duplicate=True),
@@ -3501,19 +3562,32 @@ def logout_from_detail_page(n_clicks, session_data):
     Output('reviews-comments', 'children'),
     [Input('ratings-bar-chart', 'clickData'),
      Input({'type': 'show-all-comments', 'index': ALL}, 'n_clicks')],
-    [State('restaurant-detail-data', 'data')],
+    [State('restaurant-detail-data', 'data'),
+     State('hotel-detail-data', 'data')],
     prevent_initial_call=True
 )
-def handle_reviews_interaction(clickData, show_all_n_clicks, restaurant_data):
-    """Handle both rating-bar clicks (show sample + Show all button) and Show all button clicks."""
+def handle_reviews_interaction(clickData, show_all_n_clicks, restaurant_data, hotel_data):
+    """Handle both rating-bar clicks (show sample + Show all button) and Show all button clicks.
+
+    Supports both restaurant and hotel detail stores (prefers restaurant data if present).
+    """
     ctx = callback_context
     if not ctx.triggered:
         raise PreventUpdate
 
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
+    # Choose which detail data to use (restaurant preferred)
+    detail_data = None
+    if isinstance(restaurant_data, dict) and restaurant_data:
+        detail_data = restaurant_data
+    elif isinstance(hotel_data, dict) and hotel_data:
+        detail_data = hotel_data
+    else:
+        detail_data = {}
+
     # Safely get reviews list
-    reviews = restaurant_data.get('reviews', []) if isinstance(restaurant_data, dict) else []
+    reviews = detail_data.get('reviews', []) if isinstance(detail_data, dict) else []
 
     # If the ratings bar was clicked
     if triggered_id == 'ratings-bar-chart':
@@ -3598,27 +3672,23 @@ def handle_hotel_card_click(n_clicks_list, card_ids):
     
     return f'/hotel/{hotel_id}'
 
-# Callback 3: Load hotel detail content
+# Callback 3: Render hotel detail content when hotel-detail-data store is populated
 @app.callback(
     Output('hotel-detail-content', 'children'),
-    [Input('url', 'pathname')],
+    [Input('hotel-detail-data', 'data')],
     prevent_initial_call=True
 )
-def load_hotel_detail_content(pathname):
-    """從資料庫載入旅館詳細資料並渲染內容"""
-    if pathname and pathname.startswith('/hotel/'):
-        try:
-            hotel_id = int(pathname.split('/')[-1])
-            hotel_data = get_hotel_by_id(hotel_id)
-            
-            if not hotel_data:
-                return create_error_state('Hotel not found')
-            
-            return create_hotel_detail_content(hotel_data)
-        except Exception as e:
-            return create_error_state(str(e))
-    
-    raise PreventUpdate
+def render_hotel_detail(hotel_data):
+    """根據 hotel-detail-data store 渲染旅館詳細內容（與餐廳流程一致）"""
+    print("🔍 DEBUG: render_hotel_detail called")
+    if not hotel_data:
+        print("🔍 DEBUG: hotel_data empty")
+        return create_loading_state()
+
+    if isinstance(hotel_data, dict) and 'error' in hotel_data:
+        return create_error_state(hotel_data.get('error', 'An error occurred'))
+
+    return create_hotel_detail_content(hotel_data)
 
 # Callback 4: Load nearby hotels
 @app.callback(
