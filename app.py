@@ -1946,15 +1946,26 @@ def switch_to_login(n_clicks):
 @app.callback(
     [Output('session-store', 'data'),
      Output('login-error-message', 'children')],
-    [Input('login-button', 'n_clicks')],
+    [Input('login-button', 'n_clicks'),
+     Input('login-username', 'n_submit'),  # Add n_submit for username field
+     Input('login-password', 'n_submit')],  # Add n_submit for password field
     [State('login-username', 'value'),
      State('login-password', 'value'),
      State('login-remember', 'value')],
     prevent_initial_call=True
 )
-def login(n_clicks, username, password, remember):
+def login(n_clicks, username_n_submit, password_n_submit, username, password, remember):
     """處理使用者登入"""
-    if not n_clicks:
+    # 檢查是哪個輸入觸發了回調
+    ctx = callback_context
+
+    if not ctx.triggered:
+        raise PreventUpdate
+
+    trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
+
+    # 只有當登入按鈕被點擊，或者在使用者名稱/密碼字段中按下了 Enter 鍵時才執行登入邏輯
+    if trigger_id not in ['login-button', 'login-username', 'login-password']:
         raise PreventUpdate
 
     # 驗證輸入
