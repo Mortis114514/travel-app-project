@@ -1387,6 +1387,7 @@ def create_restaurant_map_chart():
     # Filter out entries without coordinates
     df = df.dropna(subset=['Lat', 'Long'])
 
+<<<<<<< HEAD
     # Define color based on TotalRating
     def get_color(rating):
         if rating >= 4:
@@ -1401,11 +1402,15 @@ def create_restaurant_map_chart():
     df['color'] = df['TotalRating'].apply(get_color)
 
     fig = px.scatter_mapbox(
+=======
+    fig = px.scatter_map(
+>>>>>>> 258a5baa37ece120d9215e330800ecdef1e002e1
         df,
         lat="Lat",
         lon="Long",
         hover_name="Name",
         hover_data={"TotalRating": True, "FirstCategory": True},
+<<<<<<< HEAD
         color='color',
         color_discrete_map={
             'green': 'green',
@@ -1413,13 +1418,15 @@ def create_restaurant_map_chart():
             'orange': 'orange',
             'red': 'red'
         },
+=======
+>>>>>>> 258a5baa37ece120d9215e330800ecdef1e002e1
         zoom=11,
         center={"lat": 35.0116, "lon": 135.7681}, # Center on Kyoto
         height=600,
     )
 
     fig.update_layout(
-        mapbox_style="carto-darkmatter",
+        map_style="carto-darkmatter",
         margin={"r":0,"t":0,"l":0,"b":0},
         showlegend=False
     )

@@ -3,3 +3,7 @@ __pycache__/
 
 # Database files
 travel-app-project/data/*.db
+
+data/users.db
+
+data/restaurants.db
