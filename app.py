@@ -1389,8 +1389,8 @@ def create_restaurant_map_chart():
 
     # Create 'RatingCategory' based on 'TotalRating'
     bins = [0, 2, 3, 4, 5]
-    labels = ['1-2 Red', '2-3 Orange', '3-4 Yellow', 'Above 4 Green']
-    df['RatingCategory'] = pd.cut(df['TotalRating'], bins=bins, labels=labels, right=True, include_lowest=True)
+    labels = ['1-2 Stars', '2-3 Stars', '3-4 Stars', '4-5 Stars']
+    df['RatingCategory'] = pd.cut(df['TotalRating'], bins=bins, labels=labels, right=False, include_lowest=True)
 
 
     fig = px.scatter_mapbox(
@@ -1401,10 +1401,10 @@ def create_restaurant_map_chart():
         hover_data={"TotalRating": ':.1f', "FirstCategory": True, "RatingCategory": True},
         color="RatingCategory", # Use the new categorical column for coloring
         color_discrete_map={
-            "1-2 Red": "red",
-            "2-3 Orange": "orange",
-            "3-4 Yellow": "yellow",
-            "Above 4 Green": "green"
+            "1-2 Stars": "#FF6347",  # Tomato
+            "2-3 Stars": "#FFA500",  # Orange
+            "3-4 Stars": "#FFD700",  # Gold
+            "4-5 Stars": "#32CD32"   # LimeGreen
         },
         zoom=11,
         center={"lat": 35.0116, "lon": 135.7681},
@@ -1413,7 +1413,18 @@ def create_restaurant_map_chart():
     )
     fig.update_layout(
         margin={"r":0,"t":0,"l":0,"b":0},
-        showlegend=False
+        showlegend=True,
+        legend_title_text='Rating',
+        legend=dict(
+            yanchor="top",
+            y=0.99,
+            xanchor="left",
+            x=0.01,
+            bgcolor='rgba(0,0,0,0.5)',
+            font=dict(
+                color='white'
+            )
+        )
     )
     return dcc.Graph(figure=fig)
 
