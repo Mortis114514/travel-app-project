@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 # 從./utils導入所有自定義函數
 from utils.auth import verify_user, create_user, get_session, create_session, delete_session, clean_expired_sessions
 from pages.login_page import create_login_layout, create_register_layout
+from pages.analytics_page import create_analytics_layout, load_and_prepare_data, register_analytics_callbacks
 
 ########################
 #### 資料載入與前處理 ####
@@ -42,6 +43,7 @@ from utils.database import (
 
 restaurants_df = get_all_restaurants()  # 從數據庫加載（用於選項列表）
 hotels_df = get_all_hotels()
+analytics_df = load_and_prepare_data()
 
 
 # 隨機選擇4-5星餐廳（使用數據庫查詢）
@@ -1460,7 +1462,8 @@ def create_main_layout():
                 html.Div([
                     html.Div('Destinations', className='nav-link', id='nav-destinations', n_clicks=0),
                     html.Div('Trip Planner', className='nav-link', id='nav-planner', n_clicks=0),
-                    html.Div('Inspiration', className='nav-link', id='nav-inspiration', n_clicks=0)
+                    html.Div('Inspiration', className='nav-link', id='nav-inspiration', n_clicks=0),
+                    html.Div('Analytics', className='nav-link', id='nav-analytics', n_clicks=0)
                 ], className='header-nav'),
 
                 # Actions
@@ -1935,6 +1938,10 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
             elif view_mode == 'hotel-list':
                 return create_hotel_list_page(), 'main'
 
+            # === 🆕 新增：檢查分析頁面 ===
+            elif view_mode == 'analytics':
+                return create_analytics_layout(analytics_df), 'main'
+
             # 檢查餐廳列表頁面
             elif view_mode == 'restaurant-list':
                 return create_restaurant_list_page(), 'main'
@@ -2197,14 +2204,25 @@ def handle_hotel_search(n_clicks, hotel_type, keyword):
 @app.callback(
     Output('view-mode', 'data', allow_duplicate=True),
     [Input('view-all-hotels', 'n_clicks')],
+    [State('view-mode', 'data')],
     prevent_initial_call=True
 )
-def navigate_to_hotel_list(n_clicks):
-    """導航到旅館列表頁面"""
-    if n_clicks:
-        print(f"🔍 DEBUG: View All Hotels clicked! n_clicks={n_clicks}")  # Debug 訊息
+def view_all_hotels(n_clicks, current_view):
+    if n_clicks and current_view != 'hotel-list':
         return 'hotel-list'
     raise PreventUpdate
+
+@app.callback(
+    Output('view-mode', 'data', allow_duplicate=True),
+    [Input('nav-analytics', 'n_clicks')],
+    [State('view-mode', 'data')],
+    prevent_initial_call=True
+)
+def view_analytics(n_clicks, current_view):
+    if n_clicks and current_view != 'analytics':
+        return 'analytics'
+    raise PreventUpdate
+
 
 # Handle Tab Navigation
 @app.callback(
@@ -3936,6 +3954,9 @@ def update_gallery_indicators(current_index, images_list):
             classnames.append('gallery-indicator')
 
     return [classnames]
+
+# Register analytics callbacks
+register_analytics_callbacks(app, analytics_df)
 
 # ===== Clientside Callback: Scroll to Top on Page Change =====
 app.clientside_callback(
