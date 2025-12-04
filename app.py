@@ -1387,20 +1387,19 @@ def create_restaurant_map_chart():
     # Filter out entries without coordinates
     df = df.dropna(subset=['Lat', 'Long'])
 
-    fig = px.scatter_mapbox(
+    fig = px.scatter_map(
         df,
         lat="Lat",
         lon="Long",
         hover_name="Name",
         hover_data={"TotalRating": True, "FirstCategory": True},
-        color_discrete_sequence=["#deb522"],
         zoom=11,
         center={"lat": 35.0116, "lon": 135.7681}, # Center on Kyoto
         height=600,
     )
 
     fig.update_layout(
-        mapbox_style="carto-darkmatter",
+        map_style="carto-darkmatter",
         margin={"r":0,"t":0,"l":0,"b":0},
         showlegend=False
     )
