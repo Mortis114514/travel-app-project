@@ -1389,14 +1389,25 @@ def create_restaurant_map_chart():
     # Filter out entries without coordinates
     df = df.dropna(subset=['Lat', 'Long'])
 
+    # Create 'RatingCategory' based on 'TotalRating'
+    bins = [0, 2, 3, 4, 5]
+    labels = ['1-2 Stars', '2-3 Stars', '3-4 Stars', '4-5 Stars']
+    df['RatingCategory'] = pd.cut(df['TotalRating'], bins=bins, labels=labels, right=False, include_lowest=True)
+
+
     fig = px.scatter_mapbox(
         df,
         lat="Lat",
         lon="Long",
         hover_name="JapaneseName",
-        hover_data={"TotalRating": ':.1f', "FirstCategory": True},
-        color="TotalRating",
-        color_continuous_scale=px.colors.sequential.Viridis,
+        hover_data={"TotalRating": ':.1f', "FirstCategory": True, "RatingCategory": True},
+        color="RatingCategory", # Use the new categorical column for coloring
+        color_discrete_map={
+            "1-2 Stars": "#FF6347",  # Tomato
+            "2-3 Stars": "#FFA500",  # Orange
+            "3-4 Stars": "#FFD700",  # Gold
+            "4-5 Stars": "#32CD32"   # LimeGreen
+        },
         zoom=11,
         center={"lat": 35.0116, "lon": 135.7681},
         height=600,
@@ -1404,7 +1415,18 @@ def create_restaurant_map_chart():
     )
     fig.update_layout(
         margin={"r":0,"t":0,"l":0,"b":0},
-        showlegend=False
+        showlegend=True,
+        legend_title_text='Rating',
+        legend=dict(
+            yanchor="top",
+            y=0.99,
+            xanchor="left",
+            x=0.01,
+            bgcolor='rgba(0,0,0,0.5)',
+            font=dict(
+                color='white'
+            )
+        )
     )
     return dcc.Graph(figure=fig)
 
