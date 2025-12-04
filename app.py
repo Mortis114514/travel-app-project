@@ -1430,6 +1430,55 @@ def create_restaurant_map_chart():
     return dcc.Graph(figure=fig)
 
 
+def create_hotel_map_chart():
+    """Creates a mapbox scatter plot of all hotels."""
+    df = get_all_hotels()
+    # Filter out entries without coordinates
+    df = df.dropna(subset=['Lat', 'Long'])
+
+    # Create 'RatingCategory' based on 'Rating'
+    bins = [0, 2, 3, 4, 5]
+    labels = ['1-2 Stars', '2-3 Stars', '3-4 Stars', '4-5 Stars']
+    df['RatingCategory'] = pd.cut(df['Rating'], bins=bins, labels=labels, right=False, include_lowest=True)
+
+    fig = px.scatter_map(
+        df,
+        lat="Lat",
+        lon="Long",
+        hover_name="HotelName",
+        hover_data={"Rating": ':.1f', "Types": True, "RatingCategory": True},
+        color="RatingCategory",
+        color_discrete_map={
+            "1-2 Stars": "#FF6347",
+            "2-3 Stars": "#FFA500",
+            "3-4 Stars": "#FFD700",
+            "4-5 Stars": "#32CD32"
+        },
+        zoom=11,
+        center={"lat": 35.0116, "lon": 135.7681},
+        height=600,
+        map_style="carto-positron"
+    )
+    fig.update_layout(
+        margin={"r":0,"t":0,"l":0,"b":0},
+        showlegend=True,
+        legend_title_text='Rating',
+        legend=dict(
+            yanchor="top",
+            y=0.99,
+            xanchor="left",
+            x=0.01,
+            bgcolor='rgba(0,0,0,0.5)',
+            font=dict(
+                color='white'
+            )
+        )
+    )
+    return dcc.Graph(id='hotel-map-chart', figure=fig)
+
+
+
+
 ##########################
 ####   初始化應用程式   ####
 ##########################
@@ -1584,11 +1633,20 @@ def create_main_layout():
             html.Div(id='inspiration-grid-container', className='card-grid')
         ], className='content-section'),
 
-        # ===== NEW: Restaurant Map Section =====
+        # ===== NEW: Map Section =====
         html.Div([
-            html.H2('Restaurant Distribution in Kyoto', className='section-title'),
-            html.P('A map showing the location of all restaurants in the dataset.', style={'textAlign': 'center', 'color': '#aaa', 'marginBottom': '2rem'}),
-            create_restaurant_map_chart()
+            html.H2('Distribution in Kyoto', className='section-title'),
+            dcc.RadioItems(
+                id='map-type-switch',
+                options=[
+                    {'label': 'Restaurants', 'value': 'restaurants'},
+                    {'label': 'Hotels', 'value': 'hotels'},
+                ],
+                value='restaurants',
+                labelStyle={'display': 'inline-block', 'margin': '0 10px'},
+                style={'textAlign': 'center', 'color': 'white', 'marginBottom': '1rem'}
+            ),
+            html.Div(id='map-container', children=[create_restaurant_map_chart()])
         ], className='content-section')
     ], style={'backgroundColor': '#0a0a0a', 'minHeight': '100vh'})
 
@@ -3978,6 +4036,17 @@ def update_gallery_indicators(current_index, images_list):
 
 # Register analytics callbacks
 register_analytics_callbacks(app, analytics_df)
+
+@app.callback(
+    Output('map-container', 'children'),
+    Input('map-type-switch', 'value')
+)
+def update_map(selected_map):
+    if selected_map == 'restaurants':
+        return create_restaurant_map_chart()
+    elif selected_map == 'hotels':
+        return create_hotel_map_chart()
+    return html.Div()
 
 # ===== Clientside Callback: Scroll to Top on Page Change =====
 app.clientside_callback(
