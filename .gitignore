@@ -2,4 +2,4 @@ __pycache__/
 .DS_Store
 
 # Database files
-*.db
+travel-app-project/data/*.db
