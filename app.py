@@ -1387,14 +1387,25 @@ def create_restaurant_map_chart():
     # Filter out entries without coordinates
     df = df.dropna(subset=['Lat', 'Long'])
 
+    # Create 'RatingCategory' based on 'TotalRating'
+    bins = [0, 2, 3, 4, 5]
+    labels = ['1-2 Red', '2-3 Orange', '3-4 Yellow', 'Above 4 Green']
+    df['RatingCategory'] = pd.cut(df['TotalRating'], bins=bins, labels=labels, right=True, include_lowest=True)
+
+
     fig = px.scatter_mapbox(
         df,
         lat="Lat",
         lon="Long",
         hover_name="JapaneseName",
-        hover_data={"TotalRating": ':.1f', "FirstCategory": True},
-        color="TotalRating",
-        color_continuous_scale=px.colors.sequential.Viridis,
+        hover_data={"TotalRating": ':.1f', "FirstCategory": True, "RatingCategory": True},
+        color="RatingCategory", # Use the new categorical column for coloring
+        color_discrete_map={
+            "1-2 Red": "red",
+            "2-3 Orange": "orange",
+            "3-4 Yellow": "yellow",
+            "Above 4 Green": "green"
+        },
         zoom=11,
         center={"lat": 35.0116, "lon": 135.7681},
         height=600,
