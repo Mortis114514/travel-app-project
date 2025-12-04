@@ -1391,8 +1391,8 @@ def create_restaurant_map_chart():
         df,
         lat="Lat",
         lon="Long",
-        hover_name="Name",
-        hover_data={"TotalRating": True, "FirstCategory": True},
+        hover_name="JapaneseName",
+        hover_data={"TotalRating": ':.1f', "FirstCategory": True},
         zoom=11,
         center={"lat": 35.0116, "lon": 135.7681}, # Center on Kyoto
         height=600,
