@@ -1394,24 +1394,23 @@ def create_restaurant_map_chart():
     labels = ['1-2 Stars', '2-3 Stars', '3-4 Stars', '4-5 Stars']
     df['RatingCategory'] = pd.cut(df['TotalRating'], bins=bins, labels=labels, right=False, include_lowest=True)
 
-
-    fig = px.scatter_mapbox(
+    fig = px.scatter_map(
         df,
         lat="Lat",
         lon="Long",
         hover_name="JapaneseName",
         hover_data={"TotalRating": ':.1f', "FirstCategory": True, "RatingCategory": True},
-        color="RatingCategory", # Use the new categorical column for coloring
+        color="RatingCategory",
         color_discrete_map={
-            "1-2 Stars": "#FF6347",  # Tomato
-            "2-3 Stars": "#FFA500",  # Orange
-            "3-4 Stars": "#FFD700",  # Gold
-            "4-5 Stars": "#32CD32"   # LimeGreen
+            "1-2 Stars": "#FF6347",
+            "2-3 Stars": "#FFA500",
+            "3-4 Stars": "#FFD700",
+            "4-5 Stars": "#32CD32"
         },
         zoom=11,
         center={"lat": 35.0116, "lon": 135.7681},
         height=600,
-        mapbox_style="carto-darkmatter"
+        map_style="carto-positron"
     )
     fig.update_layout(
         margin={"r":0,"t":0,"l":0,"b":0},
