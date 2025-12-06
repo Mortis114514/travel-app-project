@@ -52,9 +52,18 @@ def create_analytics_layout(df):
     return html.Div([
         # Header
         html.Div([
+            html.A('← Back to Main Page', href='/', style={
+                'position': 'absolute',
+                'top': '1rem',
+                'left': '1rem',
+                'color': '#deb522',
+                'textDecoration': 'none',
+                'fontWeight': 'bold',
+                'fontSize': '1rem'
+            }),
             html.H1('Hotel Review Analytics', style={'color': '#deb522'}),
             html.P('Analyze hotel ratings over time and their distribution.', style={'color': '#cccccc'})
-        ], style={'textAlign': 'center', 'marginBottom': '2rem'}),
+        ], style={'textAlign': 'center', 'marginBottom': '2rem', 'position': 'relative'}),
 
         # Controls
         html.Div([
@@ -107,24 +116,18 @@ def register_analytics_callbacks(app, df):
         if selected_hotel:
             filtered_df = filtered_df[filtered_df['HotelName'] == selected_hotel]
 
-        # --- Create Rating Distribution Chart ---
-        rating_counts = filtered_df['Review_Rating'].value_counts().sort_index()
-        dist_fig = px.bar(
-            x=rating_counts.index,
-            y=rating_counts.values,
-            labels={'x': 'Rating', 'y': 'Number of Reviews'},
-            title=f'Rating Distribution for {selected_hotel or "All Hotels"}'
-        )
-        dist_fig.update_layout(
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='#1a1a1a',
-            font_color='#ffffff',
-            title_font_color='#deb522'
-        )
-
-        # --- Create Rating Over Time Chart ---
+        # --- Create charts ---
         if not filtered_df.empty:
-            # Sort by date and calculate rolling average
+            # --- Create Rating Distribution Chart ---
+            rating_counts = filtered_df['Review_Rating'].value_counts().sort_index()
+            dist_fig = px.bar(
+                x=rating_counts.index,
+                y=rating_counts.values,
+                labels={'x': 'Rating', 'y': 'Number of Reviews'},
+                title=f'Rating Distribution for {selected_hotel or "All Hotels"}'
+            )
+
+            # --- Create Rating Over Time Chart ---
             time_df = filtered_df.sort_values('Review_Date')
             time_df['rolling_avg'] = time_df['Review_Rating'].rolling(window=30, min_periods=1).mean()
             
@@ -135,8 +138,16 @@ def register_analytics_callbacks(app, df):
                 title=f'30-Day Rolling Average Rating for {selected_hotel or "All Hotels"}'
             )
         else:
-            # Create an empty chart if no data
+            # Create empty charts if no data
+            dist_fig = px.bar(title=f'No data to display for {selected_hotel or "All Hotels"}')
             time_fig = px.line(title=f'No data to display for {selected_hotel or "All Hotels"}')
+
+        dist_fig.update_layout(
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='#1a1a1a',
+            font_color='#ffffff',
+            title_font_color='#deb522'
+        )
 
         time_fig.update_layout(
             plot_bgcolor='rgba(0,0,0,0)',
