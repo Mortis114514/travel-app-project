@@ -218,19 +218,45 @@ def create_inspiration_card(article):
 def create_compound_search_bar():
     """創建優化的複合式搜尋欄（帶即時建議和進階篩選）"""
     return html.Div([
-        # Main search bar
+        # Keyword search bar (separate row for full width)
         html.Div([
             html.Div([
-                html.I(className='fas fa-search'),
+                html.I(className='fas fa-search', style={'color': '#deb522', 'fontSize': '1.2rem'}),
                 dcc.Input(
                     id='search-destination',
                     type='text',
-                    placeholder='Search restaurants, cuisine types, or locations...',
+                    placeholder='Search restaurants by name (English or Japanese)...',
                     className='search-input',
-                    debounce=False  # 即時搜尋
+                    debounce=False,  # 即時搜尋
+                    style={
+                        'background': 'transparent',
+                        'border': 'none',
+                        'color': '#ffffff',
+                        'fontSize': '0.95rem',
+                        'width': '100%',
+                        'outline': 'none',
+                        'paddingLeft': '0.75rem'
+                    }
                 )
-            ], className='search-input-group', style={'position': 'relative', 'flex': '2'}),
+            ], style={'flex': '1', 'display': 'flex', 'alignItems': 'center', 'gap': '0.75rem'}),
 
+            html.Button([
+                html.I(className='fas fa-search', style={'marginRight': '8px'}),
+                'Search'
+            ], id='search-btn', className='search-btn', n_clicks=0)
+        ], style={
+            'display': 'flex',
+            'alignItems': 'center',
+            'backgroundColor': '#1a1a1a',
+            'padding': '0.75rem 1.5rem',
+            'borderRadius': '8px',
+            'border': '1px solid #333',
+            'marginBottom': '1rem',
+            'gap': '1rem'
+        }),
+
+        # Filters and buttons row
+        html.Div([
             html.Div([
                 html.Div([
                     html.I(className='fas fa-utensils', id='cuisine-icon',
@@ -246,7 +272,7 @@ def create_compound_search_bar():
                             style={'maxHeight': '300px', 'overflowY': 'auto'})
                 ], id='cuisine-dropdown-menu', className='custom-dropdown-menu',
                    style={'display': 'none'})
-            ], className='search-input-group', style={'flex': '1.3', 'minWidth': '200px', 'position': 'relative'}),
+            ], className='search-input-group', style={'flex': '1', 'minWidth': '200px', 'position': 'relative'}),
 
             html.Div([
                 html.Div([
@@ -263,22 +289,14 @@ def create_compound_search_bar():
                             style={'maxHeight': '300px', 'overflowY': 'auto'})
                 ], id='rating-dropdown-menu', className='custom-dropdown-menu',
                    style={'display': 'none'})
-            ], className='search-input-group', style={'flex': '1.3', 'minWidth': '200px', 'position': 'relative'}),
-
-            html.Button([
-                html.I(className='fas fa-search', style={'marginRight': '8px'}),
-                'Search'
-            ], id='search-btn', className='search-btn', n_clicks=0),
+            ], className='search-input-group', style={'flex': '1', 'minWidth': '200px', 'position': 'relative'}),
 
             # Advanced filters toggle button
             html.Button([
                 html.I(className='fas fa-sliders-h', style={'marginRight': '8px'}),
                 'Filters'
-            ], id='toggle-advanced-filters', className='btn-secondary', n_clicks=0, style={'marginLeft': '0.5rem'})
+            ], id='toggle-advanced-filters', className='btn-secondary', n_clicks=0)
         ], className='search-container'),
-
-        # Search suggestions dropdown (hidden by default)
-        html.Div(id='search-suggestions', className='search-suggestions', style={'display': 'none'}),
 
         # Advanced filters panel (collapsible)
         html.Div([
@@ -300,57 +318,6 @@ def create_compound_search_bar():
                         },
                         tooltip={'placement': 'bottom', 'always_visible': False}
                     )
-                ], style={'marginBottom': '1.5rem'}),
-
-                # Review count filter
-                html.Div([
-                    html.Label('Minimum Reviews', style={'color': '#deb522', 'fontWeight': 'bold', 'marginBottom': '0.5rem'}),
-                    dcc.Slider(
-                        id='review-count-filter',
-                        min=0,
-                        max=500,
-                        step=10,
-                        value=0,
-                        marks={
-                            0: '0',
-                            100: '100',
-                            200: '200',
-                            300: '300',
-                            500: '500+'
-                        },
-                        tooltip={'placement': 'bottom', 'always_visible': False}
-                    )
-                ], style={'marginBottom': '1.5rem'}),
-
-                # Station/Area filter
-                html.Div([
-                    html.Label('Station/Area', style={'color': '#deb522', 'fontWeight': 'bold', 'marginBottom': '0.5rem'}),
-                    dcc.Dropdown(
-                        id='station-filter',
-                        options=[{'label': station, 'value': station} for station in get_unique_stations()],
-                        placeholder='All Stations',
-                        multi=True,
-                        className='search-input',
-                        style={'backgroundColor': '#1a1a1a', 'border': '1px solid #333'}
-                    )
-                ], style={'marginBottom': '1.5rem'}),
-
-                # Sort by options
-                html.Div([
-                    html.Label('Sort By', style={'color': '#deb522', 'fontWeight': 'bold', 'marginBottom': '0.5rem'}),
-                    dcc.Dropdown(
-                        id='sort-by-filter',
-                        options=[
-                            {'label': 'Highest Rating', 'value': 'rating_desc'},
-                            {'label': 'Most Reviews', 'value': 'reviews_desc'},
-                            {'label': 'Name (A-Z)', 'value': 'name_asc'},
-                            {'label': 'Price (Low to High)', 'value': 'price_asc'},
-                            {'label': 'Price (High to Low)', 'value': 'price_desc'}
-                        ],
-                        value='rating_desc',
-                        className='search-input',
-                        style={'backgroundColor': '#1a1a1a', 'border': '1px solid #333'}
-                    )
                 ]),
 
                 # Clear filters button
@@ -365,10 +332,7 @@ def create_compound_search_bar():
                 'border': '1px solid #333',
                 'marginTop': '1rem'
             })
-        ], id='advanced-filters-panel', style={'display': 'none'}),
-
-        # Active filter chips
-        html.Div(id='active-filter-chips', style={'marginTop': '1rem'})
+        ], id='advanced-filters-panel', style={'display': 'none'})
     ], style={'width': '100%'})
 
 ##############################################
@@ -1575,8 +1539,7 @@ def create_main_layout():
             html.Div(className='hero-overlay'),
             html.Div([
                 html.H1('旅遊平台', className='hero-title'),
-                html.P('自己設計想要的旅遊阿，底迪', className='hero-subtitle'),
-                create_compound_search_bar()
+                html.P('自己設計想要的旅遊阿，底迪', className='hero-subtitle')
             ], className='hero-content')
         ], className='hero-section'),
 
@@ -2402,7 +2365,7 @@ def search_restaurants(keyword=None, cuisine=None, rating=None, price_range=None
                       min_reviews=None, stations=None, sort_by='rating_desc'):
     """
     進階餐廳搜尋功能（使用 SQL 數據庫查詢，替代 pandas 篩選）
-    - keyword: 搜尋餐廳名稱（中英文）和料理類別
+    - keyword: 僅搜尋餐廳名稱（英文或日文）
     - cuisine: 精確匹配料理類型
     - rating: 評分範圍（例如 "4-5"）
     - price_range: 價格範圍 [min, max]
@@ -2425,7 +2388,7 @@ def search_restaurants(keyword=None, cuisine=None, rating=None, price_range=None
 def get_search_suggestions(keyword, max_results=8):
     """
     根據關鍵字生成搜尋建議（使用數據庫查詢以提高性能）
-    返回餐廳名稱、料理類型、車站的匹配結果
+    僅返回餐廳名稱的匹配結果
     """
     if not keyword or len(keyword.strip()) < 2:
         return []
@@ -2436,94 +2399,27 @@ def get_search_suggestions(keyword, max_results=8):
 
     suggestions = []
 
-    # 從結果中提取建議
+    # 從結果中提取建議（僅顯示餐廳名稱）
     if len(matched_restaurants) > 0:
-        # 餐廳名稱建議（前 3 個）
-        for _, row in matched_restaurants.head(3).iterrows():
+        # 餐廳名稱建議（顯示英文名和日文名）
+        for _, row in matched_restaurants.head(max_results).iterrows():
+            # 顯示英文名稱和日文名稱
+            label = row['Name']
+            if row.get('JapaneseName') and row['JapaneseName'].strip():
+                label = f"{row['Name']} ({row['JapaneseName']})"
+
             suggestions.append({
                 'type': 'restaurant',
                 'value': row['Name'],
-                'label': row['Name'],
+                'label': label,
                 'icon': 'fa-utensils'
             })
-
-        # 料理類型建議（唯一值，前 3 個）
-        unique_cuisines = matched_restaurants['FirstCategory'].unique()[:3]
-        for cuisine in unique_cuisines:
-            if len(suggestions) < max_results:
-                suggestions.append({
-                    'type': 'cuisine',
-                    'value': cuisine,
-                    'label': f"{cuisine} (Cuisine)",
-                    'icon': 'fa-utensils'
-                })
-
-        # 車站建議（唯一值，前 2 個）
-        unique_stations = matched_restaurants['Station'].unique()[:2]
-        for station in unique_stations:
-            if len(suggestions) < max_results:
-                suggestions.append({
-                    'type': 'station',
-                    'value': station,
-                    'label': f"{station} (Station)",
-                    'icon': 'fa-map-marker-alt'
-                })
 
     return suggestions[:max_results]
 
 # ====== Search Enhancement Callbacks ======
 
-# Show/hide search suggestions as user types
-@app.callback(
-    [Output('search-suggestions', 'children'),
-     Output('search-suggestions', 'style')],
-    [Input('search-destination', 'value')],
-    prevent_initial_call=False
-)
-def update_search_suggestions(keyword):
-    """即時顯示搜尋建議"""
-    if not keyword or len(keyword.strip()) < 2:
-        return [], {'display': 'none'}
-
-    suggestions = get_search_suggestions(keyword)
-
-    if not suggestions:
-        return [], {'display': 'none'}
-
-    # Create suggestion items
-    suggestion_items = []
-    for suggestion in suggestions:
-        suggestion_items.append(
-            html.Div([
-                html.I(className=f'fas {suggestion["icon"]}', style={'marginRight': '12px', 'color': '#deb522', 'width': '20px'}),
-                html.Span(suggestion['label'], style={'flex': '1'}),
-                html.I(className='fas fa-arrow-right', style={'color': '#666', 'fontSize': '0.8rem'})
-            ], className='suggestion-item', style={
-                'padding': '12px 16px',
-                'cursor': 'pointer',
-                'display': 'flex',
-                'alignItems': 'center',
-                'borderBottom': '1px solid #333',
-                'transition': 'background-color 0.2s',
-                'color': '#ffffff'
-            })
-        )
-
-    return suggestion_items, {
-        'display': 'block',
-        'position': 'absolute',
-        'top': '100%',
-        'left': '0',
-        'right': '0',
-        'backgroundColor': '#1a1a1a',
-        'border': '1px solid #deb522',
-        'borderTop': 'none',
-        'borderRadius': '0 0 8px 8px',
-        'maxHeight': '400px',
-        'overflowY': 'auto',
-        'zIndex': '1000',
-        'marginTop': '-1px'
-    }
+# Search suggestions removed - users can directly search by restaurant name
 
 # Toggle advanced filters panel
 @app.callback(
@@ -2547,9 +2443,6 @@ def toggle_advanced_filters(n_clicks, current_style):
      Output('search-cuisine', 'data', allow_duplicate=True),
      Output('search-rating', 'data', allow_duplicate=True),
      Output('price-range-filter', 'value'),
-     Output('review-count-filter', 'value'),
-     Output('station-filter', 'value'),
-     Output('sort-by-filter', 'value'),
      Output('cuisine-selected-text', 'children', allow_duplicate=True),
      Output('cuisine-selected-text', 'style', allow_duplicate=True),
      Output('rating-selected-text', 'children', allow_duplicate=True),
@@ -2561,7 +2454,7 @@ def clear_all_filters(n_clicks):
     """清除所有篩選器"""
     if n_clicks:
         return (
-            '', None, None, [0, 30000], 0, None, 'rating_desc',
+            '', None, None, [0, 30000],
             'Cuisine Type', {'cursor': 'pointer', 'marginLeft': '10px', 'color': '#888888'},
             'Rating', {'cursor': 'pointer', 'marginLeft': '10px', 'color': '#888888'}
         )
@@ -2729,193 +2622,23 @@ def select_rating_option(n_clicks_list, option_ids, option_labels):
         None  # 重置 active-dropdown
     )
 
-# Display active filter chips
+# Active filter chips removed - users can see filters in the filter panel
+
+# Navigate to restaurant list when searching from homepage
 @app.callback(
-    Output('active-filter-chips', 'children'),
-    [Input('search-destination', 'value'),
-     Input('search-cuisine', 'data'),
-     Input('search-rating', 'data'),
-     Input('price-range-filter', 'value'),
-     Input('review-count-filter', 'value'),
-     Input('station-filter', 'value')],
-    prevent_initial_call=True
-)
-def display_active_filters(keyword, cuisine, rating, price_range, min_reviews, stations):
-    """顯示當前激活的篩選條件標籤"""
-    chips = []
-
-    if keyword:
-        chips.append(
-            html.Span([
-                html.I(className='fas fa-search', style={'marginRight': '6px'}),
-                f'"{keyword}"',
-                html.I(className='fas fa-times', style={'marginLeft': '8px', 'cursor': 'pointer'})
-            ], className='filter-chip', style={
-                'display': 'inline-flex',
-                'alignItems': 'center',
-                'backgroundColor': '#deb522',
-                'color': '#000',
-                'padding': '6px 12px',
-                'borderRadius': '20px',
-                'fontSize': '0.85rem',
-                'marginRight': '8px',
-                'marginBottom': '8px',
-                'fontWeight': '500'
-            })
-        )
-
-    if cuisine:
-        chips.append(
-            html.Span([
-                html.I(className='fas fa-utensils', style={'marginRight': '6px'}),
-                cuisine
-            ], className='filter-chip', style={
-                'display': 'inline-flex',
-                'alignItems': 'center',
-                'backgroundColor': '#333',
-                'color': '#deb522',
-                'padding': '6px 12px',
-                'borderRadius': '20px',
-                'fontSize': '0.85rem',
-                'marginRight': '8px',
-                'marginBottom': '8px',
-                'border': '1px solid #deb522'
-            })
-        )
-
-    if rating:
-        chips.append(
-            html.Span([
-                html.I(className='fas fa-star', style={'marginRight': '6px'}),
-                f'{rating}+ Stars'
-            ], className='filter-chip', style={
-                'display': 'inline-flex',
-                'alignItems': 'center',
-                'backgroundColor': '#333',
-                'color': '#deb522',
-                'padding': '6px 12px',
-                'borderRadius': '20px',
-                'fontSize': '0.85rem',
-                'marginRight': '8px',
-                'marginBottom': '8px',
-                'border': '1px solid #deb522'
-            })
-        )
-
-    if price_range and isinstance(price_range, list) and len(price_range) == 2:
-        if price_range[0] > 0 or price_range[1] < 30000:
-            chips.append(
-                html.Span([
-                    html.I(className='fas fa-yen-sign', style={'marginRight': '6px'}),
-                    f'¥{int(price_range[0]):,} - ¥{int(price_range[1]):,}'
-                ], className='filter-chip', style={
-                    'display': 'inline-flex',
-                    'alignItems': 'center',
-                    'backgroundColor': '#333',
-                    'color': '#deb522',
-                    'padding': '6px 12px',
-                    'borderRadius': '20px',
-                    'fontSize': '0.85rem',
-                    'marginRight': '8px',
-                    'marginBottom': '8px',
-                    'border': '1px solid #deb522'
-                })
-            )
-
-    if min_reviews and int(min_reviews) > 0:
-        chips.append(
-            html.Span([
-                html.I(className='fas fa-comment', style={'marginRight': '6px'}),
-                f'{int(min_reviews)}+ Reviews'
-            ], className='filter-chip', style={
-                'display': 'inline-flex',
-                'alignItems': 'center',
-                'backgroundColor': '#333',
-                'color': '#deb522',
-                'padding': '6px 12px',
-                'borderRadius': '20px',
-                'fontSize': '0.85rem',
-                'marginRight': '8px',
-                'marginBottom': '8px',
-                'border': '1px solid #deb522'
-            })
-        )
-
-    if stations:
-        for station in stations:
-            chips.append(
-                html.Span([
-                    html.I(className='fas fa-map-marker-alt', style={'marginRight': '6px'}),
-                    station
-                ], className='filter-chip', style={
-                    'display': 'inline-flex',
-                    'alignItems': 'center',
-                    'backgroundColor': '#333',
-                    'color': '#deb522',
-                    'padding': '6px 12px',
-                    'borderRadius': '20px',
-                    'fontSize': '0.85rem',
-                    'marginRight': '8px',
-                    'marginBottom': '8px',
-                    'border': '1px solid #deb522'
-                })
-            )
-
-    if chips:
-        return html.Div(chips, style={'display': 'flex', 'flexWrap': 'wrap', 'alignItems': 'center'})
-    return []
-
-# Handle Search Button with advanced filters (home page preview)
-# 自动搜索：当选择料理类型或评分时自动触发搜索
-@app.callback(
-    Output('destinations-card-container', 'children', allow_duplicate=True),
+    Output('view-mode', 'data', allow_duplicate=True),
     [Input('search-btn', 'n_clicks'),
      Input('search-cuisine', 'data'),
      Input('search-rating', 'data')],
-    [State('search-destination', 'value'),
-     State('price-range-filter', 'value'),
-     State('review-count-filter', 'value'),
-     State('station-filter', 'value'),
-     State('sort-by-filter', 'value')],
+    [State('view-mode', 'data')],
     prevent_initial_call=True
 )
-def handle_search(n_clicks, cuisine, rating, destination, price_range, min_reviews, stations, sort_by):
-    """處理搜尋功能（首頁預覽）- 支援進階篩選和自動搜索"""
-    # 不需要检查 n_clicks，因为 dropdown 改变也会触发搜索
-
-    # Ensure default values for None parameters
-    if price_range is None:
-        price_range = [0, 30000]
-    if min_reviews is None:
-        min_reviews = 0
-    if stations is None:
-        stations = []
-    if sort_by is None:
-        sort_by = 'rating_desc'
-
-    # Use enhanced search function with all filters
-    filtered_df = search_restaurants(
-        keyword=destination,
-        cuisine=cuisine,
-        rating=rating,
-        price_range=price_range,
-        min_reviews=min_reviews,
-        stations=stations,
-        sort_by=sort_by
-    )
-
-    # Get top results for preview
-    if len(filtered_df) > 0:
-        # Show top 10 for preview
-        preview_df = filtered_df.head(10)
-        cards = [create_destination_card(row) for _, row in preview_df.iterrows()]
-        return cards
-    else:
-        return [html.Div([
-            html.I(className='fas fa-search', style={'fontSize': '3rem', 'color': '#deb522', 'marginBottom': '1rem'}),
-            html.H3('No restaurants found', style={'color': '#ffffff'}),
-            html.P('Try adjusting your search criteria', style={'color': '#888888'})
-        ], style={'textAlign': 'center', 'padding': '4rem', 'width': '100%'})]
+def navigate_to_search_results(n_clicks, cuisine, rating, current_view_mode):
+    """Navigate to restaurant list page when searching from homepage"""
+    # Only navigate if currently on homepage
+    if current_view_mode == 'home':
+        return 'restaurant-list'
+    raise PreventUpdate
 
 # Toggle hotel type dropdown menu
 @app.callback(
@@ -2972,46 +2695,38 @@ def select_hotel_type_option(n_clicks_list, option_ids):
 # ====== Restaurant List Page Callbacks ======
 
 # Handle search in restaurant list page with advanced filters
-# 自动搜索：当选择料理类型或评分时自动触发搜索
+# 自动搜索：当选择料理类型、评分或价格范围时自动触发搜索
 @app.callback(
     [Output('search-results-store', 'data'),
-     Output('current-page-store', 'data'),
+     Output('current-page-store', 'data', allow_duplicate=True),
      Output('search-params-store', 'data')],
     [Input('search-btn', 'n_clicks'),
      Input('search-cuisine', 'data'),
      Input('search-rating', 'data'),
-     Input('sort-by-filter', 'value')],  # Also trigger on sort change
+     Input('price-range-filter', 'value')],
     [State('search-destination', 'value'),
-     State('price-range-filter', 'value'),
-     State('review-count-filter', 'value'),
-     State('station-filter', 'value'),
      State('view-mode', 'data')],
     prevent_initial_call=True
 )
-def handle_restaurant_list_search(n_clicks, cuisine, rating, sort_by, destination, price_range, min_reviews, stations, view_mode):
-    """處理餐廳列表頁的搜尋功能 - 支援進階篩選、排序和自動搜索"""
+def handle_restaurant_list_search(n_clicks, cuisine, rating, price_range, destination, view_mode):
+    """處理餐廳列表頁的搜尋，並將結果存儲到 dcc.Store"""
+    # 只有在列表頁面模式才觸發
     if view_mode != 'restaurant-list':
         raise PreventUpdate
 
-    # Ensure default values for None parameters
-    if price_range is None:
-        price_range = [0, 30000]
-    if min_reviews is None:
-        min_reviews = 0
-    if stations is None:
-        stations = []
-    if sort_by is None:
-        sort_by = 'rating_desc'
+    triggered_id = callback_context.triggered[0]['prop_id'].split('.')[0]
+    if not triggered_id:
+        raise PreventUpdate
 
-    # Use enhanced search function with all filters
+    # Use enhanced search function with filters
     filtered_df = search_restaurants(
         keyword=destination,
         cuisine=cuisine,
         rating=rating,
         price_range=price_range,
-        min_reviews=min_reviews,
-        stations=stations,
-        sort_by=sort_by
+        min_reviews=None,
+        stations=None,
+        sort_by='rating_desc'
     )
 
     # Store search results and parameters
@@ -3020,13 +2735,11 @@ def handle_restaurant_list_search(n_clicks, cuisine, rating, sort_by, destinatio
         'destination': destination,
         'cuisine': cuisine,
         'rating': rating,
-        'price_range': price_range,
-        'min_reviews': min_reviews,
-        'stations': stations,
-        'sort_by': sort_by
+        'price_range': price_range
     }
 
-    return search_results, 1, search_params  # Reset to page 1
+    # 返回結果，重置到第一頁
+    return search_results, 1, search_params
 
 # Update restaurant grid and pagination based on current page
 @app.callback(

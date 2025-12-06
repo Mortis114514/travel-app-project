@@ -265,6 +265,7 @@ body {
     font-size: 0.95rem;
     width: 100%;
     outline: none;
+    padding-left: 0.5rem;
 }
 
 .search-input::placeholder {

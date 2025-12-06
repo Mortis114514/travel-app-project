@@ -77,7 +77,7 @@ def search_restaurants(
     高级餐厅搜索功能（使用 SQL 查询）
 
     Args:
-        keyword: 搜索关键词（搜索餐厅名、日文名、类别、车站）
+        keyword: 搜索关键词（仅搜索餐厅名称和日文名称）
         cuisine: 料理类型（FirstCategory）
         rating: 评分范围（例如 "4-5"）
         price_range: 价格范围 (min, max)
@@ -93,19 +93,16 @@ def search_restaurants(
         query_parts = ["SELECT * FROM restaurants WHERE 1=1"]
         params = []
 
-        # 關鍵字搜索
+        # 關鍵字搜索（僅搜索餐廳名稱）
         if keyword and keyword.strip():
             query_parts.append("""
                 AND (
                     Name LIKE ? OR
-                    JapaneseName LIKE ? OR
-                    FirstCategory LIKE ? OR
-                    SecondCategory LIKE ? OR
-                    Station LIKE ?
+                    JapaneseName LIKE ?
                 )
             """)
             keyword_pattern = f"%{keyword.strip()}%"
-            params.extend([keyword_pattern] * 5)
+            params.extend([keyword_pattern] * 2)
 
         # 料理類型篩選
         if cuisine:
@@ -147,12 +144,12 @@ def search_restaurants(
                             CASE
                                 WHEN DinnerPrice IS NOT NULL AND DinnerPrice != ''
                                      AND LunchPrice IS NOT NULL AND LunchPrice != ''
-                                THEN (CAST(REPLACE(REPLACE(DinnerPrice, '¥', ''), '~', '') AS REAL) +
-                                      CAST(REPLACE(REPLACE(LunchPrice, '¥', ''), '~', '') AS REAL)) / 2.0
+                                THEN (CAST(SUBSTR(DinnerPrice, 2, INSTR(DinnerPrice, '～') - 2) AS REAL) +
+                                      CAST(SUBSTR(LunchPrice, 2, INSTR(LunchPrice, '～') - 2) AS REAL)) / 2.0
                                 WHEN DinnerPrice IS NOT NULL AND DinnerPrice != ''
-                                THEN CAST(REPLACE(REPLACE(DinnerPrice, '¥', ''), '~', '') AS REAL)
+                                THEN CAST(SUBSTR(DinnerPrice, 2, INSTR(DinnerPrice, '～') - 2) AS REAL)
                                 WHEN LunchPrice IS NOT NULL AND LunchPrice != ''
-                                THEN CAST(REPLACE(REPLACE(LunchPrice, '¥', ''), '~', '') AS REAL)
+                                THEN CAST(SUBSTR(LunchPrice, 2, INSTR(LunchPrice, '～') - 2) AS REAL)
                                 ELSE 0
                             END
                         ) BETWEEN ? AND ?
@@ -164,12 +161,12 @@ def search_restaurants(
                             CASE
                                 WHEN DinnerPrice IS NOT NULL AND DinnerPrice != ''
                                      AND LunchPrice IS NOT NULL AND LunchPrice != ''
-                                THEN (CAST(REPLACE(REPLACE(DinnerPrice, '¥', ''), '~', '') AS REAL) +
-                                      CAST(REPLACE(REPLACE(LunchPrice, '¥', ''), '~', '') AS REAL)) / 2.0
+                                THEN (CAST(SUBSTR(DinnerPrice, 2, INSTR(DinnerPrice, '～') - 2) AS REAL) +
+                                      CAST(SUBSTR(LunchPrice, 2, INSTR(LunchPrice, '～') - 2) AS REAL)) / 2.0
                                 WHEN DinnerPrice IS NOT NULL AND DinnerPrice != ''
-                                THEN CAST(REPLACE(REPLACE(DinnerPrice, '¥', ''), '~', '') AS REAL)
+                                THEN CAST(SUBSTR(DinnerPrice, 2, INSTR(DinnerPrice, '～') - 2) AS REAL)
                                 WHEN LunchPrice IS NOT NULL AND LunchPrice != ''
-                                THEN CAST(REPLACE(REPLACE(LunchPrice, '¥', ''), '~', '') AS REAL)
+                                THEN CAST(SUBSTR(LunchPrice, 2, INSTR(LunchPrice, '～') - 2) AS REAL)
                                 ELSE 0
                             END
                         ) >= ?
@@ -196,16 +193,40 @@ def search_restaurants(
 
         # 排序
         order_clauses = []
+        if keyword and keyword.strip():
+            # 優先排序：名稱完全符合 > 名稱開頭 > 日文名稱開頭 > 其他
+            order_clauses.append("""
+                CASE
+                    WHEN Name = ? THEN 1
+                    WHEN JapaneseName = ? THEN 2
+                    WHEN Name LIKE ? THEN 3
+                    WHEN JapaneseName LIKE ? THEN 4
+                    WHEN Name LIKE ? THEN 5
+                    WHEN JapaneseName LIKE ? THEN 6
+                    ELSE 7
+                END
+            """)
+            keyword_param = keyword.strip()
+            params.extend([
+                keyword_param,
+                keyword_param,
+                f"{keyword_param}%",
+                f"{keyword_param}%",
+                f"%{keyword_param}%",
+                f"%{keyword_param}%"
+            ])
+
         if sort_by == 'rating_desc':
-            order_clauses = ['TotalRating DESC', 'ReviewNum DESC']
+            order_clauses.extend(['TotalRating DESC', 'ReviewNum DESC'])
         elif sort_by == 'reviews_desc':
-            order_clauses = ['ReviewNum DESC', 'TotalRating DESC']
+            order_clauses.extend(['ReviewNum DESC', 'TotalRating DESC'])
         elif sort_by == 'name_asc':
-            order_clauses = ['Name ASC']
+            order_clauses.append('Name ASC')
         elif sort_by == 'price_asc':
-            order_clauses = ['(DinnerPrice + LunchPrice) ASC']
+            # 價格排序（使用 SUBSTR 提取最低價格）
+            order_clauses.append("CAST(SUBSTR(DinnerPrice, 2, INSTR(DinnerPrice, '～') - 2) AS REAL) ASC")
         elif sort_by == 'price_desc':
-            order_clauses = ['(DinnerPrice + LunchPrice) DESC']
+            order_clauses.append("CAST(SUBSTR(DinnerPrice, 2, INSTR(DinnerPrice, '～') - 2) AS REAL) DESC")
 
         if order_clauses:
             query_parts.append(f"ORDER BY {', '.join(order_clauses)}")
