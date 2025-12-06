@@ -2213,7 +2213,11 @@ def login(n_clicks, username_n_submit, password_n_submit, username, password, re
     # 只有當登入按鈕被點擊，或者在使用者名稱/密碼字段中按下了 Enter 鍵時才執行登入邏輯
     if trigger_id not in ['login-button', 'login-username', 'login-password']:
         raise PreventUpdate
-
+    # 移除使用者輸入的前後空白，再驗證（避免使用者多打空格造成比對失敗）
+    if isinstance (username, str):
+        username = username.strip()
+    if isinstance(password, str):
+        password = password.strip()
     # 驗證輸入
     if not username or not password:
         return no_update, dbc.Alert('請輸入使用者名稱和密碼', color='danger')
