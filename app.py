@@ -1,6 +1,6 @@
 # Import 所有相關套件
 import dash
-from dash import Dash, html, dcc, Input, State, Output, dash_table, no_update, callback_context, ALL
+from dash import Dash, html, dcc, Input, State, Output, dash_table, no_update, callback_context, ALL, MATCH
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 import pandas as pd
@@ -17,6 +17,7 @@ from datetime import datetime, timedelta
 from utils.auth import verify_user, create_user, get_session, create_session, delete_session, clean_expired_sessions
 from pages.login_page import create_login_layout, create_register_layout
 from pages.analytics_page import create_analytics_layout, load_and_prepare_data, register_analytics_callbacks
+from utils.database import get_revenue_trend, get_occupancy_status
 
 ########################
 #### 資料載入與前處理 ####
@@ -1191,24 +1192,45 @@ def create_hotel_search_bar():
     ], style={'width': '100%'})
 
 def create_hotel_detail_page(hotel_id):
-    """創建旅館詳情頁面框架"""
+    """創建旅館詳情頁面框架 (包含 Header 和空的內容容器)"""
     return html.Div([
-        # 頁首
+        # 頁首 (Header)
         html.Div([
             html.Div([
+                # 返回按鈕
                 html.Button([
                     html.I(className='fas fa-arrow-left', style={'marginRight': '8px'}),
                     'Back'
                 ], id='hotel-detail-back-btn', className='btn-secondary', n_clicks=0,
                    style={'marginRight': 'auto'}),
                 
-                # 用戶頭像
+                # 用戶頭像與選單
                 html.Div([
                     html.Div([
                         html.I(className='fas fa-user-circle', style={'fontSize': '2rem', 'color': '#deb522'})
                     ], id='user-avatar-hotel-detail', className='user-avatar', n_clicks=0,
-                       style={'cursor': 'pointer', 'display': 'flex', 'alignItems': 'center'}),
-                ], style={'position': 'relative'})
+                        style={'cursor': 'pointer', 'display': 'flex', 'alignItems': 'center'}),
+                    
+                    # 下拉選單
+                    html.Div([
+                        html.Div([
+                            html.I(className='fas fa-user', style={'marginRight': '10px'}),
+                            'Profile'
+                        ], className='menu-item', id='menu-profile-hotel-detail', n_clicks=0),
+                        html.Div([
+                            html.I(className='fas fa-cog', style={'marginRight': '10px'}),
+                            'Settings'
+                        ], className='menu-item', id='menu-settings-hotel-detail', n_clicks=0),
+                        html.Div([
+                            html.I(className='fas fa-sign-out-alt', style={'marginRight': '10px'}),
+                            'Logout'
+                        ], className='menu-item', id='menu-logout-detail', n_clicks=0)
+                    ], id='user-dropdown-detail', className='user-dropdown', style={'display': 'none'})
+                ], style={'position': 'relative'}),
+
+                # 下拉菜單狀態儲存
+                dcc.Store(id='dropdown-open-detail', data=False, storage_type='memory')
+
             ], style={
                 'maxWidth': '1400px',
                 'margin': '0 auto',
@@ -1225,9 +1247,9 @@ def create_hotel_detail_page(hotel_id):
             'zIndex': '1000'
         }),
         
-        # 主要內容容器
+        # 主要內容容器 (將由 callback 填充 create_hotel_detail_content 的結果)
         html.Div(id='hotel-detail-content', children=[
-            create_loading_state()
+            create_loading_state() # 預設顯示載入中
         ])
     ], style={'backgroundColor': '#1a1a1a', 'minHeight': '100vh'})
 
@@ -1257,7 +1279,7 @@ def create_hotel_detail_content(hotel_data):
         types_text = 'Hotel'
     
     return html.Div([
-        # Hero 區域
+        # Hero 區域 (大圖)
         html.Div([
             html.Img(src='/assets/food_dirtyrice.png', style={
                 'width': '100%',
@@ -1333,54 +1355,60 @@ def create_hotel_detail_content(hotel_data):
             'overflow': 'hidden'
         }),
         
-        # 詳細資訊區域
+        # --- 內容容器 (包含詳細資訊 Grid + 分析圖表) ---
         html.Div([
+            # 1. 上半部：詳細資訊 Grid
             html.Div([
-                # 左側：地址和地圖
                 html.Div([
+                    # 左側：地址和地圖
                     html.Div([
-                        html.H3('Location', style={'color': '#deb522', 'marginBottom': '1rem'}),
                         html.Div([
-                            html.I(className='fas fa-map-marker-alt', style={'marginRight': '12px', 'color': '#deb522'}),
-                            html.Span(hotel_data.get('Address', 'N/A'))
-                        ], style={'color': '#ffffff', 'marginBottom': '1rem'}),
-                        # Google Map
-                        html.Iframe(
-                            src=f"https://www.google.com/maps?q={hotel_data.get('Lat')},{hotel_data.get('Long')}&z=15&output=embed",
-                            style={
-                                'width': '100%',
-                                'height': '300px',
-                                'border': 'none',
-                                'borderRadius': '8px',
-                                'marginTop': '1rem'
-                            }
-                        )
-                    ], style={
-                        'backgroundColor': '#1a1a1a',
-                        'border': '1px solid #333',
-                        'borderRadius': '12px',
-                        'padding': '1.5rem',
-                        'marginBottom': '1.5rem'
-                    })
-                ], style={'flex': '1'}),
-                
-                # 右側：評分和附近旅館
-                html.Div([
-                    # Reviews only (we removed Ratings Breakdown and Statistics for hotels)
-                    create_reviews_section(hotel_data),
+                            html.H3('Location', style={'color': '#deb522', 'marginBottom': '1rem'}),
+                            html.Div([
+                                html.I(className='fas fa-map-marker-alt', style={'marginRight': '12px', 'color': '#deb522'}),
+                                html.Span(hotel_data.get('Address', 'N/A'))
+                            ], style={'color': '#ffffff', 'marginBottom': '1rem'}),
+                            # Google Map
+                            html.Iframe(
+                                src=f"https://www.google.com/maps?q={hotel_data.get('Lat')},{hotel_data.get('Long')}&z=15&output=embed",
+                                style={
+                                    'width': '100%',
+                                    'height': '300px',
+                                    'border': 'none',
+                                    'borderRadius': '8px',
+                                    'marginTop': '1rem'
+                                }
+                            )
+                        ], style={
+                            'backgroundColor': '#1a1a1a',
+                            'border': '1px solid #333',
+                            'borderRadius': '12px',
+                            'padding': '1.5rem',
+                            'marginBottom': '1.5rem'
+                        })
+                    ], style={'flex': '1'}),
+                    
+                    # 右側：評分和附近旅館
+                    html.Div([
+                        create_reviews_section(hotel_data),
+                        html.Div(id='nearby-hotels-section')
+                    ], style={'flex': '1'})
+                ], style={
+                    'display': 'grid',
+                    'gridTemplateColumns': '1fr 1fr',
+                    'gap': '2rem',
+                    'marginBottom': '2rem' # 增加底部間距，讓圖表不會黏太近
+                }),
 
-                    # 附近旅館
-                    html.Div(id='nearby-hotels-section')
-                ], style={'flex': '1'})
-            ], style={
-                'maxWidth': '1400px',
-                'margin': '0 auto',
-                'padding': '3rem 2rem',
-                'display': 'grid',
-                'gridTemplateColumns': '1fr 1fr',
-                'gap': '2rem'
-            })
-        ])
+                # 2. 下半部：分析圖表 (放在這裡！)
+                create_hotel_analytics_charts(hotel_data.get('Hotel_ID'))
+
+            ])
+        ], style={
+            'maxWidth': '1400px',
+            'margin': '0 auto',
+            'padding': '3rem 2rem'
+        })
     ])
 
 def create_restaurant_map_chart():
@@ -1476,7 +1504,107 @@ def create_hotel_map_chart():
     )
     return dcc.Graph(id='hotel-map-chart', figure=fig)
 
+# --- 新增這個輔助函式 ---
+def create_help_section(index_id, button_text, explanation_content):
+    """
+    建立一個「說明按鈕」和「折疊內容」的組合 (用於 app.py)
+    """
+    return html.Div([
+        dbc.Button(
+            [html.I(className="fas fa-info-circle", style={'marginRight': '8px'}), button_text],
+            id={'type': 'help-btn-detail', 'index': index_id}, # 注意：這裡的 type 跟 analytics_page 的不同，避免衝突
+            className="btn-outline-info",
+            size="sm",
+            n_clicks=0,
+            style={'marginBottom': '10px', 'borderColor': '#00cec9', 'color': '#00cec9'}
+        ),
+        dbc.Collapse(
+            dbc.Card(
+                dbc.CardBody(explanation_content),
+                style={'backgroundColor': '#222', 'border': '1px solid #444', 'color': '#ddd', 'marginBottom': '15px'}
+            ),
+            id={'type': 'help-collapse-detail', 'index': index_id},
+            is_open=False,
+        ),
+    ])
 
+def create_hotel_analytics_charts(hotel_id):
+    """建立旅館分析圖表 (營收與訂單狀態) - 含說明按鈕版"""
+    
+    # 1. 取得資料
+    revenue_df = get_revenue_trend(hotel_id)
+    status_df = get_occupancy_status(hotel_id)
+    
+    if revenue_df.empty or status_df.empty:
+        return html.Div("No booking data available for this hotel.", style={'color': '#888', 'padding': '2rem'})
+
+    # 2. 製作營收趨勢圖
+    fig_revenue = px.area(
+        revenue_df, x='Month', y='Revenue',
+        title='Monthly Revenue Trend', markers=True
+    )
+    fig_revenue.update_layout(
+        plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+        font_color='#ffffff', title_font_size=18,
+        xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor='#333'),
+        margin=dict(l=40, r=20, t=60, b=40)
+    )
+    fig_revenue.update_traces(line_color='#deb522', fillcolor='rgba(222, 181, 34, 0.2)')
+
+    # 3. 製作訂單狀態圖
+    fig_status = px.bar(
+        status_df, x='Month', y='Count', color='status',
+        title='Booking Status (Confirmed vs Cancelled)',
+        barmode='stack',
+        color_discrete_map={'Confirmed': '#4caf50', 'Cancelled': '#f44336'}
+    )
+    fig_status.update_layout(
+        plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+        font_color='#ffffff', title_font_size=18,
+        xaxis=dict(showgrid=False), yaxis=dict(showgrid=True, gridcolor='#333'),
+        margin=dict(l=40, r=20, t=60, b=40),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    )
+
+    # --- 4. 定義解釋文案 ---
+    help_rev = [
+        html.H5("營收趨勢解讀", style={'color': '#deb522'}),
+        html.P("此圖顯示該旅館過去一段時間的「總營收」變化。"),
+        html.Ul([
+            html.Li("高峰：通常代表旅遊旺季（如櫻花季、楓葉季）。"),
+            html.Li("低谷：代表淡季，建議此時推出促銷活動。"),
+            html.Li("資料來源：基於系統內的實際訂單金額 (Price Paid) 計算。")
+        ])
+    ]
+
+    help_status = [
+        html.H5("訂單健康度分析", style={'color': '#4caf50'}),
+        html.P("顯示每個月的「實際入住」與「取消」比例。"),
+        html.Ul([
+            html.Li("綠色 (Confirmed)：實際帶來的有效客源。"),
+            html.Li("紅色 (Cancelled)：被取消的訂單。若紅色比例過高，需檢查是否房價過高或競爭力不足。"),
+            html.Li("監控重點：當紅色區塊異常變長時，需介入調查原因。")
+        ])
+    ]
+
+    # 5. 回傳佈局 (加入說明按鈕 + 固定高度)
+    return html.Div([
+        html.H3('Analytics Dashboard', style={'color': '#deb522', 'marginTop': '2rem', 'marginBottom': '1rem', 'borderBottom': '1px solid #333', 'paddingBottom': '10px'}),
+        
+        html.Div([
+            # 左圖：營收
+            html.Div([
+                create_help_section('rev-detail-help', 'About Revenue', help_rev),
+                dcc.Graph(figure=fig_revenue, style={'height': '500px'})
+            ], style={'flex': '1', 'minWidth': '400px', 'backgroundColor': '#1a1a1a', 'padding': '10px', 'borderRadius': '8px'}),
+            
+            # 右圖：狀態
+            html.Div([
+                create_help_section('status-detail-help', 'About Cancellations', help_status),
+                dcc.Graph(figure=fig_status, style={'height': '500px'})
+            ], style={'flex': '1', 'minWidth': '400px', 'backgroundColor': '#1a1a1a', 'padding': '10px', 'borderRadius': '8px'})
+        ], style={'display': 'flex', 'flexWrap': 'wrap', 'gap': '2rem'})
+    ])
 
 
 ##########################
@@ -4066,6 +4194,17 @@ app.clientside_callback(
     Output('scroll-trigger', 'children'),
     Input('current-page-store', 'data')
 )
+
+# --- 處理旅館詳細頁面的說明按鈕開關 ---
+@app.callback(
+    Output({'type': 'help-collapse-detail', 'index': MATCH}, 'is_open'),
+    [Input({'type': 'help-btn-detail', 'index': MATCH}, 'n_clicks')],
+    [State({'type': 'help-collapse-detail', 'index': MATCH}, 'is_open')]
+)
+def toggle_detail_help(n_clicks, is_open):
+    if n_clicks:
+        return not is_open
+    return is_open
 
 if __name__ == '__main__':
     app.run(debug=True, port=8050)
