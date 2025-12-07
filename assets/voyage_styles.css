@@ -157,8 +157,9 @@ body {
 /* ===== Hero Section ===== */
 .hero-section {
     position: relative;
-    height: 90vh;
-    min-height: 600px;
+    height: 50vh;
+    min-height: 400px;
+    max-height: 500px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -438,15 +439,47 @@ body {
 .view-all-link {
     color: #deb522;
     font-weight: 600;
-    text-decoration: none;
-    display: flex;
+    text-decoration: none !important;
+    display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    transition: gap 0.3s ease;
+    padding: 0.6rem 1.2rem;
+    border: 2px solid #deb522;
+    border-radius: 25px;
+    background: transparent;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+    letter-spacing: 0.3px;
 }
 
-.view-all-link:hover {
+.view-all-link:hover,
+.view-all-link:focus,
+.view-all-link:active {
     gap: 0.75rem;
+    background: #deb522;
+    color: #0a0a0a;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(222, 181, 34, 0.3);
+    text-decoration: none !important;
+    outline: none;
+}
+
+.view-all-link i {
+    transition: all 0.3s ease;
+    font-size: 0.85rem;
+}
+
+.view-all-link:hover i {
+    animation: arrowBounce 0.6s ease-in-out infinite;
+}
+
+@keyframes arrowBounce {
+    0%, 100% {
+        transform: translateX(0px);
+    }
+    50% {
+        transform: translateX(6px);
+    }
 }
 
 /* ===== Horizontal Scrolling Cards ===== */
