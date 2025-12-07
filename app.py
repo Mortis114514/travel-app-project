@@ -203,19 +203,6 @@ def create_add_new_card(text="Start planning a new trip..."):
         html.Div(text, className='add-new-text')
     ], className='add-new-card', id='add-new-trip-btn', n_clicks=0)
 
-def create_inspiration_card(article):
-    """創建靈感文章卡片"""
-    return html.Div([
-        html.Img(
-            src='/assets/food_dirtyrice.png',
-            className='inspiration-image'
-        ),
-        html.Div([
-            html.Div(article['title'], className='inspiration-title'),
-            html.Div(article['category'], className='inspiration-category')
-        ], className='inspiration-overlay')
-    ], className='inspiration-card')
-
 def create_compound_search_bar():
     """創建優化的複合式搜尋欄（帶即時建議和進階篩選）"""
     return html.Div([
@@ -921,7 +908,9 @@ def create_ratings_breakdown_section(data):
 
 def create_statistics_section(data):
     """創建統計資訊區域"""
-    review_num = data.get('ReviewNum', 0)
+    # Count actual reviews from the reviews list instead of using ReviewNum field
+    reviews = data.get('reviews', []) if isinstance(data, dict) else []
+    review_num = len(reviews)
     rating_category = data.get('Rating_Category', 'N/A')
 
     return html.Div([
@@ -1646,7 +1635,6 @@ def create_main_layout():
                 html.Div([
                     html.Div('Destinations', className='nav-link', id='nav-destinations', n_clicks=0),
                     html.Div('Trip Planner', className='nav-link', id='nav-planner', n_clicks=0),
-                    html.Div('Inspiration', className='nav-link', id='nav-inspiration', n_clicks=0),
                     html.Div('Analytics', className='nav-link', id='nav-analytics', n_clicks=0)
                 ], className='header-nav'),
 
@@ -1730,20 +1718,6 @@ def create_main_layout():
 
             # Tab Content
             html.Div(id='tab-content-container')
-        ], className='content-section'),
-
-        # ===== Inspiration Content Section - Find Your Inspiration =====
-        html.Div([
-            html.Div([
-                html.H2('Find Your Inspiration', className='section-title'),
-                html.A([
-                    'Explore More',
-                    html.I(className='fas fa-arrow-right')
-                ], className='view-all-link', id='view-all-inspiration', n_clicks=0)
-            ], className='section-header'),
-
-            # Article Grid
-            html.Div(id='inspiration-grid-container', className='card-grid')
         ], className='content-section'),
 
         # ===== NEW: Map Section =====
@@ -2363,7 +2337,7 @@ def populate_destinations_cards(pathname):
 )
 def populate_hotels_cards(pathname):
     """填充旅館卡片（橫向滾動）"""
-    top_hotels = get_random_top_hotels(10, min_rating=4.0)
+    top_hotels = get_random_top_hotels(4, min_rating=4.0)
     
     if len(top_hotels) > 0:
         cards = [create_hotel_card(row) for _, row in top_hotels.iterrows()]
@@ -2491,28 +2465,6 @@ def handle_tab_navigation(saved_clicks, wishlisted_clicks, favorites_clicks):
         content = html.Div(cards, className='card-grid')
 
     return (*tab_classes, content)
-
-# Populate Inspiration Grid
-@app.callback(
-    Output('inspiration-grid-container', 'children'),
-    [Input('url', 'pathname')]
-)
-def populate_inspiration_grid(pathname):
-    """填充靈感內容網格"""
-    # Sample inspiration articles
-    articles = [
-        {'title': 'Top 10 Traditional Kyoto Restaurants', 'category': 'Food & Dining'},
-        {'title': 'Hidden Gems in Kyoto: Local Favorites', 'category': 'Travel Guide'},
-        {'title': 'Best Seasonal Dishes in Japan', 'category': 'Culinary'},
-        {'title': 'How to Experience Authentic Japanese Cuisine', 'category': 'Tips & Tricks'},
-        {'title': 'Weekend Getaway: Kyoto Food Tour', 'category': 'Itinerary'},
-        {'title': 'Japanese Tea Ceremony: A Complete Guide', 'category': 'Culture'},
-    ]
-
-    cards = [dbc.Col(create_inspiration_card(article), width=12, md=6, lg=4)
-             for article in articles]
-
-    return dbc.Row(cards, style={'marginTop': '1rem'})
 
 # Enhanced search function with advanced filters (使用數據庫查詢)
 def search_restaurants(keyword=None, cuisine=None, rating=None, price_range=None,
