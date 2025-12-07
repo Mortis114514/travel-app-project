@@ -14,7 +14,7 @@ import json
 from datetime import datetime, timedelta
 
 # 從./utils導入所有自定義函數
-from utils.auth import verify_user, create_user, get_session, create_session, delete_session, clean_expired_sessions
+from utils.auth import verify_user, create_user, get_session, create_session, delete_session, clean_expired_sessions, get_user_full_details
 from pages.login_page import create_login_layout, create_register_layout
 from pages.analytics_page import create_analytics_layout, load_and_prepare_data, register_analytics_callbacks
 from utils.database import get_revenue_trend, get_occupancy_status
@@ -381,19 +381,14 @@ def create_detail_header():
             # 用戶頭像和下拉菜單（右側）
             html.Div([
                 html.Div([
-                    html.I(className='fas fa-user-circle', style={'fontSize': '2rem', 'color': '#deb522'})
-                ], id='user-avatar-detail', className='user-avatar', n_clicks=0,
-                   style={'cursor': 'pointer', 'display': 'flex', 'alignItems': 'center'}),
+                    html.I(className='fas fa-user')
+                ], id='user-avatar-detail', className='user-avatar', n_clicks=0),
 
                 html.Div([
                     html.Div([
                         html.I(className='fas fa-user', style={'marginRight': '10px'}),
                         'Profile'
                     ], className='menu-item', id='menu-profile-detail', n_clicks=0),
-                    html.Div([
-                        html.I(className='fas fa-cog', style={'marginRight': '10px'}),
-                        'Settings'
-                    ], className='menu-item', id='menu-settings-detail', n_clicks=0),
                     html.Div([
                         html.I(className='fas fa-sign-out-alt', style={'marginRight': '10px'}),
                         'Logout'
@@ -1160,9 +1155,8 @@ def create_hotel_detail_page(hotel_id):
                 # 用戶頭像與選單
                 html.Div([
                     html.Div([
-                        html.I(className='fas fa-user-circle', style={'fontSize': '2rem', 'color': '#deb522'})
-                    ], id='user-avatar-hotel-detail', className='user-avatar', n_clicks=0,
-                        style={'cursor': 'pointer', 'display': 'flex', 'alignItems': 'center'}),
+                        html.I(className='fas fa-user')
+                    ], id='user-avatar-hotel-detail', className='user-avatar', n_clicks=0),
                     
                     # 下拉選單
                     html.Div([
@@ -1170,10 +1164,6 @@ def create_hotel_detail_page(hotel_id):
                             html.I(className='fas fa-user', style={'marginRight': '10px'}),
                             'Profile'
                         ], className='menu-item', id='menu-profile-hotel-detail', n_clicks=0),
-                        html.Div([
-                            html.I(className='fas fa-cog', style={'marginRight': '10px'}),
-                            'Settings'
-                        ], className='menu-item', id='menu-settings-hotel-detail', n_clicks=0),
                         html.Div([
                             html.I(className='fas fa-sign-out-alt', style={'marginRight': '10px'}),
                             'Logout'
@@ -1597,6 +1587,7 @@ server = app.server
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
     dcc.Store(id='session-store', storage_type='session'),
+    dcc.Store(id='current-user-data', storage_type='memory'),  # 當前使用者資料
     dcc.Store(id='page-mode', data='login', storage_type='memory'),  # 'login' 或 'register'
     dcc.Store(id='current-page', data='overview', storage_type='memory'),  # 記錄當前頁面
     dcc.Store(id='menu-open', data=False, storage_type='memory'),  # 記錄選單開關狀態
@@ -1621,6 +1612,150 @@ app.layout = html.Div([
     html.Div(id='scroll-trigger', style={'display': 'none'}),  # 隱藏的滾動觸發器
     html.Div(id='page-content', style={'minHeight': '100vh'})
 ], style={'backgroundColor': '#1a1a1a', 'minHeight': '100vh'})
+
+# ===== Profile Page Layout =====
+def create_profile_page(user_data):
+    """創建使用者個人檔案頁面"""
+    if not user_data:
+        return html.Div([
+            html.H2('Error: Unable to load user data', style={'color': 'white', 'textAlign': 'center', 'padding': '2rem'})
+        ])
+
+    # Format dates
+    created_at = user_data.get('created_at', 'N/A')
+    last_login = user_data.get('last_login', 'N/A')
+
+    if created_at and created_at != 'N/A':
+        try:
+            created_dt = datetime.fromisoformat(created_at)
+            created_at = created_dt.strftime('%B %d, %Y at %I:%M %p')
+        except:
+            pass
+
+    if last_login and last_login != 'N/A':
+        try:
+            login_dt = datetime.fromisoformat(last_login)
+            last_login = login_dt.strftime('%B %d, %Y at %I:%M %p')
+        except:
+            pass
+
+    return html.Div([
+        # Store for dropdown state
+        dcc.Store(id='dropdown-open', data=False, storage_type='memory'),
+
+        # Header with back button
+        html.Div([
+            html.Div([
+                # Logo
+                html.Div('Trip', className='header-logo'),
+
+                # Right side: Back button + User Avatar
+                html.Div([
+                    # Back button styled like View All button
+                    html.A([
+                        html.I(className='fas fa-arrow-left'),
+                        html.Span('Back')
+                    ], className='view-all-link', id='back-from-profile', n_clicks=0, style={
+                        'cursor': 'pointer',
+                        'marginRight': '1.5rem'
+                    }),
+
+                    # User Avatar with Dropdown
+                    html.Div([
+                        html.Div([
+                            html.I(className='fas fa-user')
+                        ], className='user-avatar', id='user-avatar-profile', n_clicks=0),
+
+                        # Dropdown Menu
+                        html.Div([
+                            html.Div([
+                                html.I(className='fas fa-user-circle'),
+                                html.Span('Profile')
+                            ], className='dropdown-item', id='dropdown-profile-page', n_clicks=0),
+                            html.Div([
+                                html.I(className='fas fa-sign-out-alt'),
+                                html.Span('Logout')
+                            ], className='dropdown-item', id='menu-logout-profile', n_clicks=0),
+                        ], id='user-dropdown-profile', className='user-dropdown')
+                    ], style={'position': 'relative'})
+                ], style={'display': 'flex', 'alignItems': 'center'})
+            ], className='header-content')
+        ], className='global-header'),
+
+        # Profile Content
+        html.Div([
+            html.Div([
+                # Page Title
+                html.H1('My Profile', style={
+                    'color': '#deb522',
+                    'fontSize': '2.5rem',
+                    'marginBottom': '2rem',
+                    'textAlign': 'center'
+                }),
+
+                # Profile Card
+                html.Div([
+                    # User Avatar Icon
+                    html.Div([
+                        html.I(className='fas fa-user-circle', style={
+                            'fontSize': '6rem',
+                            'color': '#deb522'
+                        })
+                    ], style={'textAlign': 'center', 'marginBottom': '2rem'}),
+
+                    # User Information
+                    html.Div([
+                        # Username
+                        html.Div([
+                            html.Div([
+                                html.I(className='fas fa-user', style={'marginRight': '0.5rem', 'color': '#deb522'}),
+                                html.Span('Username:', style={'fontWeight': 'bold', 'color': '#deb522'})
+                            ], style={'marginBottom': '0.5rem'}),
+                            html.Div(user_data.get('username', 'N/A'), style={'fontSize': '1.2rem', 'color': 'white'})
+                        ], style={'marginBottom': '1.5rem'}),
+
+                        # Email
+                        html.Div([
+                            html.Div([
+                                html.I(className='fas fa-envelope', style={'marginRight': '0.5rem', 'color': '#deb522'}),
+                                html.Span('Email:', style={'fontWeight': 'bold', 'color': '#deb522'})
+                            ], style={'marginBottom': '0.5rem'}),
+                            html.Div(user_data.get('email', 'Not provided'), style={'fontSize': '1.2rem', 'color': 'white'})
+                        ], style={'marginBottom': '1.5rem'}),
+
+                        # Account Created
+                        html.Div([
+                            html.Div([
+                                html.I(className='fas fa-calendar-plus', style={'marginRight': '0.5rem', 'color': '#deb522'}),
+                                html.Span('Member Since:', style={'fontWeight': 'bold', 'color': '#deb522'})
+                            ], style={'marginBottom': '0.5rem'}),
+                            html.Div(created_at, style={'fontSize': '1.2rem', 'color': 'white'})
+                        ], style={'marginBottom': '1.5rem'}),
+
+                        # Last Login
+                        html.Div([
+                            html.Div([
+                                html.I(className='fas fa-clock', style={'marginRight': '0.5rem', 'color': '#deb522'}),
+                                html.Span('Last Login:', style={'fontWeight': 'bold', 'color': '#deb522'})
+                            ], style={'marginBottom': '0.5rem'}),
+                            html.Div(last_login, style={'fontSize': '1.2rem', 'color': 'white'})
+                        ], style={'marginBottom': '1.5rem'}),
+                    ], style={'padding': '2rem'})
+                ], style={
+                    'backgroundColor': '#2a2a2a',
+                    'borderRadius': '12px',
+                    'padding': '2rem',
+                    'maxWidth': '600px',
+                    'margin': '0 auto',
+                    'boxShadow': '0 4px 6px rgba(0, 0, 0, 0.3)'
+                })
+            ], style={
+                'maxWidth': '1200px',
+                'margin': '0 auto',
+                'padding': '7rem 2rem 3rem 2rem'
+            })
+        ], style={'backgroundColor': '#1a1a1a', 'minHeight': '100vh'})
+    ])
 
 # 主應用布局（登入後顯示）
 def create_main_layout():
@@ -1654,10 +1789,6 @@ def create_main_layout():
                                 html.I(className='fas fa-user-circle'),
                                 html.Span('Profile')
                             ], className='dropdown-item', id='dropdown-profile', n_clicks=0),
-                            html.Div([
-                                html.I(className='fas fa-cog'),
-                                html.Span('Settings')
-                            ], className='dropdown-item', id='dropdown-settings', n_clicks=0),
                             html.Div([
                                 html.I(className='fas fa-sign-out-alt'),
                                 html.Span('Logout')
@@ -1770,10 +1901,6 @@ def create_restaurant_list_page():
                             html.Span('Profile')
                         ], className='dropdown-item', id='dropdown-profile-list', n_clicks=0),
                         html.Div([
-                            html.I(className='fas fa-cog'),
-                            html.Span('Settings')
-                        ], className='dropdown-item', id='dropdown-settings-list', n_clicks=0),
-                        html.Div([
                             html.I(className='fas fa-sign-out-alt'),
                             html.Span('Logout')
                         ], className='dropdown-item', id='menu-logout-list', n_clicks=0),
@@ -1873,10 +2000,6 @@ def create_hotel_list_page():
                             html.I(className='fas fa-user-circle'),
                             html.Span('Profile')
                         ], className='dropdown-item', id='dropdown-profile-hotel-list', n_clicks=0),
-                        html.Div([
-                            html.I(className='fas fa-cog'),
-                            html.Span('Settings')
-                        ], className='dropdown-item', id='dropdown-settings-hotel-list', n_clicks=0),
                         html.Div([
                             html.I(className='fas fa-sign-out-alt'),
                             html.Span('Logout')
@@ -2107,6 +2230,11 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
             # === 🆕 新增：檢查分析頁面 ===
             elif view_mode == 'analytics':
                 return create_analytics_layout(analytics_df), 'main'
+
+            # === 🆕 新增：檢查個人檔案頁面 ===
+            elif view_mode == 'profile':
+                user_data = get_user_full_details(user_id)
+                return create_profile_page(user_data), 'main'
 
             # 檢查餐廳列表頁面
             elif view_mode == 'restaurant-list':
@@ -3054,6 +3182,113 @@ def logout_from_dropdown_hotel_list(n_clicks, session_data):
         delete_session(session_data['session_id'])
 
     return None
+
+# ====== Profile Page Callbacks ======
+
+# Navigate to profile page from home dropdown
+@app.callback(
+    Output('view-mode', 'data', allow_duplicate=True),
+    [Input('dropdown-profile', 'n_clicks')],
+    prevent_initial_call=True
+)
+def navigate_to_profile_from_home(n_clicks):
+    """從首頁下拉選單導航到個人檔案頁"""
+    if n_clicks:
+        return 'profile'
+    raise PreventUpdate
+
+# Navigate to profile page from restaurant list dropdown
+@app.callback(
+    Output('view-mode', 'data', allow_duplicate=True),
+    [Input('dropdown-profile-list', 'n_clicks')],
+    prevent_initial_call=True
+)
+def navigate_to_profile_from_restaurant_list(n_clicks):
+    """從餐廳列表頁下拉選單導航到個人檔案頁"""
+    if n_clicks:
+        return 'profile'
+    raise PreventUpdate
+
+# Navigate to profile page from hotel list dropdown
+@app.callback(
+    Output('view-mode', 'data', allow_duplicate=True),
+    [Input('dropdown-profile-hotel-list', 'n_clicks')],
+    prevent_initial_call=True
+)
+def navigate_to_profile_from_hotel_list(n_clicks):
+    """從旅館列表頁下拉選單導航到個人檔案頁"""
+    if n_clicks:
+        return 'profile'
+    raise PreventUpdate
+
+# Back button from profile page
+@app.callback(
+    Output('view-mode', 'data', allow_duplicate=True),
+    [Input('back-from-profile', 'n_clicks')],
+    prevent_initial_call=True
+)
+def back_from_profile(n_clicks):
+    """從個人檔案頁返回首頁"""
+    if n_clicks:
+        return 'home'
+    raise PreventUpdate
+
+# Toggle user dropdown in profile page
+@app.callback(
+    [Output('user-dropdown-profile', 'className'),
+     Output('dropdown-open', 'data', allow_duplicate=True)],
+    [Input('user-avatar-profile', 'n_clicks')],
+    [State('dropdown-open', 'data')],
+    prevent_initial_call=True
+)
+def toggle_user_dropdown_profile(n_clicks, is_open):
+    """切換個人檔案頁使用者下拉選單"""
+    if n_clicks:
+        new_state = not is_open
+        className = 'user-dropdown show' if new_state else 'user-dropdown'
+        return className, new_state
+    raise PreventUpdate
+
+# Logout from profile page
+@app.callback(
+    Output('session-store', 'data', allow_duplicate=True),
+    [Input('menu-logout-profile', 'n_clicks')],
+    [State('session-store', 'data')],
+    prevent_initial_call=True
+)
+def logout_from_profile(n_clicks, session_data):
+    """從個人檔案頁登出"""
+    if not n_clicks:
+        raise PreventUpdate
+
+    if session_data and 'session_id' in session_data:
+        delete_session(session_data['session_id'])
+
+    return None
+
+# Navigate to profile page from restaurant detail page dropdown
+@app.callback(
+    Output('view-mode', 'data', allow_duplicate=True),
+    [Input('menu-profile-detail', 'n_clicks')],
+    prevent_initial_call=True
+)
+def navigate_to_profile_from_restaurant_detail(n_clicks):
+    """從餐廳詳細頁下拉選單導航到個人檔案頁"""
+    if n_clicks:
+        return 'profile'
+    raise PreventUpdate
+
+# Navigate to profile page from hotel detail page dropdown
+@app.callback(
+    Output('view-mode', 'data', allow_duplicate=True),
+    [Input('menu-profile-hotel-detail', 'n_clicks')],
+    prevent_initial_call=True
+)
+def navigate_to_profile_from_hotel_detail(n_clicks):
+    """從旅館詳細頁下拉選單導航到個人檔案頁"""
+    if n_clicks:
+        return 'profile'
+    raise PreventUpdate
 
 # ====== Hotel List Page Callbacks ======
 

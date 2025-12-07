@@ -1493,3 +1493,18 @@ body {
 #rating-dropdown-menu {
     display: none;
 }
+
+/* ===== Profile Page Back Button ===== */
+/* Custom animation for back button arrow (bounces left instead of right) */
+#back-from-profile:hover i {
+    animation: arrowBounceLeft 0.6s ease-in-out infinite;
+}
+
+@keyframes arrowBounceLeft {
+    0%, 100% {
+        transform: translateX(0px);
+    }
+    50% {
+        transform: translateX(-6px);
+    }
+}

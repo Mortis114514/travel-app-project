@@ -96,6 +96,30 @@ def get_user_by_id(user_id):
     conn.close()
     return user
 
+def get_user_full_details(user_id):
+    """取得使用者完整資訊，包含建立時間和最後登入時間"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute(
+        'SELECT id, username, email, created_at, last_login FROM users WHERE id = ?',
+        (user_id,)
+    )
+    user = cursor.fetchone()
+
+    conn.close()
+
+    if user:
+        return {
+            'id': user['id'],
+            'username': user['username'],
+            'email': user['email'],
+            'created_at': user['created_at'],
+            'last_login': user['last_login']
+        }
+    return None
+
 def create_session(user_id, session_id, expires_at):
     """建立 session"""
     conn = sqlite3.connect(DB_PATH)
