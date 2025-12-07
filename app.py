@@ -1386,6 +1386,9 @@ def create_restaurant_map_chart():
     labels = ['1-2 Stars', '2-3 Stars', '3-4 Stars', '4-5 Stars']
     df['RatingCategory'] = pd.cut(df['TotalRating'], bins=bins, labels=labels, right=False, include_lowest=True)
 
+    # Ensure Restaurant_ID is integer
+    df['Restaurant_ID_int'] = df['Restaurant_ID'].astype(int)
+
     fig = px.scatter_map(
         df,
         lat="Lat",
@@ -1402,7 +1405,8 @@ def create_restaurant_map_chart():
         zoom=11,
         center={"lat": 35.0116, "lon": 135.7681},
         height=600,
-        map_style="carto-positron"
+        map_style="carto-positron",
+        custom_data=['Restaurant_ID_int', 'Name']  # Add Restaurant ID for click handling
     )
     fig.update_layout(
         margin={"r":0,"t":0,"l":0,"b":0},
@@ -1417,9 +1421,16 @@ def create_restaurant_map_chart():
             font=dict(
                 color='white'
             )
-        )
+        ),
+        clickmode='event+select'  # Enable click events
     )
-    return dcc.Graph(figure=fig)
+    # Update hover template to show it's clickable
+    fig.update_traces(
+        hovertemplate='<b>%{hovertext}</b><br>' +
+                     'Rating: %{customdata[1]}<br>' +
+                     '<i>Click to view details</i><extra></extra>'
+    )
+    return dcc.Graph(id='restaurant-map-graph', figure=fig)
 
 
 def create_hotel_map_chart():
@@ -1432,6 +1443,9 @@ def create_hotel_map_chart():
     bins = [0, 2, 3, 4, 5]
     labels = ['1-2 Stars', '2-3 Stars', '3-4 Stars', '4-5 Stars']
     df['RatingCategory'] = pd.cut(df['Rating'], bins=bins, labels=labels, right=False, include_lowest=True)
+
+    # Ensure Hotel_ID is integer
+    df['Hotel_ID_int'] = df['Hotel_ID'].astype(int)
 
     fig = px.scatter_map(
         df,
@@ -1449,7 +1463,8 @@ def create_hotel_map_chart():
         zoom=11,
         center={"lat": 35.0116, "lon": 135.7681},
         height=600,
-        map_style="carto-positron"
+        map_style="carto-positron",
+        custom_data=['Hotel_ID_int', 'HotelName']  # Add Hotel ID for click handling
     )
     fig.update_layout(
         margin={"r":0,"t":0,"l":0,"b":0},
@@ -1464,9 +1479,16 @@ def create_hotel_map_chart():
             font=dict(
                 color='white'
             )
-        )
+        ),
+        clickmode='event+select'  # Enable click events
     )
-    return dcc.Graph(id='hotel-map-chart', figure=fig)
+    # Update hover template to show it's clickable
+    fig.update_traces(
+        hovertemplate='<b>%{hovertext}</b><br>' +
+                     'Hotel: %{customdata[1]}<br>' +
+                     '<i>Click to view details</i><extra></extra>'
+    )
+    return dcc.Graph(id='hotel-map-graph', figure=fig)
 
 # --- 新增這個輔助函式 ---
 def create_help_section(index_id, button_text, explanation_content):
@@ -3892,6 +3914,50 @@ def update_map(selected_map):
     elif selected_map == 'hotels':
         return create_hotel_map_chart()
     return html.Div()
+
+# ===== Callback: Restaurant Map Click Navigation =====
+@app.callback(
+    Output('url', 'pathname', allow_duplicate=True),
+    Input('restaurant-map-graph', 'clickData'),
+    prevent_initial_call=True
+)
+def navigate_from_restaurant_map(click_data):
+    if click_data is None:
+        raise PreventUpdate
+
+    try:
+        # Extract Restaurant ID from customdata
+        restaurant_id = click_data['points'][0]['customdata'][0]
+        print(f"Restaurant map clicked - ID: {restaurant_id}")  # Debug log
+
+        # Navigate to restaurant detail page
+        return f'/restaurant/{int(restaurant_id)}'
+    except (KeyError, IndexError, TypeError) as e:
+        print(f"Error handling restaurant map click: {e}")
+        print(f"Click data: {click_data}")
+        raise PreventUpdate
+
+# ===== Callback: Hotel Map Click Navigation =====
+@app.callback(
+    Output('url', 'pathname', allow_duplicate=True),
+    Input('hotel-map-graph', 'clickData'),
+    prevent_initial_call=True
+)
+def navigate_from_hotel_map(click_data):
+    if click_data is None:
+        raise PreventUpdate
+
+    try:
+        # Extract Hotel ID from customdata
+        hotel_id = click_data['points'][0]['customdata'][0]
+        print(f"Hotel map clicked - ID: {hotel_id}")  # Debug log
+
+        # Navigate to hotel detail page
+        return f'/hotel/{int(hotel_id)}'
+    except (KeyError, IndexError, TypeError) as e:
+        print(f"Error handling hotel map click: {e}")
+        print(f"Click data: {click_data}")
+        raise PreventUpdate
 
 # ===== Clientside Callback: Scroll to Top on Page Change =====
 app.clientside_callback(

@@ -129,8 +129,8 @@ def create_analytics_layout(data_dict):
         labels={'negative_ratio': 'Negative Review %', 'cancellation_rate': 'Cancel Rate'}
     )
     fig_neg.update_layout(
-        template='plotly_dark', 
-        plot_bgcolor='rgba(0,0,0,0)', 
+        template='plotly_dark',
+        plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='#1a1a1a',
         margin=dict(l=40, r=40, t=60, b=40)
     )

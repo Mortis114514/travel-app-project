@@ -13,11 +13,18 @@ This is a Python-based Dash web application called "Voyage" - a modern travel di
 - Real-time search suggestions and filter chips
 - Search history (session-based) and popular searches (persistent)
 
-**Hotel Features** (Recently Added):
+**Hotel Features**:
 - Hotel search with type filtering and keyword search
 - Paginated hotel grid display
 - Individual hotel detail pages with ratings, location, and nearby hotel recommendations
 - Hotel type categorization and filtering
+
+**Analytics Dashboard** (Recently Added):
+- Market analysis with price vs rating scatter plots
+- Negative review correlation with cancellation rates
+- Hotel-specific rating distribution charts
+- Time-series quality trend monitoring with 30-day moving averages
+- Interactive help sections explaining chart interpretation
 
 **Core Features**:
 - Session-based authentication with login/registration (SQLite)
@@ -54,22 +61,26 @@ python performance_test.py            # Compare CSV vs database performance
 ### Data Generation and Testing
 ```bash
 # Data generation utilities
-python generate_reviews.py                        # Generate synthetic review data
+python generate_reviews.py                        # Generate synthetic restaurant review data
 python change_totalRating.py                      # Update restaurant ratings from reviews
 python Hotel_Generate.py                          # Generate hotel data
 python Hotel_Separate.py                          # Separate hotel data into CSV files
+python generate_bookings.py                       # Generate hotel booking data (for analytics)
+python generate_hotel_reviews.py                  # Generate hotel review data
+python generate_hotelReviews_all.py              # Generate comprehensive hotel reviews
 
 # Testing scripts (standalone Dash apps)
 python test_restaurant_barChart.py                # Test rating visualizations
 python test_rating_distribution.py                # Test rating distribution analysis
 python test_reviews_join.py                       # Test review data joins
+python tests/test_hotel_detail_flow.py           # Test hotel detail page flow
 ```
 
 ## Architecture
 
 ### Main Application (app.py)
 
-**Large monolithic file** (3700+ lines) organized into sections:
+**Large monolithic file** (~3560 lines) organized into sections:
 
 1. **Imports & Setup** (lines 1-45): Dash, Plotly, Pandas imports; utility imports from `utils/`, `pages/`
 2. **Data Loading** (lines 46-150): Database connection, helper functions for options creation
@@ -78,11 +89,11 @@ python test_reviews_join.py                       # Test review data joins
 5. **Main Layouts** (lines 1701-1900): Homepage layout with stores and navigation
 6. **App Initialization** (lines 1901-1950): Dash app setup, external stylesheets, layout definition
 7. **Callbacks - Authentication** (lines 1951-2100): Login, register, logout, page routing
-8. **Callbacks - Navigation** (lines 2101-2200): Page navigation, back buttons
+8. **Callbacks - Navigation** (lines 2101-2200): Page navigation, back buttons (includes analytics routing)
 9. **Callbacks - Restaurant Features** (lines 2201-2800): Search, filters, pagination, detail pages
 10. **Callbacks - Hotel Features** (lines 2801-3200): Hotel search, filtering, detail pages
-11. **Callbacks - UI Components** (lines 3201-3700): Dropdowns, tabs, user menus
-12. **App Runner** (line 3700+): `if __name__ == '__main__': app.run(debug=True)`
+11. **Callbacks - UI Components** (lines 3201-3900): Dropdowns, tabs, user menus, scroll behavior
+12. **App Runner** (line 3926+): `if __name__ == '__main__': app.run(debug=True, port=8050)`
 
 ### Database Module (utils/database.py)
 
@@ -103,6 +114,13 @@ python test_reviews_join.py                       # Test review data joins
 - `get_unique_hotel_types()`: List all unique hotel types
 - `get_nearby_hotels(lat, lon, limit, exclude_id)`: Find nearby hotels by coordinates
 - `get_hotels_by_type(type_name)`: Filter hotels by type
+
+**Analytics Functions** (New):
+- `get_all_reviews()`: Fetch all hotel reviews
+- `get_booking_data(hotel_id)`: Get booking data for specific hotel or all hotels
+- `get_revenue_trend(hotel_id)`: Calculate revenue trends over time
+- `get_occupancy_status(hotel_id)`: Get occupancy statistics
+- `get_market_analysis_data()`: Aggregate market analysis data for all hotels
 
 **Connection Management**:
 ```python
@@ -140,6 +158,12 @@ Database: `./data/users.db`
 - `create_login_layout()`: Login page with username/password form
 - `create_register_layout()`: Registration page with validation
 
+**analytics_page.py** (New):
+- `load_and_prepare_data()`: Load and integrate Hotels, Bookings, and Reviews CSV data
+- `create_analytics_layout(data_dict)`: Create analytics dashboard with 4 interactive charts
+- `create_help_section(index_id, button_text, explanation_content)`: Generate collapsible help sections
+- `register_analytics_callbacks(app, data_dict)`: Register callbacks for hotel-specific chart filtering
+
 ### Data Files (data/)
 
 **Active Databases**:
@@ -149,13 +173,15 @@ Database: `./data/users.db`
 - `users.db`: SQLite database for authentication (auto-created)
   - Tables: `users`, `sessions`
 
-**CSV Source Files** (used for migration):
+**CSV Source Files** (used for migration and analytics):
 - `Kyoto_Restaurant_Info_Full.csv`: Restaurant source data
-- `Reviews.csv`: Review source data
+- `Reviews.csv`: Restaurant review source data
 - `Hotels.csv`: Hotel data
 - `HotelTypes.csv`: Hotel type mappings
 - `Kyoto_Hotels_Full.csv`: Complete hotel dataset
 - `Types.csv`: Type categorization
+- `HotelReviews.csv`: Hotel review data (for analytics)
+- `bookings.csv`: Hotel booking data (for analytics - generated via generate_bookings.py)
 
 **Legacy CSV Files** (referenced in code but may not exist):
 - `Restaurant.csv`, `Category.csv`, `Price.csv`, `Rating.csv`, `RestaurantCategory.csv` - Normalized table structure (legacy)
@@ -179,13 +205,14 @@ Database: `./data/users.db`
 
 ## URL Routing and Navigation
 
-The app uses URL-based routing with three main page types:
+The app uses URL-based routing with multiple page types:
 
 1. **Homepage** (`/`):
    - Hero section with search bar
    - Random selection of 10 top-rated restaurants (4-5 stars)
    - Tab navigation (Saved Trips / Wishlisted Hotels / Favorite Restaurants)
    - Inspiration grid
+   - Navigation links to Analytics Dashboard
 
 2. **Restaurant List Page** (`/restaurants` - view-mode state):
    - Paginated grid (12 per page)
@@ -208,6 +235,12 @@ The app uses URL-based routing with three main page types:
    - Fetches data via `get_hotel_by_id()`
    - Displays nearby hotels using `get_nearby_hotels()`
    - Back button navigation
+
+6. **Analytics Dashboard** (view-mode: 'analytics'):
+   - Market-wide scatter plots (price vs rating, negative reviews vs cancellations)
+   - Hotel-specific analysis (rating distribution, time-series trends)
+   - Interactive hotel selector dropdown
+   - Help sections with chart interpretation guidance
 
 **Routing Implementation**:
 - `dcc.Location` component tracks URL
@@ -242,18 +275,32 @@ The app uses URL-based routing with three main page types:
 4. Results store change → update grid display and pagination
 5. Search saved to history (session storage) and popular searches (local storage)
 
+### Analytics Data Flow
+**Important**: The analytics dashboard uses CSV data, NOT the SQLite database.
+
+1. **Data Preparation**: Run data generation scripts to create required CSV files:
+   - `generate_bookings.py` → creates `data/bookings.csv` (50-150 bookings per hotel)
+   - `generate_hotel_reviews.py` or `generate_hotelReviews_all.py` → creates `data/HotelReviews.csv`
+2. **App Startup**: `load_and_prepare_data()` loads and merges Hotels.csv, bookings.csv, HotelReviews.csv
+3. **Data Integration**: Calculates derived metrics (avg_price, cancellation_rate, negative_ratio)
+4. **Chart Rendering**:
+   - Market-wide charts: Static Plotly figures generated on page load
+   - Hotel-specific charts: Dynamic updates via callbacks when hotel is selected
+5. **Database Functions**: `get_revenue_trend()` and `get_occupancy_status()` query bookings.csv data
+
 ## Callback Architecture
 
-The app uses 40+ callbacks organized by functionality:
+The app uses 45+ callbacks organized by functionality:
 
 **Authentication Callbacks** (6):
 - Page routing based on session state
 - Login/register form handlers
-- Logout from different pages (home, restaurant list, detail, hotel list)
+- Logout from different pages (home, restaurant list, detail, hotel list, analytics)
 
-**Navigation Callbacks** (5):
+**Navigation Callbacks** (6):
 - Navigate to restaurant list
 - Navigate to hotel list
+- Navigate to analytics dashboard
 - Back button handlers (using pattern matching)
 - View mode updates
 
@@ -275,11 +322,17 @@ The app uses 40+ callbacks organized by functionality:
 - Nearby hotels display
 - Hotel card click navigation
 
+**Analytics Callbacks** (New - 3+):
+- Hotel-specific rating distribution chart updates
+- Hotel-specific time-series trend chart updates
+- Help section collapse toggles
+
 **UI Component Callbacks** (10+):
 - User dropdown toggles (separate for each page)
 - Tab navigation (Saved/Wishlisted/Favorites)
 - Inspiration grid population
 - Destination cards population
+- Scroll-to-top on pagination (clientside callback)
 
 **Technical Details**:
 - **Pattern Matching**: Used for dynamic elements (`{'type': 'card', 'index': ALL}`)
@@ -372,12 +425,20 @@ The codebase contains legacy code from a previous travel analysis dashboard that
 - **Slow search**: Check SQL query performance; consider adding more indexes
 - **Too many callbacks firing**: Use `prevent_initial_call=True` to avoid unnecessary updates
 
+### Analytics Issues
+- **"No data available" message**: Run `generate_bookings.py` and `generate_hotelReviews_all.py` first
+- **Missing HotelReviews.csv or bookings.csv**: Check `data/` folder; run generation scripts
+- **Charts not loading**: Check browser console; verify CSV files have correct structure
+- **Hotel dropdown empty**: Verify Hotels.csv exists and contains data
+- **Time-series chart shows no data**: Ensure bookings.csv has date ranges (past year to future 6 months)
+
 ## Important Notes
 
 **Current State**:
 - App implements modern restaurant and hotel discovery platform (Voyage)
 - SQLite database with 2000+ Kyoto restaurants and hotels
-- Active development on search, filtering, pagination, and detail pages
+- Full-featured analytics dashboard with hotel performance metrics
+- Recent improvements: keyword search optimization, analytics dashboard with 4 interactive charts
 - Personalized features (saved/wishlisted) have UI but no backend yet
 
 **Authentication & Security**:
