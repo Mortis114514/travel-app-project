@@ -20,7 +20,8 @@ def init_db():
             password_hash TEXT NOT NULL,
             email TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            last_login TIMESTAMP
+            last_login TIMESTAMP,
+            profile_photo TEXT
         )
     ''')
 
@@ -36,6 +37,15 @@ def init_db():
     ''')
 
     conn.commit()
+
+    # Add profile_photo column if it doesn't exist (migration for existing databases)
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN profile_photo TEXT")
+        conn.commit()
+    except sqlite3.OperationalError:
+        # Column already exists
+        pass
+
     conn.close()
 
 def hash_password(password):
@@ -103,7 +113,7 @@ def get_user_full_details(user_id):
     cursor = conn.cursor()
 
     cursor.execute(
-        'SELECT id, username, email, created_at, last_login FROM users WHERE id = ?',
+        'SELECT id, username, email, created_at, last_login, profile_photo FROM users WHERE id = ?',
         (user_id,)
     )
     user = cursor.fetchone()
@@ -116,9 +126,27 @@ def get_user_full_details(user_id):
             'username': user['username'],
             'email': user['email'],
             'created_at': user['created_at'],
-            'last_login': user['last_login']
+            'last_login': user['last_login'],
+            'profile_photo': user['profile_photo']
         }
     return None
+
+def update_profile_photo(user_id, photo_data):
+    """更新使用者的個人照片（base64 編碼）"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        cursor.execute(
+            'UPDATE users SET profile_photo = ? WHERE id = ?',
+            (photo_data, user_id)
+        )
+
+        conn.commit()
+        conn.close()
+        return True, "照片更新成功"
+    except Exception as e:
+        return False, f"更新失敗: {str(e)}"
 
 def create_session(user_id, session_id, expires_at):
     """建立 session"""

@@ -11,10 +11,12 @@ from geopy.extra.rate_limiter import RateLimiter
 import uuid
 import random
 import json
+import base64
+import io
 from datetime import datetime, timedelta
 
 # 從./utils導入所有自定義函數
-from utils.auth import verify_user, create_user, get_session, create_session, delete_session, clean_expired_sessions, get_user_full_details
+from utils.auth import verify_user, create_user, get_session, create_session, delete_session, clean_expired_sessions, get_user_full_details, update_profile_photo
 from pages.login_page import create_login_layout, create_register_layout
 from pages.analytics_page import create_analytics_layout, load_and_prepare_data, register_analytics_callbacks
 from utils.database import get_revenue_trend, get_occupancy_status
@@ -376,7 +378,22 @@ def create_detail_header():
             # 用戶頭像和下拉菜單（右側）
             html.Div([
                 html.Div([
-                    html.I(className='fas fa-user')
+                    html.Img(
+                        id='user-avatar-img-detail',
+                        src=None,
+                        style={
+                            'width': '40px',
+                            'height': '40px',
+                            'borderRadius': '50%',
+                            'objectFit': 'cover',
+                            'display': 'none'
+                        }
+                    ),
+                    html.I(
+                        id='user-avatar-icon-detail',
+                        className='fas fa-user',
+                        style={'display': 'block'}
+                    )
                 ], id='user-avatar-detail', className='user-avatar', n_clicks=0),
 
                 html.Div([
@@ -943,7 +960,7 @@ def create_reviews_section(data):
     ratings = list(counts.keys())
     values = [counts[r] for r in ratings]
 
-    # Create Plotly bar chart for visibility
+    # Create Plotly bar chart for visibility with enhanced interactivity
     fig = px.bar(
         x=ratings,
         y=values,
@@ -952,23 +969,70 @@ def create_reviews_section(data):
         text=values,
         height=360
     )
-    fig.update_traces(marker_color='#deb522', hovertemplate='Stars: %{x}<br>Count: %{y}<extra></extra>')
+
+    # Enhanced styling with hover and click effects
+    fig.update_traces(
+        marker_color='#deb522',
+        marker_line_color='#ffffff',
+        marker_line_width=0,
+        hovertemplate='<b>%{x} Stars</b><br>Count: %{y}<br><i>Click to view reviews</i><extra></extra>',
+        hoverlabel=dict(
+            bgcolor='#2a2a2a',
+            font_size=14,
+            font_family='Segoe UI, Arial',
+            font_color='#ffffff',
+            bordercolor='#deb522'
+        )
+    )
+
     fig.update_layout(
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
-        title={'x':0.02, 'xanchor':'left', 'font': {'color':'#ffffff'}},
-        xaxis=dict(tickfont=dict(color='#ffffff')),
-        yaxis=dict(tickfont=dict(color='#ffffff')),
-        margin=dict(l=20, r=20, t=40, b=20)
+        title={
+            'text': 'Ratings distribution - <i>Click on any bar to view reviews</i>',
+            'x': 0.02,
+            'xanchor': 'left',
+            'font': {'color': '#ffffff', 'size': 16}
+        },
+        xaxis=dict(
+            tickfont=dict(color='#ffffff', size=12),
+            title=dict(text='Stars', font=dict(color='#deb522', size=14))
+        ),
+        yaxis=dict(
+            tickfont=dict(color='#ffffff', size=12),
+            title=dict(text='Count', font=dict(color='#deb522', size=14))
+        ),
+        margin=dict(l=60, r=20, t=60, b=60),
+        hovermode='closest',
+        transition=dict(duration=500, easing='cubic-in-out'),
+        uirevision='constant'  # Maintain zoom/pan state across updates
     )
 
     comments_area = html.Div(id='reviews-comments', children=[
-        html.Div('Click a star bar to show comments', style={'color': '#888888'})
-    ], style={'marginTop': '1rem', 'color': '#ffffff', 'maxHeight': '260px', 'overflowY': 'auto'})
+        html.Div('Click a star bar to show comments', style={'color': '#888888', 'fontStyle': 'italic'})
+    ], style={
+        'marginTop': '1rem',
+        'color': '#ffffff',
+        'minHeight': '80px',
+        'maxHeight': '260px',
+        'overflowY': 'auto',
+        'transition': 'all 0.3s ease'
+    })
 
     return html.Div([
         html.H3('Reviews', style={'color': '#deb522', 'marginBottom': '1rem', 'fontSize': '1.5rem', 'fontWeight': 'bold'}),
-        dcc.Graph(id='ratings-bar-chart', figure=fig, config={'displayModeBar': False}),
+        dcc.Store(id='selected-rating-store', data=None),
+        html.Div([
+            dcc.Graph(
+                id='ratings-bar-chart',
+                figure=fig,
+                config={
+                    'displayModeBar': False,
+                    'responsive': True
+                },
+                style={'cursor': 'pointer', 'height': '360px'}
+            )
+        ], style={'minHeight': '360px', 'maxHeight': '360px', 'overflow': 'hidden'}),
         comments_area
     ], style={
         'backgroundColor': '#1a1a1a',
@@ -1147,9 +1211,24 @@ def create_hotel_detail_page(hotel_id):
                 # 用戶頭像與選單
                 html.Div([
                     html.Div([
-                        html.I(className='fas fa-user')
+                        html.Img(
+                            id='user-avatar-img-hotel-detail',
+                            src=None,
+                            style={
+                                'width': '40px',
+                                'height': '40px',
+                                'borderRadius': '50%',
+                                'objectFit': 'cover',
+                                'display': 'none'
+                            }
+                        ),
+                        html.I(
+                            id='user-avatar-icon-hotel-detail',
+                            className='fas fa-user',
+                            style={'display': 'block'}
+                        )
                     ], id='user-avatar-hotel-detail', className='user-avatar', n_clicks=0),
-                    
+
                     # 下拉選單
                     html.Div([
                         html.Div([
@@ -1655,7 +1734,22 @@ def create_profile_page(user_data):
                     # User Avatar with Dropdown
                     html.Div([
                         html.Div([
-                            html.I(className='fas fa-user')
+                            html.Img(
+                                id='user-avatar-img-profile',
+                                src=None,
+                                style={
+                                    'width': '40px',
+                                    'height': '40px',
+                                    'borderRadius': '50%',
+                                    'objectFit': 'cover',
+                                    'display': 'none'
+                                }
+                            ),
+                            html.I(
+                                id='user-avatar-icon-profile',
+                                className='fas fa-user',
+                                style={'display': 'block'}
+                            )
                         ], className='user-avatar', id='user-avatar-profile', n_clicks=0),
 
                         # Dropdown Menu
@@ -1687,11 +1781,65 @@ def create_profile_page(user_data):
 
                 # Profile Card
                 html.Div([
-                    # User Avatar Icon
+                    # User Avatar Icon with Upload
                     html.Div([
-                        html.I(className='fas fa-user-circle', style={
-                            'fontSize': '6rem',
-                            'color': '#deb522'
+                        # Display current photo or default icon
+                        html.Div([
+                            html.Img(
+                                id='profile-photo-display',
+                                src=user_data.get('profile_photo') if user_data.get('profile_photo') else None,
+                                style={
+                                    'width': '150px',
+                                    'height': '150px',
+                                    'borderRadius': '50%',
+                                    'objectFit': 'cover',
+                                    'border': '3px solid #deb522',
+                                    'display': 'block' if user_data.get('profile_photo') else 'none'
+                                }
+                            ),
+                            html.I(
+                                className='fas fa-user-circle',
+                                id='profile-default-icon',
+                                style={
+                                    'fontSize': '6rem',
+                                    'color': '#deb522',
+                                    'display': 'none' if user_data.get('profile_photo') else 'block'
+                                }
+                            )
+                        ], style={'display': 'flex', 'justifyContent': 'center', 'marginBottom': '1rem'}),
+
+                        # Upload button
+                        html.Div([
+                            dcc.Upload(
+                                id='upload-profile-photo',
+                                children=html.Div([
+                                    html.I(className='fas fa-camera', style={'marginRight': '0.5rem'}),
+                                    'Upload Photo'
+                                ]),
+                                style={
+                                    'width': '150px',
+                                    'height': '40px',
+                                    'lineHeight': '40px',
+                                    'borderRadius': '20px',
+                                    'textAlign': 'center',
+                                    'backgroundColor': '#deb522',
+                                    'color': '#1a1a1a',
+                                    'cursor': 'pointer',
+                                    'fontWeight': 'bold',
+                                    'transition': 'all 0.3s ease',
+                                    'margin': '0 auto'
+                                },
+                                multiple=False,
+                                accept='image/*'
+                            )
+                        ], style={'display': 'flex', 'justifyContent': 'center', 'marginBottom': '1rem'}),
+
+                        # Upload feedback message
+                        html.Div(id='upload-feedback', style={
+                            'textAlign': 'center',
+                            'color': '#deb522',
+                            'fontSize': '0.9rem',
+                            'minHeight': '20px'
                         })
                     ], style={'textAlign': 'center', 'marginBottom': '2rem'}),
 
@@ -1772,7 +1920,22 @@ def create_main_layout():
                     # User Avatar with Dropdown
                     html.Div([
                         html.Div([
-                            html.I(className='fas fa-user')
+                            html.Img(
+                                id='user-avatar-img',
+                                src=None,
+                                style={
+                                    'width': '40px',
+                                    'height': '40px',
+                                    'borderRadius': '50%',
+                                    'objectFit': 'cover',
+                                    'display': 'none'
+                                }
+                            ),
+                            html.I(
+                                id='user-avatar-icon',
+                                className='fas fa-user',
+                                style={'display': 'block'}
+                            )
                         ], className='user-avatar', id='user-avatar', n_clicks=0),
 
                         # Dropdown Menu
@@ -1843,16 +2006,19 @@ def create_main_layout():
         # ===== NEW: Map Section =====
         html.Div([
             html.H2('Distribution in Kyoto', className='section-title'),
-            dcc.RadioItems(
-                id='map-type-switch',
-                options=[
-                    {'label': 'Restaurants', 'value': 'restaurants'},
-                    {'label': 'Hotels', 'value': 'hotels'},
-                ],
-                value='restaurants',
-                labelStyle={'display': 'inline-block', 'margin': '0 10px'},
-                style={'textAlign': 'center', 'color': 'white', 'marginBottom': '1rem'}
-            ),
+            html.Div([
+                dcc.RadioItems(
+                    id='map-type-switch',
+                    options=[
+                        {'label': 'Restaurants', 'value': 'restaurants'},
+                        {'label': 'Hotels', 'value': 'hotels'},
+                    ],
+                    value='restaurants',
+                    className='map-toggle-buttons',
+                    labelClassName='map-toggle-label',
+                    inputClassName='map-toggle-input'
+                )
+            ], className='map-toggle-container'),
             html.Div(id='map-container', children=[create_restaurant_map_chart()])
         ], className='content-section')
     ], style={'backgroundColor': '#0a0a0a', 'minHeight': '100vh'})
@@ -1880,7 +2046,22 @@ def create_restaurant_list_page():
                 # User Avatar
                 html.Div([
                     html.Div([
-                        html.I(className='fas fa-user')
+                        html.Img(
+                            id='user-avatar-img-list',
+                            src=None,
+                            style={
+                                'width': '40px',
+                                'height': '40px',
+                                'borderRadius': '50%',
+                                'objectFit': 'cover',
+                                'display': 'none'
+                            }
+                        ),
+                        html.I(
+                            id='user-avatar-icon-list',
+                            className='fas fa-user',
+                            style={'display': 'block'}
+                        )
                     ], className='user-avatar', id='user-avatar-list', n_clicks=0),
 
                     # Dropdown Menu
@@ -1977,7 +2158,22 @@ def create_hotel_list_page():
                 # User Avatar
                 html.Div([
                     html.Div([
-                        html.I(className='fas fa-user')
+                        html.Img(
+                            id='user-avatar-img-hotel-list',
+                            src=None,
+                            style={
+                                'width': '40px',
+                                'height': '40px',
+                                'borderRadius': '50%',
+                                'objectFit': 'cover',
+                                'display': 'none'
+                            }
+                        ),
+                        html.I(
+                            id='user-avatar-icon-hotel-list',
+                            className='fas fa-user',
+                            style={'display': 'block'}
+                        )
                     ], className='user-avatar', id='user-avatar-hotel-list', n_clicks=0),
 
                     # Dropdown Menu
@@ -2265,7 +2461,8 @@ def switch_to_login(n_clicks):
 # 登入處理
 @app.callback(
     [Output('session-store', 'data'),
-     Output('login-error-message', 'children')],
+     Output('login-error-message', 'children'),
+     Output('current-user-data', 'data')],
     [Input('login-button', 'n_clicks'),
      Input('login-username', 'n_submit'),  # Add n_submit for username field
      Input('login-password', 'n_submit')],  # Add n_submit for password field
@@ -2294,7 +2491,7 @@ def login(n_clicks, username_n_submit, password_n_submit, username, password, re
         password = password.strip()
     # 驗證輸入
     if not username or not password:
-        return no_update, dbc.Alert('請輸入使用者名稱和密碼', color='danger')
+        return no_update, dbc.Alert('請輸入使用者名稱和密碼', color='danger'), no_update
 
     # 驗證使用者
     user = verify_user(username, password)
@@ -2312,9 +2509,17 @@ def login(n_clicks, username_n_submit, password_n_submit, username, password, re
 
         create_session(user_id, session_id, expires_at)
 
-        return {'session_id': session_id, 'user_id': user_id, 'username': user[1]}, None
+        # Get full user details including profile photo
+        user_details = get_user_full_details(user_id)
+        user_data = {
+            'user_id': user_id,
+            'username': user[1],
+            'profile_photo': user_details.get('profile_photo') if user_details else None
+        }
+
+        return {'session_id': session_id, 'user_id': user_id, 'username': user[1]}, None, user_data
     else:
-        return no_update, dbc.Alert('使用者名稱或密碼錯誤', color='danger')
+        return no_update, dbc.Alert('使用者名稱或密碼錯誤', color='danger'), no_update
 
 # 註冊處理
 @app.callback(
@@ -3269,6 +3474,319 @@ def logout_from_profile(n_clicks, session_data):
 
     return None
 
+# Handle profile photo upload
+@app.callback(
+    [Output('profile-photo-display', 'src'),
+     Output('profile-photo-display', 'style'),
+     Output('profile-default-icon', 'style'),
+     Output('upload-feedback', 'children'),
+     Output('current-user-data', 'data', allow_duplicate=True)],
+    [Input('upload-profile-photo', 'contents')],
+    [State('session-store', 'data'),
+     State('current-user-data', 'data')],
+    prevent_initial_call=True
+)
+def upload_profile_photo(contents, session_data, current_user_data):
+    """處理個人照片上傳"""
+    if not contents or not session_data or 'session_id' not in session_data:
+        raise PreventUpdate
+
+    # Get user ID from session
+    user_id = get_session(session_data['session_id'])
+    if not user_id:
+        return no_update, no_update, no_update, 'Session expired. Please login again.', no_update
+
+    try:
+        # Validate file type
+        content_type, content_string = contents.split(',')
+
+        # Check if it's an image
+        if not content_type.startswith('data:image'):
+            return no_update, no_update, no_update, 'Please upload an image file (JPG, PNG, etc.)', no_update
+
+        # Decode the base64 data
+        decoded = base64.b64decode(content_string)
+
+        # Check file size (limit to 5MB)
+        if len(decoded) > 5 * 1024 * 1024:
+            return no_update, no_update, no_update, 'Image too large. Please upload an image smaller than 5MB.', no_update
+
+        # Update database with photo data
+        success, message = update_profile_photo(user_id, contents)
+
+        if success:
+            # Return updated styles to show photo and hide default icon
+            photo_style = {
+                'width': '150px',
+                'height': '150px',
+                'borderRadius': '50%',
+                'objectFit': 'cover',
+                'border': '3px solid #deb522',
+                'display': 'block'
+            }
+            icon_style = {
+                'fontSize': '6rem',
+                'color': '#deb522',
+                'display': 'none'
+            }
+
+            # Update user data store to trigger avatar updates
+            updated_user_data = current_user_data or {}
+            updated_user_data['profile_photo'] = contents
+
+            return contents, photo_style, icon_style, 'Photo uploaded successfully!', updated_user_data
+        else:
+            return no_update, no_update, no_update, f'Upload failed: {message}', no_update
+
+    except Exception as e:
+        return no_update, no_update, no_update, f'Error processing image: {str(e)}', no_update
+
+# Update homepage user avatar when photo is uploaded
+@app.callback(
+    [Output('user-avatar-img', 'src'),
+     Output('user-avatar-img', 'style'),
+     Output('user-avatar-icon', 'style')],
+    [Input('current-user-data', 'data'),
+     Input('view-mode', 'data')]
+)
+def update_homepage_avatar(user_data, view_mode):
+    """更新首頁使用者頭像"""
+    # Only update when on homepage
+    if view_mode != 'home':
+        raise PreventUpdate
+
+    # Update even if user_data is None (will show default icon)
+    if not user_data:
+        profile_photo = None
+    else:
+        profile_photo = user_data.get('profile_photo')
+
+    if profile_photo:
+        img_style = {
+            'width': '40px',
+            'height': '40px',
+            'borderRadius': '50%',
+            'objectFit': 'cover',
+            'display': 'block'
+        }
+        icon_style = {'display': 'none'}
+        return profile_photo, img_style, icon_style
+    else:
+        img_style = {
+            'width': '40px',
+            'height': '40px',
+            'borderRadius': '50%',
+            'objectFit': 'cover',
+            'display': 'none'
+        }
+        icon_style = {'display': 'block'}
+        return None, img_style, icon_style
+
+# Update restaurant list page avatar
+@app.callback(
+    [Output('user-avatar-img-list', 'src'),
+     Output('user-avatar-img-list', 'style'),
+     Output('user-avatar-icon-list', 'style')],
+    [Input('current-user-data', 'data'),
+     Input('view-mode', 'data')]
+)
+def update_list_avatar(user_data, view_mode):
+    """更新餐廳列表頁使用者頭像"""
+    # Only update when on restaurant list page
+    if view_mode != 'restaurant-list':
+        raise PreventUpdate
+
+    # Update even if user_data is None (will show default icon)
+    if not user_data:
+        profile_photo = None
+    else:
+        profile_photo = user_data.get('profile_photo')
+
+    if profile_photo:
+        img_style = {
+            'width': '40px',
+            'height': '40px',
+            'borderRadius': '50%',
+            'objectFit': 'cover',
+            'display': 'block'
+        }
+        icon_style = {'display': 'none'}
+        return profile_photo, img_style, icon_style
+    else:
+        img_style = {
+            'width': '40px',
+            'height': '40px',
+            'borderRadius': '50%',
+            'objectFit': 'cover',
+            'display': 'none'
+        }
+        icon_style = {'display': 'block'}
+        return None, img_style, icon_style
+
+# Update hotel list page avatar
+@app.callback(
+    [Output('user-avatar-img-hotel-list', 'src'),
+     Output('user-avatar-img-hotel-list', 'style'),
+     Output('user-avatar-icon-hotel-list', 'style')],
+    [Input('current-user-data', 'data'),
+     Input('view-mode', 'data')]
+)
+def update_hotel_list_avatar(user_data, view_mode):
+    """更新旅館列表頁使用者頭像"""
+    # Only update when on hotel list page
+    if view_mode != 'hotel-list':
+        raise PreventUpdate
+
+    # Update even if user_data is None (will show default icon)
+    if not user_data:
+        profile_photo = None
+    else:
+        profile_photo = user_data.get('profile_photo')
+
+    if profile_photo:
+        img_style = {
+            'width': '40px',
+            'height': '40px',
+            'borderRadius': '50%',
+            'objectFit': 'cover',
+            'display': 'block'
+        }
+        icon_style = {'display': 'none'}
+        return profile_photo, img_style, icon_style
+    else:
+        img_style = {
+            'width': '40px',
+            'height': '40px',
+            'borderRadius': '50%',
+            'objectFit': 'cover',
+            'display': 'none'
+        }
+        icon_style = {'display': 'block'}
+        return None, img_style, icon_style
+
+# Update restaurant detail page avatar
+@app.callback(
+    [Output('user-avatar-img-detail', 'src'),
+     Output('user-avatar-img-detail', 'style'),
+     Output('user-avatar-icon-detail', 'style')],
+    [Input('current-user-data', 'data'),
+     Input('selected-restaurant-id', 'data')]
+)
+def update_detail_avatar(user_data, restaurant_id):
+    """更新餐廳詳情頁使用者頭像"""
+    # Only update when on restaurant detail page
+    if not restaurant_id:
+        raise PreventUpdate
+
+    # Update even if user_data is None (will show default icon)
+    if not user_data:
+        profile_photo = None
+    else:
+        profile_photo = user_data.get('profile_photo')
+
+    if profile_photo:
+        img_style = {
+            'width': '40px',
+            'height': '40px',
+            'borderRadius': '50%',
+            'objectFit': 'cover',
+            'display': 'block'
+        }
+        icon_style = {'display': 'none'}
+        return profile_photo, img_style, icon_style
+    else:
+        img_style = {
+            'width': '40px',
+            'height': '40px',
+            'borderRadius': '50%',
+            'objectFit': 'cover',
+            'display': 'none'
+        }
+        icon_style = {'display': 'block'}
+        return None, img_style, icon_style
+
+# Update hotel detail page avatar
+@app.callback(
+    [Output('user-avatar-img-hotel-detail', 'src'),
+     Output('user-avatar-img-hotel-detail', 'style'),
+     Output('user-avatar-icon-hotel-detail', 'style')],
+    [Input('current-user-data', 'data'),
+     Input('hotel-detail-data', 'data')]
+)
+def update_hotel_detail_avatar(user_data, hotel_data):
+    """更新旅館詳情頁使用者頭像"""
+    # Only update when on hotel detail page
+    if not hotel_data:
+        raise PreventUpdate
+
+    # Update even if user_data is None (will show default icon)
+    if not user_data:
+        profile_photo = None
+    else:
+        profile_photo = user_data.get('profile_photo')
+
+    if profile_photo:
+        img_style = {
+            'width': '40px',
+            'height': '40px',
+            'borderRadius': '50%',
+            'objectFit': 'cover',
+            'display': 'block'
+        }
+        icon_style = {'display': 'none'}
+        return profile_photo, img_style, icon_style
+    else:
+        img_style = {
+            'width': '40px',
+            'height': '40px',
+            'borderRadius': '50%',
+            'objectFit': 'cover',
+            'display': 'none'
+        }
+        icon_style = {'display': 'block'}
+        return None, img_style, icon_style
+
+# Update profile page avatar
+@app.callback(
+    [Output('user-avatar-img-profile', 'src'),
+     Output('user-avatar-img-profile', 'style'),
+     Output('user-avatar-icon-profile', 'style')],
+    [Input('current-user-data', 'data'),
+     Input('view-mode', 'data')]
+)
+def update_profile_page_avatar(user_data, view_mode):
+    """更新個人檔案頁使用者頭像"""
+    # Only update when on profile page
+    if view_mode != 'profile':
+        raise PreventUpdate
+
+    # Update even if user_data is None (will show default icon)
+    if not user_data:
+        profile_photo = None
+    else:
+        profile_photo = user_data.get('profile_photo')
+
+    if profile_photo:
+        img_style = {
+            'width': '40px',
+            'height': '40px',
+            'borderRadius': '50%',
+            'objectFit': 'cover',
+            'display': 'block'
+        }
+        icon_style = {'display': 'none'}
+        return profile_photo, img_style, icon_style
+    else:
+        img_style = {
+            'width': '40px',
+            'height': '40px',
+            'borderRadius': '50%',
+            'objectFit': 'cover',
+            'display': 'none'
+        }
+        icon_style = {'display': 'block'}
+        return None, img_style, icon_style
+
 # Navigate to profile page from restaurant detail page dropdown
 @app.callback(
     [Output('view-mode', 'data', allow_duplicate=True),
@@ -3755,7 +4273,8 @@ def logout_from_detail_page(n_clicks, session_data):
 
 # 點擊星等長條圖顯示該星級部分評論，並提供 Show all 按鈕
 @app.callback(
-    Output('reviews-comments', 'children'),
+    [Output('reviews-comments', 'children'),
+     Output('selected-rating-store', 'data')],
     [Input('ratings-bar-chart', 'clickData'),
      Input({'type': 'show-all-comments', 'index': ALL}, 'n_clicks')],
     [State('restaurant-detail-data', 'data'),
@@ -3792,12 +4311,12 @@ def handle_reviews_interaction(clickData, show_all_n_clicks, restaurant_data, ho
         try:
             clicked_star = int(clickData['points'][0]['x'])
         except Exception:
-            return html.Div('Unable to parse clicked rating', style={'color': '#888888'})
+            return html.Div('Unable to parse clicked rating', style={'color': '#888888'}), None
 
         matched = [r for r in reviews if r and r.get('rating') is not None and int(round(float(r['rating']))) == clicked_star]
 
         if not matched:
-            return html.Div(f'No comments for {clicked_star}★', style={'color': '#888888'})
+            return html.Div(f'No comments for {clicked_star}★', style={'color': '#888888'}), clicked_star
 
         items = []
         for r in matched[:6]:
@@ -3805,7 +4324,7 @@ def handle_reviews_interaction(clickData, show_all_n_clicks, restaurant_data, ho
             items.append(html.Div([
                 html.Div(f"★ {clicked_star}", style={'color': '#deb522', 'fontWeight': '600', 'marginRight': '8px', 'display': 'inline-block', 'width': '48px'}),
                 html.Div(text, style={'color': '#ffffff', 'display': 'inline-block', 'verticalAlign': 'top', 'maxWidth': 'calc(100% - 60px)'})
-            ], style={'padding': '8px 0', 'borderBottom': '1px solid #222'}))
+            ], style={'padding': '8px 0', 'borderBottom': '1px solid #222', 'animation': 'fadeIn 0.3s ease'}))
 
         # Add Show all button if more comments exist
         if len(matched) > 6:
@@ -3813,7 +4332,7 @@ def handle_reviews_interaction(clickData, show_all_n_clicks, restaurant_data, ho
                 html.Button('Show all comments', id={'type': 'show-all-comments', 'index': clicked_star}, n_clicks=0, className='btn-primary', style={'marginTop': '10px'})
             ], style={'textAlign': 'center'}))
 
-        return html.Div(items)
+        return html.Div(items), clicked_star
 
     # Otherwise a "Show all" button was clicked (pattern-matching id)
     else:
@@ -3830,7 +4349,7 @@ def handle_reviews_interaction(clickData, show_all_n_clicks, restaurant_data, ho
         matched = [r for r in reviews if r and r.get('rating') is not None and int(round(float(r['rating']))) == star]
 
         if not matched:
-            return html.Div(f'No comments for {star}★', style={'color': '#888888'})
+            return html.Div(f'No comments for {star}★', style={'color': '#888888'}), star
 
         items = []
         for r in matched:
@@ -3838,10 +4357,105 @@ def handle_reviews_interaction(clickData, show_all_n_clicks, restaurant_data, ho
             items.append(html.Div([
                 html.Div(f"★ {star}", style={'color': '#deb522', 'fontWeight': '600', 'marginRight': '8px', 'display': 'inline-block', 'width': '48px'}),
                 html.Div(text, style={'color': '#ffffff', 'display': 'inline-block', 'verticalAlign': 'top', 'maxWidth': 'calc(100% - 60px)'})
-            ], style={'padding': '8px 0', 'borderBottom': '1px solid #222'}))
+            ], style={'padding': '8px 0', 'borderBottom': '1px solid #222', 'animation': 'fadeIn 0.3s ease'}))
 
-        return html.Div(items)
-    
+        return html.Div(items), star
+
+# Callback to update bar chart colors when a rating is selected
+@app.callback(
+    Output('ratings-bar-chart', 'figure', allow_duplicate=True),
+    [Input('selected-rating-store', 'data')],
+    [State('restaurant-detail-data', 'data'),
+     State('hotel-detail-data', 'data')],
+    prevent_initial_call=True
+)
+def update_bar_chart_selection(selected_rating, restaurant_data, hotel_data):
+    """Update bar chart colors to highlight the selected rating."""
+    # Choose which detail data to use (restaurant preferred)
+    detail_data = None
+    if isinstance(restaurant_data, dict) and restaurant_data:
+        detail_data = restaurant_data
+    elif isinstance(hotel_data, dict) and hotel_data:
+        detail_data = hotel_data
+    else:
+        raise PreventUpdate
+
+    # Get reviews and count ratings
+    reviews = detail_data.get('reviews', []) if isinstance(detail_data, dict) else []
+    counts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+
+    for review in reviews:
+        try:
+            rating = review.get('rating')
+            if rating is None:
+                continue
+            rating_int = int(round(float(rating)))
+            if 1 <= rating_int <= 5:
+                counts[rating_int] += 1
+        except Exception:
+            continue
+
+    ratings = list(counts.keys())
+    values = [counts[r] for r in ratings]
+
+    # Create colors array - highlight selected bar
+    colors = []
+    for r in ratings:
+        if selected_rating is not None and r == selected_rating:
+            colors.append('#ffd700')  # Brighter gold for selected
+        else:
+            colors.append('#deb522')  # Normal gold
+
+    # Create updated bar chart
+    fig = px.bar(
+        x=ratings,
+        y=values,
+        labels={'x': 'Stars', 'y': 'Count'},
+        title='Ratings distribution',
+        text=values,
+        height=360
+    )
+
+    # Update with dynamic colors
+    fig.update_traces(
+        marker_color=colors,
+        marker_line_color='#ffffff',
+        marker_line_width=2 if selected_rating is not None else 0,
+        hovertemplate='<b>%{x} Stars</b><br>Count: %{y}<br><i>Click to view reviews</i><extra></extra>',
+        hoverlabel=dict(
+            bgcolor='#2a2a2a',
+            font_size=14,
+            font_family='Segoe UI, Arial',
+            font_color='#ffffff',
+            bordercolor='#deb522'
+        )
+    )
+
+    fig.update_layout(
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        title={
+            'text': f'Ratings distribution - <i>{"Showing " + str(selected_rating) + "★ reviews" if selected_rating else "Click on any bar to view reviews"}</i>',
+            'x': 0.02,
+            'xanchor': 'left',
+            'font': {'color': '#ffffff', 'size': 16}
+        },
+        xaxis=dict(
+            tickfont=dict(color='#ffffff', size=12),
+            title=dict(text='Stars', font=dict(color='#deb522', size=14))
+        ),
+        yaxis=dict(
+            tickfont=dict(color='#ffffff', size=12),
+            title=dict(text='Count', font=dict(color='#deb522', size=14))
+        ),
+        margin=dict(l=60, r=20, t=60, b=60),
+        hovermode='closest',
+        transition=dict(duration=200, easing='cubic-in-out'),
+        uirevision='constant'  # Prevent full re-render, only update data
+    )
+
+    return fig
+
 ##########################################################
 ####  旅館詳細頁面 Callbacks (Hotel Detail Page)  ####
 ##########################################################
