@@ -394,10 +394,7 @@ def create_detail_header():
                         html.Span('Logout')
                     ], className='dropdown-item', id='menu-logout-detail', n_clicks=0)
                 ], id='user-dropdown-detail', className='user-dropdown')
-            ], style={'position': 'relative'}),
-
-            # 下拉菜單狀態儲存
-            dcc.Store(id='dropdown-open-detail', data=False, storage_type='memory')
+            ], style={'position': 'relative'})
         ], style={
             'maxWidth': '1400px',
             'margin': '0 auto',
@@ -1169,10 +1166,7 @@ def create_hotel_detail_page(hotel_id):
                             html.Span('Logout')
                         ], className='dropdown-item', id='menu-logout-detail', n_clicks=0)
                     ], id='user-dropdown-detail', className='user-dropdown')
-                ], style={'position': 'relative'}),
-
-                # 下拉菜單狀態儲存
-                dcc.Store(id='dropdown-open-detail', data=False, storage_type='memory')
+                ], style={'position': 'relative'})
 
             ], style={
                 'maxWidth': '1400px',
@@ -1576,8 +1570,8 @@ def create_hotel_analytics_charts(hotel_id):
 ####   初始化應用程式   ####
 ##########################
 app = Dash(__name__, external_stylesheets=[
-    dbc.themes.BOOTSTRAP,
-    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
+    '/assets/bootstrap.min.css',
+    '/assets/fontawesome.min.css',
     '/assets/voyage_styles.css'
 ],
            title='柔成員的旅遊平台', suppress_callback_exceptions=True)
@@ -1611,6 +1605,10 @@ app.layout = html.Div([
     dcc.Store(id='hotel-current-page-store', data=1, storage_type='memory'),  # 👈 存儲旅館列表分頁狀態
     dcc.Store(id='hotel-detail-data', storage_type='memory'),  # 旅館詳細資料（包含 reviews）
     dcc.Store(id='dropdown-open', data=False, storage_type='memory'),  # User dropdown state for homepage
+    dcc.Store(id='dropdown-open-list', data=False, storage_type='memory'),  # User dropdown state for restaurant list page
+    dcc.Store(id='dropdown-open-hotel-list', data=False, storage_type='memory'),  # User dropdown state for hotel list page
+    dcc.Store(id='dropdown-open-detail', data=False, storage_type='memory'),  # User dropdown state for detail pages
+    dcc.Store(id='previous-view-mode', storage_type='memory'),  # Track previous view mode before navigating to profile
     html.Div(id='scroll-trigger', style={'display': 'none'}),  # 隱藏的滾動觸發器
     html.Div(id='page-content', style={'minHeight': '100vh'})
 ], style={'backgroundColor': '#1a1a1a', 'minHeight': '100vh'})
@@ -1918,9 +1916,6 @@ def create_restaurant_list_page():
             'zIndex': '1000'
         }),
 
-        # Store for dropdown state
-        dcc.Store(id='dropdown-open-list', data=False, storage_type='memory'),
-
         # ===== Search and Filter Section =====
         html.Div([
             html.Div([
@@ -2017,9 +2012,6 @@ def create_hotel_list_page():
             'top': '0',
             'zIndex': '1000'
         }),
-
-        # Store for dropdown state
-        dcc.Store(id='dropdown-open-hotel-list', data=False, storage_type='memory'),
 
         # ===== Search and Filter Section =====
         html.Div([
@@ -2859,20 +2851,21 @@ def select_rating_option(n_clicks_list, option_ids, option_labels):
 # Active filter chips removed - users can see filters in the filter panel
 
 # Navigate to restaurant list when searching from homepage
-@app.callback(
-    Output('view-mode', 'data', allow_duplicate=True),
-    [Input('search-btn', 'n_clicks'),
-     Input('search-cuisine', 'data'),
-     Input('search-rating', 'data')],
-    [State('view-mode', 'data')],
-    prevent_initial_call=True
-)
-def navigate_to_search_results(n_clicks, cuisine, rating, current_view_mode):
-    """Navigate to restaurant list page when searching from homepage"""
-    # Only navigate if currently on homepage
-    if current_view_mode == 'home':
-        return 'restaurant-list'
-    raise PreventUpdate
+# COMMENTED OUT: search-btn only exists on homepage, causes errors on other pages
+# @app.callback(
+#     Output('view-mode', 'data', allow_duplicate=True),
+#     [Input('search-btn', 'n_clicks'),
+#      Input('search-cuisine', 'data'),
+#      Input('search-rating', 'data')],
+#     [State('view-mode', 'data')],
+#     prevent_initial_call=True
+# )
+# def navigate_to_search_results(n_clicks, cuisine, rating, current_view_mode):
+#     """Navigate to restaurant list page when searching from homepage"""
+#     # Only navigate if currently on homepage
+#     if current_view_mode == 'home':
+#         return 'restaurant-list'
+#     raise PreventUpdate
 
 # Toggle hotel type dropdown menu
 @app.callback(
@@ -2929,27 +2922,23 @@ def select_hotel_type_option(n_clicks_list, option_ids):
 # ====== Restaurant List Page Callbacks ======
 
 # Handle search in restaurant list page with advanced filters
-# 自动搜索：当选择料理类型、评分或价格范围时自动触发搜索
+# 自动搜索：当选择料理类型、评分或价格范围或输入关键字时自动触发搜索
+# Removed search-btn input to avoid errors when component doesn't exist on other pages
 @app.callback(
     [Output('search-results-store', 'data'),
      Output('current-page-store', 'data', allow_duplicate=True),
      Output('search-params-store', 'data')],
-    [Input('search-btn', 'n_clicks'),
+    [Input('search-destination', 'value'),
      Input('search-cuisine', 'data'),
      Input('search-rating', 'data'),
      Input('price-range-filter', 'value')],
-    [State('search-destination', 'value'),
-     State('view-mode', 'data')],
+    [State('view-mode', 'data')],
     prevent_initial_call=True
 )
-def handle_restaurant_list_search(n_clicks, cuisine, rating, price_range, destination, view_mode):
+def handle_restaurant_list_search(destination, cuisine, rating, price_range, view_mode):
     """處理餐廳列表頁的搜尋，並將結果存儲到 dcc.Store"""
     # 只有在列表頁面模式才觸發
     if view_mode != 'restaurant-list':
-        raise PreventUpdate
-
-    triggered_id = callback_context.triggered[0]['prop_id'].split('.')[0]
-    if not triggered_id:
         raise PreventUpdate
 
     # Use enhanced search function with filters
@@ -3187,50 +3176,63 @@ def logout_from_dropdown_hotel_list(n_clicks, session_data):
 
 # Navigate to profile page from home dropdown
 @app.callback(
-    Output('view-mode', 'data', allow_duplicate=True),
+    [Output('view-mode', 'data', allow_duplicate=True),
+     Output('previous-view-mode', 'data', allow_duplicate=True)],
     [Input('dropdown-profile', 'n_clicks')],
+    [State('view-mode', 'data')],
     prevent_initial_call=True
 )
-def navigate_to_profile_from_home(n_clicks):
+def navigate_to_profile_from_home(n_clicks, current_view_mode):
     """從首頁下拉選單導航到個人檔案頁"""
     if n_clicks:
-        return 'profile'
+        # Store current view mode
+        return 'profile', current_view_mode or 'home'
     raise PreventUpdate
 
 # Navigate to profile page from restaurant list dropdown
 @app.callback(
-    Output('view-mode', 'data', allow_duplicate=True),
+    [Output('view-mode', 'data', allow_duplicate=True),
+     Output('previous-view-mode', 'data', allow_duplicate=True),
+     Output('selected-restaurant-id', 'data', allow_duplicate=True),
+     Output('url', 'pathname', allow_duplicate=True)],
     [Input('dropdown-profile-list', 'n_clicks')],
+    [State('view-mode', 'data')],
     prevent_initial_call=True
 )
-def navigate_to_profile_from_restaurant_list(n_clicks):
+def navigate_to_profile_from_restaurant_list(n_clicks, current_view_mode):
     """從餐廳列表頁下拉選單導航到個人檔案頁"""
     if n_clicks:
-        return 'profile'
+        # Store current view mode and clear restaurant ID to prevent detail page from showing
+        return 'profile', current_view_mode or 'restaurant-list', {'id': None}, '/'
     raise PreventUpdate
 
 # Navigate to profile page from hotel list dropdown
 @app.callback(
-    Output('view-mode', 'data', allow_duplicate=True),
+    [Output('view-mode', 'data', allow_duplicate=True),
+     Output('previous-view-mode', 'data', allow_duplicate=True)],
     [Input('dropdown-profile-hotel-list', 'n_clicks')],
+    [State('view-mode', 'data')],
     prevent_initial_call=True
 )
-def navigate_to_profile_from_hotel_list(n_clicks):
+def navigate_to_profile_from_hotel_list(n_clicks, current_view_mode):
     """從旅館列表頁下拉選單導航到個人檔案頁"""
     if n_clicks:
-        return 'profile'
+        # Store current view mode
+        return 'profile', current_view_mode or 'hotel-list'
     raise PreventUpdate
 
 # Back button from profile page
 @app.callback(
     Output('view-mode', 'data', allow_duplicate=True),
     [Input('back-from-profile', 'n_clicks')],
+    [State('previous-view-mode', 'data')],
     prevent_initial_call=True
 )
-def back_from_profile(n_clicks):
-    """從個人檔案頁返回首頁"""
+def back_from_profile(n_clicks, previous_view_mode):
+    """從個人檔案頁返回上一頁"""
     if n_clicks:
-        return 'home'
+        # Return to the previous view mode, default to home if not set
+        return previous_view_mode or 'home'
     raise PreventUpdate
 
 # Toggle user dropdown in profile page
@@ -3268,26 +3270,34 @@ def logout_from_profile(n_clicks, session_data):
 
 # Navigate to profile page from restaurant detail page dropdown
 @app.callback(
-    Output('view-mode', 'data', allow_duplicate=True),
+    [Output('view-mode', 'data', allow_duplicate=True),
+     Output('previous-view-mode', 'data', allow_duplicate=True),
+     Output('selected-restaurant-id', 'data', allow_duplicate=True),
+     Output('url', 'pathname', allow_duplicate=True)],
     [Input('menu-profile-detail', 'n_clicks')],
+    [State('view-mode', 'data')],
     prevent_initial_call=True
 )
-def navigate_to_profile_from_restaurant_detail(n_clicks):
+def navigate_to_profile_from_restaurant_detail(n_clicks, current_view_mode):
     """從餐廳詳細頁下拉選單導航到個人檔案頁"""
     if n_clicks:
-        return 'profile'
+        # Clear restaurant ID and change URL to prevent showing detail page on return
+        return 'profile', 'restaurant-list', {'id': None}, '/'
     raise PreventUpdate
 
 # Navigate to profile page from hotel detail page dropdown
 @app.callback(
-    Output('view-mode', 'data', allow_duplicate=True),
+    [Output('view-mode', 'data', allow_duplicate=True),
+     Output('previous-view-mode', 'data', allow_duplicate=True)],
     [Input('menu-profile-hotel-detail', 'n_clicks')],
+    [State('view-mode', 'data')],
     prevent_initial_call=True
 )
-def navigate_to_profile_from_hotel_detail(n_clicks):
+def navigate_to_profile_from_hotel_detail(n_clicks, current_view_mode):
     """從旅館詳細頁下拉選單導航到個人檔案頁"""
     if n_clicks:
-        return 'profile'
+        # Store that we came from hotel-list (since we were on hotel detail)
+        return 'profile', 'hotel-list'
     raise PreventUpdate
 
 # ====== Hotel List Page Callbacks ======
@@ -3436,10 +3446,10 @@ def update_hotel_grid(search_results, current_page):
 
 # Callback 1: Route Detector - 解析 URL 中的餐廳 ID
 @app.callback(
-    [Output('selected-restaurant-id', 'data'),
-     Output('previous-page-location', 'data')],
+    [Output('selected-restaurant-id', 'data', allow_duplicate=True),
+     Output('previous-page-location', 'data', allow_duplicate=True)],
     [Input('url', 'pathname')],
-    prevent_initial_call=False
+    prevent_initial_call=True
 )
 def detect_restaurant_route(pathname):
     """解析 URL pathname 來提取餐廳 ID 並追蹤導航來源"""
@@ -3450,11 +3460,9 @@ def detect_restaurant_route(pathname):
             return {'id': restaurant_id}, {'from': 'restaurant-list'}
         except (ValueError, IndexError):
             # 無效的餐廳 ID
-            return {'id': None}, {'from': 'home'}
-    elif pathname == '/restaurant-list':
-        return {'id': None}, {'from': 'home'}
+            raise PreventUpdate
     else:
-        return {'id': None}, {'from': 'home'}
+        raise PreventUpdate
 
 # Callback 2: Data Loader - 從數據庫載入餐廳數據
 @app.callback(
@@ -3601,7 +3609,8 @@ def load_hotel_detail_data(pathname):
 
 # Callback 4: Card Click Handler - 處理餐廳卡片點擊事件
 @app.callback(
-    Output('url', 'pathname', allow_duplicate=True),
+    [Output('url', 'pathname', allow_duplicate=True),
+     Output('view-mode', 'data', allow_duplicate=True)],
     [Input({'type': 'restaurant-card', 'index': ALL}, 'n_clicks')],
     [State({'type': 'restaurant-card', 'index': ALL}, 'id')],
     prevent_initial_call=True
@@ -3618,12 +3627,13 @@ def handle_card_click(n_clicks_list, card_ids):
     triggered_dict = json.loads(triggered_id)
     restaurant_id = triggered_dict['index']
 
-    # 導航到詳細頁面
-    return f'/restaurant/{restaurant_id}'
+    # 導航到詳細頁面，清除 view-mode 讓 URL 路由優先
+    return f'/restaurant/{restaurant_id}', None
 
 # Callback 4b: Nearby Restaurant Card Click Handler - 處理附近餐廳卡片點擊事件
 @app.callback(
-    Output('url', 'pathname', allow_duplicate=True),
+    [Output('url', 'pathname', allow_duplicate=True),
+     Output('view-mode', 'data', allow_duplicate=True)],
     [Input({'type': 'nearby-restaurant-card', 'index': ALL}, 'n_clicks')],
     [State({'type': 'nearby-restaurant-card', 'index': ALL}, 'id')],
     prevent_initial_call=True
@@ -3640,8 +3650,8 @@ def handle_nearby_card_click(n_clicks_list, card_ids):
     triggered_dict = json.loads(triggered_id)
     restaurant_id = triggered_dict['index']
 
-    # 導航到詳細頁面
-    return f'/restaurant/{restaurant_id}'
+    # 導航到詳細頁面，清除 view-mode 讓 URL 路由優先
+    return f'/restaurant/{restaurant_id}', None
 
 # Callback 5: Back Button Handler - 處理返回按鈕
 @app.callback(
