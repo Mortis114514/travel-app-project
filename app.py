@@ -386,14 +386,14 @@ def create_detail_header():
 
                 html.Div([
                     html.Div([
-                        html.I(className='fas fa-user', style={'marginRight': '10px'}),
-                        'Profile'
-                    ], className='menu-item', id='menu-profile-detail', n_clicks=0),
+                        html.I(className='fas fa-user-circle'),
+                        html.Span('Profile')
+                    ], className='dropdown-item', id='menu-profile-detail', n_clicks=0),
                     html.Div([
-                        html.I(className='fas fa-sign-out-alt', style={'marginRight': '10px'}),
-                        'Logout'
-                    ], className='menu-item', id='menu-logout-detail', n_clicks=0)
-                ], id='user-dropdown-detail', className='user-dropdown', style={'display': 'none'})
+                        html.I(className='fas fa-sign-out-alt'),
+                        html.Span('Logout')
+                    ], className='dropdown-item', id='menu-logout-detail', n_clicks=0)
+                ], id='user-dropdown-detail', className='user-dropdown')
             ], style={'position': 'relative'}),
 
             # 下拉菜單狀態儲存
@@ -1161,14 +1161,14 @@ def create_hotel_detail_page(hotel_id):
                     # 下拉選單
                     html.Div([
                         html.Div([
-                            html.I(className='fas fa-user', style={'marginRight': '10px'}),
-                            'Profile'
-                        ], className='menu-item', id='menu-profile-hotel-detail', n_clicks=0),
+                            html.I(className='fas fa-user-circle'),
+                            html.Span('Profile')
+                        ], className='dropdown-item', id='menu-profile-hotel-detail', n_clicks=0),
                         html.Div([
-                            html.I(className='fas fa-sign-out-alt', style={'marginRight': '10px'}),
-                            'Logout'
-                        ], className='menu-item', id='menu-logout-detail', n_clicks=0)
-                    ], id='user-dropdown-detail', className='user-dropdown', style={'display': 'none'})
+                            html.I(className='fas fa-sign-out-alt'),
+                            html.Span('Logout')
+                        ], className='dropdown-item', id='menu-logout-detail', n_clicks=0)
+                    ], id='user-dropdown-detail', className='user-dropdown')
                 ], style={'position': 'relative'}),
 
                 # 下拉菜單狀態儲存
@@ -1596,6 +1596,7 @@ app.layout = html.Div([
     dcc.Store(id='search-cuisine', storage_type='memory'),  # 選中的料理類型
     dcc.Store(id='search-rating', storage_type='memory'),  # 選中的評分範圍
     dcc.Store(id='active-dropdown', storage_type='memory', data=None),  # 當前打開的下拉菜單 ('cuisine', 'rating', or None)
+    dcc.Store(id='close-dropdowns-trigger', storage_type='memory'),  # 觸發關閉所有下拉菜單
     # 餐廳詳細頁面狀態管理
     dcc.Store(id='selected-restaurant-id', storage_type='memory'),  # 選中的餐廳 ID
     dcc.Store(id='previous-page-location', storage_type='memory'),  # 上一頁位置 (用於返回導航)
@@ -1609,6 +1610,7 @@ app.layout = html.Div([
     dcc.Store(id='hotel-search-results-store', storage_type='memory'),  # 👈 存儲旅館搜尋結果
     dcc.Store(id='hotel-current-page-store', data=1, storage_type='memory'),  # 👈 存儲旅館列表分頁狀態
     dcc.Store(id='hotel-detail-data', storage_type='memory'),  # 旅館詳細資料（包含 reviews）
+    dcc.Store(id='dropdown-open', data=False, storage_type='memory'),  # User dropdown state for homepage
     html.Div(id='scroll-trigger', style={'display': 'none'}),  # 隱藏的滾動觸發器
     html.Div(id='page-content', style={'minHeight': '100vh'})
 ], style={'backgroundColor': '#1a1a1a', 'minHeight': '100vh'})
@@ -1640,9 +1642,6 @@ def create_profile_page(user_data):
             pass
 
     return html.Div([
-        # Store for dropdown state
-        dcc.Store(id='dropdown-open', data=False, storage_type='memory'),
-
         # Header with back button
         html.Div([
             html.Div([
@@ -1798,9 +1797,6 @@ def create_main_layout():
                 ], className='header-actions')
             ], className='header-content')
         ], className='global-header'),
-
-        # Store for dropdown state
-        dcc.Store(id='dropdown-open', data=False, storage_type='memory'),
 
         # ===== Hero Section =====
         html.Div([
@@ -2207,8 +2203,29 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
         if user_id:
             # 已登入，根據 pathname 和 view_mode 顯示不同頁面
 
-            # === 🆕 新增：檢查是否為旅館詳細頁面路由 ===
-            if pathname and pathname.startswith('/hotel/'):
+            # === 優先檢查 view_mode (用於從任何頁面導航) ===
+
+            # 檢查個人檔案頁面
+            if view_mode == 'profile':
+                user_data = get_user_full_details(user_id)
+                return create_profile_page(user_data), 'main'
+
+            # 檢查旅館列表頁面
+            elif view_mode == 'hotel-list':
+                return create_hotel_list_page(), 'main'
+
+            # 檢查分析頁面
+            elif view_mode == 'analytics':
+                return create_analytics_layout(analytics_df), 'main'
+
+            # 檢查餐廳列表頁面
+            elif view_mode == 'restaurant-list':
+                return create_restaurant_list_page(), 'main'
+
+            # === 然後檢查 pathname (用於 URL 路由) ===
+
+            # 檢查是否為旅館詳細頁面路由
+            elif pathname and pathname.startswith('/hotel/'):
                 try:
                     hotel_id = int(pathname.split('/')[-1])
                     return create_hotel_detail_page(hotel_id), 'main'
@@ -2222,23 +2239,6 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
                     return create_restaurant_detail_page(restaurant_id_data['id']), 'main'
                 else:
                     return create_restaurant_list_page(), 'main'
-
-            # === 🆕 新增：檢查旅館列表頁面 ===
-            elif view_mode == 'hotel-list':
-                return create_hotel_list_page(), 'main'
-
-            # === 🆕 新增：檢查分析頁面 ===
-            elif view_mode == 'analytics':
-                return create_analytics_layout(analytics_df), 'main'
-
-            # === 🆕 新增：檢查個人檔案頁面 ===
-            elif view_mode == 'profile':
-                user_data = get_user_full_details(user_id)
-                return create_profile_page(user_data), 'main'
-
-            # 檢查餐廳列表頁面
-            elif view_mode == 'restaurant-list':
-                return create_restaurant_list_page(), 'main'
 
             # 預設顯示首頁
             else:
@@ -3675,20 +3675,51 @@ def handle_error_back_button(n_clicks):
 
     return '/', 'home'
 
-# Callback 7: User Dropdown Toggle (Detail Page) - 詳細頁面用戶下拉菜單
+# Callback 7: User Dropdown Toggle (Restaurant Detail Page) - 餐廳詳細頁面用戶下拉菜單
 @app.callback(
-    [Output('user-dropdown-detail', 'style'),
+    [Output('user-dropdown-detail', 'className'),
      Output('dropdown-open-detail', 'data')],
     [Input('user-avatar-detail', 'n_clicks')],
     [State('dropdown-open-detail', 'data')],
     prevent_initial_call=True
 )
 def toggle_user_dropdown_detail(n_clicks, is_open):
-    """切換詳細頁面的用戶下拉菜單"""
+    """切換餐廳詳細頁面的用戶下拉菜單"""
     if n_clicks:
         new_state = not is_open
-        style = {'display': 'block'} if new_state else {'display': 'none'}
-        return style, new_state
+        className = 'user-dropdown show' if new_state else 'user-dropdown'
+        return className, new_state
+    raise PreventUpdate
+
+# Callback 7b: User Dropdown Toggle (Hotel Detail Page) - 旅館詳細頁面用戶下拉菜單
+@app.callback(
+    [Output('user-dropdown-detail', 'className', allow_duplicate=True),
+     Output('dropdown-open-detail', 'data', allow_duplicate=True)],
+    [Input('user-avatar-hotel-detail', 'n_clicks')],
+    [State('dropdown-open-detail', 'data')],
+    prevent_initial_call=True
+)
+def toggle_user_dropdown_hotel_detail(n_clicks, is_open):
+    """切換旅館詳細頁面的用戶下拉菜單"""
+    if n_clicks:
+        new_state = not is_open
+        className = 'user-dropdown show' if new_state else 'user-dropdown'
+        return className, new_state
+    raise PreventUpdate
+
+# Callback 7c: Reset All Dropdown States on Outside Click - 點擊外部時重置所有下拉菜單狀態
+@app.callback(
+    [Output('dropdown-open', 'data', allow_duplicate=True),
+     Output('dropdown-open-list', 'data', allow_duplicate=True),
+     Output('dropdown-open-hotel-list', 'data', allow_duplicate=True),
+     Output('dropdown-open-detail', 'data', allow_duplicate=True)],
+    [Input('close-dropdowns-trigger', 'data')],
+    prevent_initial_call=True
+)
+def reset_all_dropdown_states(trigger):
+    """當用戶點擊外部時，重置所有下拉菜單的狀態"""
+    if trigger is not None:
+        return False, False, False, False
     raise PreventUpdate
 
 # Callback 8: Logout from Detail Page - 從詳細頁面登出
@@ -4163,6 +4194,83 @@ app.clientside_callback(
     """,
     Output('scroll-trigger', 'children'),
     Input('current-page-store', 'data')
+)
+
+# ===== Clientside Callback: Close Dropdowns on Outside Click =====
+app.clientside_callback(
+    """
+    function(pathname) {
+        // Add click event listener to document
+        if (!window.dropdownClickListenerAdded) {
+            document.addEventListener('click', function(event) {
+                // Get all dropdown containers
+                const dropdownIds = [
+                    'user-dropdown',
+                    'user-dropdown-list',
+                    'user-dropdown-hotel-list',
+                    'user-dropdown-detail'
+                ];
+
+                const avatarIds = [
+                    'user-avatar',
+                    'user-avatar-list',
+                    'user-avatar-hotel-list',
+                    'user-avatar-detail',
+                    'user-avatar-hotel-detail'
+                ];
+
+                // Check if click is on avatar (toggle should handle it)
+                let clickedAvatar = false;
+                for (let avatarId of avatarIds) {
+                    const avatar = document.getElementById(avatarId);
+                    if (avatar && avatar.contains(event.target)) {
+                        clickedAvatar = true;
+                        break;
+                    }
+                }
+
+                // If clicked on avatar, don't close (let toggle handle it)
+                if (clickedAvatar) {
+                    return;
+                }
+
+                // Check if click is outside all dropdowns
+                let clickedOutside = true;
+                for (let dropdownId of dropdownIds) {
+                    const dropdown = document.getElementById(dropdownId);
+                    if (dropdown && dropdown.contains(event.target)) {
+                        clickedOutside = false;
+                        break;
+                    }
+                }
+
+                // If clicked outside, close all dropdowns
+                if (clickedOutside) {
+                    let anyClosed = false;
+                    for (let dropdownId of dropdownIds) {
+                        const dropdown = document.getElementById(dropdownId);
+                        if (dropdown && dropdown.classList.contains('show')) {
+                            dropdown.classList.remove('show');
+                            anyClosed = true;
+                        }
+                    }
+
+                    // Trigger server-side state updates if any dropdown was closed
+                    if (anyClosed && window.dash_clientside) {
+                        // Set the trigger value to current timestamp
+                        window.dash_clientside.set_props('close-dropdowns-trigger', {data: Date.now()});
+                    }
+                }
+            });
+            window.dropdownClickListenerAdded = true;
+        }
+
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output('url', 'pathname', allow_duplicate=True),
+    Input('url', 'pathname'),
+    prevent_initial_call=True
 )
 
 # --- 處理旅館詳細頁面的說明按鈕開關 ---
