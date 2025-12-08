@@ -226,12 +226,7 @@ def create_compound_search_bar():
                         'paddingLeft': '0.75rem'
                     }
                 )
-            ], style={'flex': '1', 'display': 'flex', 'alignItems': 'center', 'gap': '0.75rem'}),
-
-            html.Button([
-                html.I(className='fas fa-search', style={'marginRight': '8px'}),
-                'Search'
-            ], id='search-btn', className='search-btn', n_clicks=0)
+            ], style={'flex': '1', 'display': 'flex', 'alignItems': 'center', 'gap': '0.75rem'})
         ], style={
             'display': 'flex',
             'alignItems': 'center',
@@ -3223,16 +3218,22 @@ def navigate_to_profile_from_hotel_list(n_clicks, current_view_mode):
 
 # Back button from profile page
 @app.callback(
-    Output('view-mode', 'data', allow_duplicate=True),
+    [Output('view-mode', 'data', allow_duplicate=True),
+     Output('url', 'pathname', allow_duplicate=True)],
     [Input('back-from-profile', 'n_clicks')],
-    [State('previous-view-mode', 'data')],
+    [State('previous-view-mode', 'data'),
+     State('selected-restaurant-id', 'data')],
     prevent_initial_call=True
 )
-def back_from_profile(n_clicks, previous_view_mode):
+def back_from_profile(n_clicks, previous_view_mode, restaurant_id_data):
     """從個人檔案頁返回上一頁"""
     if n_clicks:
-        # Return to the previous view mode, default to home if not set
-        return previous_view_mode or 'home'
+        # If we came from a restaurant detail page, restore the restaurant URL
+        if previous_view_mode == 'restaurant-detail' and restaurant_id_data and restaurant_id_data.get('id'):
+            restaurant_id = restaurant_id_data['id']
+            return 'home', f'/restaurant/{restaurant_id}'
+        # Otherwise, return to the previous view mode normally
+        return previous_view_mode or 'home', '/'
     raise PreventUpdate
 
 # Toggle user dropdown in profile page
@@ -3275,14 +3276,17 @@ def logout_from_profile(n_clicks, session_data):
      Output('selected-restaurant-id', 'data', allow_duplicate=True),
      Output('url', 'pathname', allow_duplicate=True)],
     [Input('menu-profile-detail', 'n_clicks')],
-    [State('view-mode', 'data')],
+    [State('view-mode', 'data'),
+     State('selected-restaurant-id', 'data'),
+     State('url', 'pathname')],
     prevent_initial_call=True
 )
-def navigate_to_profile_from_restaurant_detail(n_clicks, current_view_mode):
+def navigate_to_profile_from_restaurant_detail(n_clicks, current_view_mode, restaurant_id_data, current_pathname):
     """從餐廳詳細頁下拉選單導航到個人檔案頁"""
     if n_clicks:
-        # Clear restaurant ID and change URL to prevent showing detail page on return
-        return 'profile', 'restaurant-list', {'id': None}, '/'
+        # Keep restaurant ID and store the current pathname to return to the same restaurant detail page
+        # Set previous-view-mode to 'restaurant-detail' to indicate we came from a detail page
+        return 'profile', 'restaurant-detail', restaurant_id_data, '/'
     raise PreventUpdate
 
 # Navigate to profile page from hotel detail page dropdown
