@@ -1,4 +1,11 @@
 # Import 所有相關套件
+import os
+import warnings
+
+# Suppress warnings
+warnings.filterwarnings('ignore')
+os.environ.setdefault('PYTHONIOENCODING', 'utf-8')
+
 import dash
 from dash import Dash, html, dcc, Input, State, Output, dash_table, no_update, callback_context, ALL, MATCH
 from dash.exceptions import PreventUpdate
@@ -229,15 +236,16 @@ def create_compound_search_bar():
                     }
                 )
             ], style={'flex': '1', 'display': 'flex', 'alignItems': 'center', 'gap': '0.75rem'})
-        ], style={
+        ], className='keyword-search-bar', style={
             'display': 'flex',
             'alignItems': 'center',
-            'backgroundColor': '#F2F6FA',
+            'backgroundColor': '#FFFFFF',
             'padding': '0.75rem 1.5rem',
             'borderRadius': '8px',
-            'border': '1px solid #E8ECEF',
+            'border': '2px solid #E8ECEF',
             'marginBottom': '1rem',
-            'gap': '1rem'
+            'gap': '1rem',
+            'boxShadow': '0 2px 4px rgba(0, 0, 0, 0.05)'
         }),
 
         # Filters and buttons row
@@ -278,9 +286,9 @@ def create_compound_search_bar():
 
             # Advanced filters toggle button
             html.Button([
-                html.I(className='fas fa-sliders-h', style={'marginRight': '8px'}),
+                html.I(id='filter-icon', className='fas fa-filter', style={'marginRight': '8px'}),
                 'Filters'
-            ], id='toggle-advanced-filters', className='btn-secondary', n_clicks=0)
+            ], id='toggle-advanced-filters', className='btn-filter', n_clicks=0)
         ], className='search-container'),
 
         # Advanced filters panel (collapsible)
@@ -348,7 +356,7 @@ def create_error_state(error_message):
         html.H2('Restaurant Not Found',
                 style={'color': '#1A1A1A', 'marginBottom': '0.5rem'}),
         html.P(error_message,
-               style={'color': '#888888', 'marginBottom': '2rem', 'fontSize': '1.1rem'}),
+               style={'color': '#555555', 'marginBottom': '2rem', 'fontSize': '1.1rem', 'fontWeight': '500'}),
         html.Button([
             html.I(className='fas fa-arrow-left', style={'marginRight': '8px'}),
             'Back to Restaurants'
@@ -529,47 +537,49 @@ def create_detail_hero(data):
     stars = []
     for i in range(5):
         if i < full_stars:
-            stars.append(html.I(className='fas fa-star', style={'color': '#003580', 'marginRight': '4px'}))
+            stars.append(html.I(className='fas fa-star', style={'color': '#deb522', 'marginRight': '4px', 'textShadow': '1px 1px 3px rgba(0,0,0,0.5)'}))
         else:
-            stars.append(html.I(className='far fa-star', style={'color': '#555555', 'marginRight': '4px'}))
+            stars.append(html.I(className='far fa-star', style={'color': 'rgba(255, 255, 255, 0.5)', 'marginRight': '4px', 'textShadow': '1px 1px 3px rgba(0,0,0,0.5)'}))
 
     return html.Div([
         # 圖片畫廊（替換原本的單一圖片）
         create_image_gallery(),
 
-        # 漸層遮罩
+        # 漸層遮罩 (subtle shadow for text readability)
         html.Div(style={
             'position': 'absolute',
             'bottom': '0',
             'left': '0',
             'right': '0',
             'height': '70%',
-            'background': 'linear-gradient(to top, rgba(0, 53, 128, 0.85) 0%, rgba(0, 53, 128, 0.3) 70%, transparent 100%)',
+            'background': 'linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.2) 70%, transparent 100%)',
             'pointerEvents': 'none'  # 讓遮罩不阻擋按鈕點擊
         }),
 
         # Hero 內容
         html.Div([
             html.H1(data.get('Name', 'Restaurant'), style={
-                'color': '#1A1A1A',
+                'color': '#FFFFFF',
                 'fontSize': '3rem',
                 'fontWeight': 'bold',
                 'marginBottom': '0.5rem',
-                'textShadow': '2px 2px 4px rgba(0,0,0,0.5)'
+                'textShadow': '2px 2px 8px rgba(0,0,0,0.7)'
             }),
             html.Div(data.get('JapaneseName', ''), style={
-                'color': '#cccccc',
+                'color': '#FFFFFF',
                 'fontSize': '1.5rem',
                 'marginBottom': '1rem',
-                'textShadow': '1px 1px 2px rgba(0,0,0,0.5)'
+                'fontWeight': '500',
+                'textShadow': '1px 1px 4px rgba(0,0,0,0.7)'
             }),
             html.Div([
                 html.Div(stars + [
                     html.Span(f"{rating:.1f}", style={
-                        'color': '#003580',
+                        'color': '#deb522',
                         'fontSize': '1.8rem',
                         'fontWeight': 'bold',
-                        'marginLeft': '12px'
+                        'marginLeft': '12px',
+                        'textShadow': '1px 1px 3px rgba(0,0,0,0.5)'
                     })
                 ], style={'marginBottom': '1rem'}),
                 html.Div([
@@ -577,36 +587,45 @@ def create_detail_hero(data):
                         html.I(className='fas fa-utensils', style={'marginRight': '6px'}),
                         data.get('SecondCategory', data.get('FirstCategory', 'Restaurant'))
                     ], style={
-                        'backgroundColor': 'rgba(222, 181, 34, 0.2)',
-                        'border': '1px solid #003580',
-                        'color': '#003580',
+                        'backgroundColor': 'rgba(255, 255, 255, 0.25)',
+                        'backdropFilter': 'blur(10px)',
+                        'border': '1.5px solid rgba(255, 255, 255, 0.5)',
+                        'color': '#FFFFFF',
                         'padding': '8px 16px',
                         'borderRadius': '20px',
                         'marginRight': '10px',
-                        'fontSize': '1rem'
+                        'fontSize': '1rem',
+                        'fontWeight': '500',
+                        'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)'
                     }),
                     html.Span([
                         html.I(className='fas fa-yen-sign', style={'marginRight': '6px'}),
                         data.get('Price_Category', 'N/A')
                     ], style={
-                        'backgroundColor': 'rgba(222, 181, 34, 0.2)',
-                        'border': '1px solid #003580',
-                        'color': '#003580',
+                        'backgroundColor': 'rgba(255, 255, 255, 0.25)',
+                        'backdropFilter': 'blur(10px)',
+                        'border': '1.5px solid rgba(255, 255, 255, 0.5)',
+                        'color': '#FFFFFF',
                         'padding': '8px 16px',
                         'borderRadius': '20px',
                         'marginRight': '10px',
-                        'fontSize': '1rem'
+                        'fontSize': '1rem',
+                        'fontWeight': '500',
+                        'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)'
                     }),
                     html.Span([
                         html.I(className='fas fa-comment', style={'marginRight': '6px'}),
                         f"{data.get('ReviewNum', 0)} reviews"
                     ], style={
-                        'backgroundColor': 'rgba(222, 181, 34, 0.2)',
-                        'border': '1px solid #003580',
-                        'color': '#003580',
+                        'backgroundColor': 'rgba(255, 255, 255, 0.25)',
+                        'backdropFilter': 'blur(10px)',
+                        'border': '1.5px solid rgba(255, 255, 255, 0.5)',
+                        'color': '#FFFFFF',
                         'padding': '8px 16px',
                         'borderRadius': '20px',
-                        'fontSize': '1rem'
+                        'fontSize': '1rem',
+                        'fontWeight': '500',
+                        'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)'
                     })
                 ])
             ])
@@ -639,13 +658,14 @@ def create_location_section(data):
             html.Span(data.get('Station', 'Not Available'), style={'color': '#1A1A1A', 'fontSize': '1.1rem'})
         ], style={'marginBottom': '1rem', 'display': 'flex', 'alignItems': 'center'}),
         html.Small(f"Coordinates: {lat:.6f}, {long:.6f}" if has_coords else "Coordinates not available",
-                   style={'color': '#888888', 'fontSize': '0.9rem'})
+                   style={'color': '#555555', 'fontSize': '0.9rem', 'fontWeight': '500'})
     ], style={
         'backgroundColor': '#F2F6FA',
-        'border': '1px solid #E8ECEF',
+        'border': '1.5px solid #D0D5DD',
         'borderRadius': '12px',
         'padding': '1.5rem',
-        'marginBottom': '1.5rem'
+        'marginBottom': '1.5rem',
+        'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.08)'
     })
 
 def create_pricing_section(data):
@@ -657,20 +677,21 @@ def create_pricing_section(data):
         html.H3('Pricing', style={'color': '#003580', 'marginBottom': '1rem', 'fontSize': '1.5rem', 'fontWeight': 'bold'}),
         html.Div([
             html.I(className='fas fa-moon', style={'color': '#003580', 'marginRight': '12px', 'fontSize': '1.1rem'}),
-            html.Span('Dinner: ', style={'color': '#cccccc', 'marginRight': '8px', 'fontSize': '1rem'}),
+            html.Span('Dinner: ', style={'color': '#555555', 'marginRight': '8px', 'fontSize': '1rem', 'fontWeight': '600'}),
             html.Span(dinner_price, style={'color': '#1A1A1A', 'fontSize': '1.1rem', 'fontWeight': '500'})
         ], style={'marginBottom': '0.8rem', 'display': 'flex', 'alignItems': 'center'}),
         html.Div([
             html.I(className='fas fa-sun', style={'color': '#003580', 'marginRight': '12px', 'fontSize': '1.1rem'}),
-            html.Span('Lunch: ', style={'color': '#cccccc', 'marginRight': '8px', 'fontSize': '1rem'}),
+            html.Span('Lunch: ', style={'color': '#555555', 'marginRight': '8px', 'fontSize': '1rem', 'fontWeight': '600'}),
             html.Span(lunch_price, style={'color': '#1A1A1A', 'fontSize': '1.1rem', 'fontWeight': '500'})
         ], style={'display': 'flex', 'alignItems': 'center'})
     ], style={
         'backgroundColor': '#F2F6FA',
-        'border': '1px solid #E8ECEF',
+        'border': '1.5px solid #D0D5DD',
         'borderRadius': '12px',
         'padding': '1.5rem',
-        'marginBottom': '1.5rem'
+        'marginBottom': '1.5rem',
+        'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.08)'
     })
 
 def create_categories_section(data):
@@ -709,10 +730,11 @@ def create_categories_section(data):
         html.Div(categories)
     ], style={
         'backgroundColor': '#F2F6FA',
-        'border': '1px solid #E8ECEF',
+        'border': '1.5px solid #D0D5DD',
         'borderRadius': '12px',
         'padding': '1.5rem',
-        'marginBottom': '1.5rem'
+        'marginBottom': '1.5rem',
+        'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.08)'
     })
 
 def create_map_placeholder_section(data):
@@ -730,7 +752,7 @@ def create_map_placeholder_section(data):
             html.H3('Map', style={'color': '#003580', 'marginBottom': '1rem', 'fontSize': '1.5rem', 'fontWeight': 'bold'}),
             html.Div([
                 html.I(className='fas fa-map-marker-alt', style={'fontSize': '3rem', 'color': '#555555', 'marginBottom': '1rem'}),
-                html.P('Location coordinates not available', style={'color': '#888888', 'fontSize': '1rem', 'textAlign': 'center'})
+                html.P('Location coordinates not available', style={'color': '#555555', 'fontSize': '1rem', 'textAlign': 'center', 'fontWeight': '500'})
             ], style={
                 'display': 'flex',
                 'flexDirection': 'column',
@@ -819,9 +841,10 @@ def create_map_placeholder_section(data):
                 'alignItems': 'center',
                 'padding': '12px',
                 'backgroundColor': '#F2F6FA',
-                'border': '1px solid #E8ECEF',
+                'border': '1.5px solid #D0D5DD',
                 'borderRadius': '8px',
                 'marginBottom': '8px',
+                'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.05)',
                 'transition': 'border-color 0.3s',
                 'cursor': 'pointer'
             }, className='nearby-restaurant-card',
@@ -835,7 +858,7 @@ def create_map_placeholder_section(data):
         html.Div([
             html.I(className='fas fa-map-marker-alt', style={'color': '#003580', 'marginRight': '8px'}),
             f"{station}, Kyoto"
-        ], style={'color': '#cccccc', 'marginBottom': '1rem', 'fontSize': '0.95rem'}),
+        ], style={'color': '#555555', 'marginBottom': '1rem', 'fontSize': '0.95rem', 'fontWeight': '500'}),
 
         # Google Map
         map_component,
@@ -871,9 +894,10 @@ def create_map_placeholder_section(data):
 
     ], style={
         'backgroundColor': '#F2F6FA',
-        'border': '1px solid #E8ECEF',
+        'border': '1.5px solid #D0D5DD',
         'borderRadius': '12px',
-        'padding': '1.5rem'
+        'padding': '1.5rem',
+        'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.08)'
     })
 
 def create_ratings_breakdown_section(data):
@@ -892,7 +916,7 @@ def create_ratings_breakdown_section(data):
                 stars.append(html.I(className='far fa-star', style={'color': '#555555', 'marginRight': '3px', 'fontSize': '0.9rem'}))
 
         return html.Div([
-            html.Span(label, style={'color': '#cccccc', 'minWidth': '80px', 'fontSize': '1rem'}),
+            html.Span(label, style={'color': '#555555', 'minWidth': '80px', 'fontSize': '1rem', 'fontWeight': '600'}),
             html.Div(stars, style={'display': 'flex', 'alignItems': 'center', 'flex': '1'}),
             html.Span(f"{rating:.1f}", style={'color': '#1A1A1A', 'fontWeight': 'bold', 'marginLeft': '12px', 'fontSize': '1.1rem'})
         ], style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '0.8rem'})
@@ -904,10 +928,11 @@ def create_ratings_breakdown_section(data):
         create_rating_row('Lunch', data.get('LunchRating', 0))
     ], style={
         'backgroundColor': '#F2F6FA',
-        'border': '1px solid #E8ECEF',
+        'border': '1.5px solid #D0D5DD',
         'borderRadius': '12px',
         'padding': '1.5rem',
-        'marginBottom': '1.5rem'
+        'marginBottom': '1.5rem',
+        'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.08)'
     })
 
 def create_statistics_section(data):
@@ -923,22 +948,23 @@ def create_statistics_section(data):
             html.I(className='fas fa-comment', style={'color': '#003580', 'marginRight': '12px', 'fontSize': '1.5rem'}),
             html.Div([
                 html.Div(f"{review_num:,}", style={'color': '#1A1A1A', 'fontSize': '1.8rem', 'fontWeight': 'bold'}),
-                html.Div('Total Reviews', style={'color': '#888888', 'fontSize': '0.9rem'})
+                html.Div('Total Reviews', style={'color': '#555555', 'fontSize': '0.9rem', 'fontWeight': '600'})
             ])
         ], style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '1.5rem'}),
         html.Div([
             html.I(className='fas fa-award', style={'color': '#003580', 'marginRight': '12px', 'fontSize': '1.5rem'}),
             html.Div([
                 html.Div(rating_category, style={'color': '#1A1A1A', 'fontSize': '1.3rem', 'fontWeight': 'bold'}),
-                html.Div('Rating Category', style={'color': '#888888', 'fontSize': '0.9rem'})
+                html.Div('Rating Category', style={'color': '#555555', 'fontSize': '0.9rem', 'fontWeight': '600'})
             ])
         ], style={'display': 'flex', 'alignItems': 'center'})
     ], style={
         'backgroundColor': '#F2F6FA',
-        'border': '1px solid #E8ECEF',
+        'border': '1.5px solid #D0D5DD',
         'borderRadius': '12px',
         'padding': '1.5rem',
-        'marginBottom': '1.5rem'
+        'marginBottom': '1.5rem',
+        'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.08)'
     })
 
 def create_reviews_section(data):
@@ -1036,10 +1062,11 @@ def create_reviews_section(data):
         comments_area
     ], style={
         'backgroundColor': '#F2F6FA',
-        'border': '1px solid #E8ECEF',
+        'border': '1.5px solid #D0D5DD',
         'borderRadius': '12px',
         'padding': '1.5rem',
-        'marginBottom': '1.5rem'
+        'marginBottom': '1.5rem',
+        'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.08)'
     })
 
 def create_restaurant_detail_page(restaurant_id):
@@ -1645,11 +1672,61 @@ def create_hotel_analytics_charts(hotel_id):
 ##########################
 app = Dash(__name__, external_stylesheets=[
     '/assets/bootstrap.min.css',
-    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
+    '/assets/fontawesome-local.css',
     '/assets/voyage_styles.css'
 ],
-           title='柔成員的旅遊平台', suppress_callback_exceptions=True)
+           title='柔成員的旅遊平台',
+           suppress_callback_exceptions=True)
 server = app.server
+
+# Suppress React defaultProps warnings in console
+app.index_string = '''
+<!DOCTYPE html>
+<html>
+    <head>
+        {%metas%}
+        <title>{%title%}</title>
+        {%favicon%}
+        {%css%}
+        <script>
+            // Suppress React warnings from Dash internal components
+            const originalWarn = console.warn;
+            const originalError = console.error;
+
+            console.warn = function(...args) {
+                if (args[0] && typeof args[0] === 'string') {
+                    // Suppress defaultProps warnings
+                    if (args[0].includes('defaultProps')) return;
+                    // Suppress componentWillMount warnings
+                    if (args[0].includes('componentWillMount')) return;
+                    if (args[0].includes('UNSAFE_componentWillMount')) return;
+                    // Suppress other React lifecycle warnings
+                    if (args[0].includes('componentWillReceiveProps')) return;
+                    if (args[0].includes('componentWillUpdate')) return;
+                }
+                originalWarn.apply(console, args);
+            };
+
+            console.error = function(...args) {
+                if (args[0] && typeof args[0] === 'string') {
+                    // Suppress React lifecycle errors
+                    if (args[0].includes('componentWillMount')) return;
+                    if (args[0].includes('defaultProps')) return;
+                }
+                originalError.apply(console, args);
+            };
+        </script>
+    </head>
+    <body>
+        {%app_entry%}
+        <footer>
+            {%config%}
+            {%scripts%}
+            {%renderer%}
+        </footer>
+    </body>
+</html>
+'''
 
 # ===== 版面配置 =====
 app.layout = html.Div([
@@ -2034,7 +2111,7 @@ def create_restaurant_list_page():
                     html.Button([
                         html.I(className='fas fa-arrow-left'),
                         html.Span('Back', style={'marginLeft': '8px'})
-                    ], id={'type': 'back-btn', 'index': 'restaurant-list'}, className='btn-secondary', n_clicks=0),
+                    ], id={'type': 'back-btn', 'index': 'restaurant-list'}, className='btn-back', n_clicks=0),
                     html.H1('Restaurant Directory', style={
                         'color': '#003580',
                         'marginLeft': '2rem',
@@ -2100,9 +2177,10 @@ def create_restaurant_list_page():
 
                 # Search stats
                 html.Div(id='search-stats', style={
-                    'color': '#888888',
+                    'color': '#555555',
                     'fontSize': '0.95rem',
-                    'marginTop': '1rem'
+                    'marginTop': '1rem',
+                    'fontWeight': '500'
                 })
             ], style={
                 'maxWidth': '1000px',
@@ -2146,7 +2224,7 @@ def create_hotel_list_page():
                     html.Button([
                         html.I(className='fas fa-arrow-left'),
                         html.Span('Back', style={'marginLeft': '8px'})
-                    ], id={'type': 'back-btn', 'index': 'hotel-list'}, className='btn-secondary', n_clicks=0),
+                    ], id={'type': 'back-btn', 'index': 'hotel-list'}, className='btn-back', n_clicks=0),
                     html.H1('Hotel Directory', style={
                         'color': '#003580',
                         'marginLeft': '2rem',
@@ -2212,9 +2290,10 @@ def create_hotel_list_page():
 
                 # Search stats
                 html.Div(id='hotel-search-stats', style={
-                    'color': '#888888',
+                    'color': '#555555',
                     'fontSize': '0.95rem',
-                    'marginTop': '1rem'
+                    'marginTop': '1rem',
+                    'fontWeight': '500'
                 })
             ], style={
                 'maxWidth': '1000px',
@@ -2386,10 +2465,28 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
         if user_id:
             # 已登入，根據 pathname 和 view_mode 顯示不同頁面
 
-            # === 優先檢查 view_mode (用於從任何頁面導航) ===
+            # === 優先檢查 pathname (URL 直接導航) ===
+
+            # 檢查是否為旅館詳細頁面路由
+            if pathname and pathname.startswith('/hotel/'):
+                try:
+                    hotel_id = int(pathname.split('/')[-1])
+                    return create_hotel_detail_page(hotel_id), 'main'
+                except (ValueError, IndexError):
+                    # 無效的旅館 ID，重定向到首頁
+                    return create_main_layout(), 'main'
+
+            # 檢查是否為餐廳詳細頁面路由
+            elif pathname and pathname.startswith('/restaurant/'):
+                if restaurant_id_data and restaurant_id_data.get('id'):
+                    return create_restaurant_detail_page(restaurant_id_data['id']), 'main'
+                else:
+                    return create_restaurant_list_page(), 'main'
+
+            # === 然後檢查 view_mode (用於從任何頁面導航) ===
 
             # 檢查個人檔案頁面
-            if view_mode == 'profile':
+            elif view_mode == 'profile':
                 user_data = get_user_full_details(user_id)
                 return create_profile_page(user_data), 'main'
 
@@ -2404,24 +2501,6 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
             # 檢查餐廳列表頁面
             elif view_mode == 'restaurant-list':
                 return create_restaurant_list_page(), 'main'
-
-            # === 然後檢查 pathname (用於 URL 路由) ===
-
-            # 檢查是否為旅館詳細頁面路由
-            elif pathname and pathname.startswith('/hotel/'):
-                try:
-                    hotel_id = int(pathname.split('/')[-1])
-                    return create_hotel_detail_page(hotel_id), 'main'
-                except (ValueError, IndexError):
-                    # 無效的旅館 ID，重定向到首頁
-                    return create_main_layout(), 'main'
-
-            # 檢查是否為餐廳詳細頁面路由
-            elif pathname and pathname.startswith('/restaurant/'):
-                if restaurant_id_data and restaurant_id_data.get('id'):
-                    return create_restaurant_detail_page(restaurant_id_data['id']), 'main'
-                else:
-                    return create_restaurant_list_page(), 'main'
 
             # 預設顯示首頁
             else:
@@ -2878,18 +2957,21 @@ def get_search_suggestions(keyword, max_results=8):
 
 # Toggle advanced filters panel
 @app.callback(
-    Output('advanced-filters-panel', 'style'),
+    [Output('advanced-filters-panel', 'style'),
+     Output('filter-icon', 'style')],
     [Input('toggle-advanced-filters', 'n_clicks')],
     [State('advanced-filters-panel', 'style')],
     prevent_initial_call=True
 )
 def toggle_advanced_filters(n_clicks, current_style):
-    """切換進階篩選面板"""
+    """切換進階篩選面板並旋轉圖標"""
     if n_clicks:
         if current_style and current_style.get('display') == 'block':
-            return {'display': 'none'}
+            # Close panel - rotate icon back to 0 degrees
+            return {'display': 'none'}, {'marginRight': '8px', 'transform': 'rotate(0deg)', 'transition': 'transform 0.3s ease'}
         else:
-            return {'display': 'block'}
+            # Open panel - rotate icon to 180 degrees
+            return {'display': 'block'}, {'marginRight': '8px', 'transform': 'rotate(180deg)', 'transition': 'transform 0.3s ease'}
     raise PreventUpdate
 
 # Clear all filters
@@ -3269,9 +3351,10 @@ def update_restaurant_grid(search_results, current_page):
             'backgroundColor': '#F2F6FA',
             'borderRadius': '8px',
             'overflow': 'hidden',
-            'border': '1px solid #E8ECEF',
+            'border': '1.5px solid #D0D5DD',
             'transition': 'transform 0.2s, border-color 0.2s',
-            'cursor': 'pointer'
+            'cursor': 'pointer',
+            'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.08)'
         }, className='restaurant-list-card')
 
         # 包裝在可點擊的容器中，使用 pattern-matching ID
@@ -3961,9 +4044,10 @@ def update_hotel_grid(search_results, current_page):
             'backgroundColor': '#F2F6FA',
             'borderRadius': '8px',
             'overflow': 'hidden',
-            'border': '1px solid #E8ECEF',
+            'border': '1.5px solid #D0D5DD',
             'transition': 'transform 0.2s, border-color 0.2s',
-            'cursor': 'pointer'
+            'cursor': 'pointer',
+            'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.08)'
         })
         
         card_wrapper = html.Div(
@@ -4110,7 +4194,7 @@ def load_hotel_detail_data(pathname):
     except Exception:
         return {'error': 'Invalid hotel id', 'id': None}
 
-    print(f"🔍 DEBUG: load_hotel_detail_data triggered for pathname={pathname}, hotel_id={hotel_id}")
+    print(f"DEBUG: load_hotel_detail_data triggered for pathname={pathname}, hotel_id={hotel_id}")
 
     try:
         hotel_data = get_hotel_by_id(hotel_id)
@@ -4507,7 +4591,7 @@ def handle_hotel_card_click(n_clicks_list, card_ids):
     triggered_dict = json.loads(triggered_id)
     hotel_id = triggered_dict['index']
     
-    print(f"🔍 DEBUG: Hotel card clicked! hotel_id={hotel_id}")  # Debug 訊息
+    print(f"DEBUG: Hotel card clicked! hotel_id={hotel_id}")  # Debug 訊息
     
     return f'/hotel/{hotel_id}'
 
@@ -4519,9 +4603,9 @@ def handle_hotel_card_click(n_clicks_list, card_ids):
 )
 def render_hotel_detail(hotel_data):
     """根據 hotel-detail-data store 渲染旅館詳細內容（與餐廳流程一致）"""
-    print("🔍 DEBUG: render_hotel_detail called")
+    print("DEBUG: render_hotel_detail called")
     if not hotel_data:
-        print("🔍 DEBUG: hotel_data empty")
+        print("DEBUG: hotel_data empty")
         return create_loading_state()
 
     if isinstance(hotel_data, dict) and 'error' in hotel_data:
@@ -4584,8 +4668,9 @@ def load_nearby_hotels(pathname):
                             ], style={'fontSize': '0.85rem', 'marginTop': '4px'})
                         ])
                     ], style={'display': 'flex', 'alignItems': 'center', 'padding': '12px',
-                             'backgroundColor': '#F2F6FA', 'border': '1px solid #E8ECEF',
-                             'borderRadius': '8px', 'marginBottom': '8px', 'cursor': 'pointer'})
+                             'backgroundColor': '#F2F6FA', 'border': '1.5px solid #D0D5DD',
+                             'borderRadius': '8px', 'marginBottom': '8px', 'cursor': 'pointer',
+                             'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.05)'})
                 ], id={'type': 'nearby-hotel-card', 'index': nearby['Hotel_ID']}, n_clicks=0)
                 nearby_cards.append(card)
             
@@ -4597,9 +4682,10 @@ def load_nearby_hotels(pathname):
                 html.Div(nearby_cards)
             ], style={
                 'backgroundColor': '#F2F6FA',
-                'border': '1px solid #E8ECEF',
+                'border': '1.5px solid #D0D5DD',
                 'borderRadius': '12px',
-                'padding': '1.5rem'
+                'padding': '1.5rem',
+                'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.08)'
             })
         except:
             return html.Div()

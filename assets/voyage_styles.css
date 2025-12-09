@@ -190,8 +190,8 @@ body {
     height: 100%;
     background: linear-gradient(
         to bottom,
-        rgba(0, 53, 128, 0.15) 0%,
-        rgba(0, 53, 128, 0.35) 100%
+        rgba(0, 0, 0, 0.2) 0%,
+        rgba(0, 0, 0, 0.4) 100%
     );
 }
 
@@ -906,6 +906,110 @@ body {
     background: #003580;
     color: #FFFFFF;
     transform: translateX(-3px);
+}
+
+/* Back Button with Animation */
+.btn-back {
+    background: #FFFFFF !important;
+    color: #003580 !important;
+    border: 2px solid #003580 !important;
+    padding: 0.65rem 1.5rem;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.btn-back:hover {
+    background: #003580 !important;
+    color: #FFFFFF !important;
+    border: 2px solid #003580 !important;
+    transform: translateX(-5px);
+    box-shadow: 0 4px 12px rgba(0, 53, 128, 0.2) !important;
+    outline: none !important;
+}
+
+.btn-back:focus,
+.btn-back:active,
+.btn-back:focus-visible {
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(0, 53, 128, 0.2) !important;
+    background: #003580 !important;
+    color: #FFFFFF !important;
+    border: 2px solid #003580 !important;
+}
+
+.btn-back i {
+    transition: all 0.3s ease;
+}
+
+.btn-back:hover i {
+    animation: arrowBackBounce 0.6s ease-in-out infinite;
+}
+
+@keyframes arrowBackBounce {
+    0%, 100% {
+        transform: translateX(0px);
+    }
+    50% {
+        transform: translateX(-6px);
+    }
+}
+
+/* Filter Button Styling */
+.btn-filter {
+    background: #FFFFFF;
+    color: #003580;
+    border: 2px solid #003580;
+    padding: 0.65rem 1.5rem;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.btn-filter:hover {
+    background: #003580;
+    color: #FFFFFF;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 53, 128, 0.3);
+}
+
+.btn-filter i {
+    font-size: 0.9rem;
+    transition: transform 0.3s ease;
+}
+
+/* Remove hover rotation since we handle it with state */
+.btn-filter:hover i {
+    /* Rotation is now controlled by click state */
+}
+
+/* Keyword Search Bar Enhancement */
+.keyword-search-bar {
+    transition: all 0.3s ease;
+}
+
+.keyword-search-bar:hover {
+    border-color: #003580;
+    box-shadow: 0 4px 8px rgba(0, 53, 128, 0.1);
+}
+
+.keyword-search-bar:focus-within {
+    border-color: #003580;
+    box-shadow: 0 4px 12px rgba(0, 53, 128, 0.2);
+    transform: translateY(-2px);
 }
 
 /* Restaurant List Grid */

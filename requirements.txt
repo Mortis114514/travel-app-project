@@ -1,5 +1,5 @@
-dash
-dash_bootstrap_components
+dash>=3.3.0
+dash_bootstrap_components>=1.6.0
 pandas
 plotly
 dash_leaflet
