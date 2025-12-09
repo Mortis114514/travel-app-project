@@ -1,0 +1,99 @@
+/*!
+ * Font Awesome Free 6.4.0 - Local Version
+ * License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License)
+ */
+
+/* Font Awesome Solid */
+@font-face {
+  font-family: "Font Awesome 6 Free";
+  font-style: normal;
+  font-weight: 900;
+  font-display: block;
+  src: url("webfonts/fa-solid-900.woff2") format("woff2");
+}
+
+.fas,
+.fa-solid {
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+}
+
+/* Font Awesome Regular */
+@font-face {
+  font-family: "Font Awesome 6 Free";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("webfonts/fa-regular-400.woff2") format("woff2");
+}
+
+.far,
+.fa-regular {
+  font-family: "Font Awesome 6 Free";
+  font-weight: 400;
+}
+
+/* Font Awesome Brands */
+@font-face {
+  font-family: "Font Awesome 6 Brands";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("webfonts/fa-brands-400.woff2") format("woff2");
+}
+
+.fab,
+.fa-brands {
+  font-family: "Font Awesome 6 Brands";
+  font-weight: 400;
+}
+
+/* Base styles for all Font Awesome icons */
+.fa,
+.fas,
+.far,
+.fal,
+.fat,
+.fab {
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: antialiased;
+  display: inline-block;
+  font-style: normal;
+  font-variant: normal;
+  line-height: 1;
+  text-rendering: auto;
+}
+
+/* Icon definitions - add the ones your app uses */
+.fa-user:before { content: "\f007"; }
+.fa-plus:before { content: "\2b"; }
+.fa-arrow-right:before { content: "\f061"; }
+.fa-user-circle:before { content: "\f2bd"; }
+.fa-sign-out-alt:before { content: "\f2f5"; }
+.fa-search:before { content: "\f002"; }
+.fa-filter:before { content: "\f0b0"; }
+.fa-times:before { content: "\f00d"; }
+.fa-star:before { content: "\f005"; }
+.fa-map-marker-alt:before { content: "\f3c5"; }
+.fa-phone:before { content: "\f095"; }
+.fa-globe:before { content: "\f0ac"; }
+.fa-clock:before { content: "\f017"; }
+.fa-utensils:before { content: "\f2e7"; }
+.fa-yen-sign:before { content: "\a5"; }
+.fa-arrow-left:before { content: "\f060"; }
+.fa-arrow-right:before { content: "\f061"; }
+.fa-chevron-left:before { content: "\f053"; }
+.fa-chevron-right:before { content: "\f054"; }
+.fa-heart:before { content: "\f004"; }
+.fa-share:before { content: "\f064"; }
+.fa-bed:before { content: "\f236"; }
+.fa-wifi:before { content: "\f1eb"; }
+.fa-parking:before { content: "\f540"; }
+.fa-swimming-pool:before { content: "\f5c5"; }
+.fa-spinner:before { content: "\f110"; }
+.fa-sliders-h:before { content: "\f1de"; }
+.fa-undo:before { content: "\f0e2"; }
+.fa-sun:before { content: "\f185"; }
+.fa-moon:before { content: "\f186"; }
+.fa-award:before { content: "\f559"; }
+.fa-comment:before { content: "\f075"; }

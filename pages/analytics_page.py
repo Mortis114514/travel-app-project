@@ -84,12 +84,12 @@ def create_help_section(index_id, button_text, explanation_content):
             className="btn-outline-info",
             size="sm",
             n_clicks=0,
-            style={'marginBottom': '10px', 'borderColor': '#00cec9', 'color': '#00cec9'}
+            style={'marginBottom': '10px', 'borderColor': '#003580', 'color': '#003580'}
         ),
         dbc.Collapse(
             dbc.Card(
                 dbc.CardBody(explanation_content),
-                style={'backgroundColor': '#222', 'border': '1px solid #444', 'color': '#ddd', 'marginBottom': '15px'}
+                style={'backgroundColor': '#FFFFFF', 'border': '1px solid #E8ECEF', 'color': '#4A5568', 'marginBottom': '15px'}
             ),
             id={'type': 'help-collapse', 'index': index_id},
             is_open=False,
@@ -116,9 +116,9 @@ def create_analytics_layout(data_dict):
     fig_cp.add_vline(x=market_df['avg_price'].mean(), line_dash="dash", line_color="grey")
     fig_cp.add_hline(y=market_df['avg_rating'].mean(), line_dash="dash", line_color="grey")
     fig_cp.update_layout(
-        template='plotly_dark', 
+        template='plotly_white', 
         plot_bgcolor='rgba(0,0,0,0)', 
-        paper_bgcolor='#1a1a1a',
+        paper_bgcolor='#FFFFFF',
         margin=dict(l=40, r=40, t=60, b=40)
     )
 
@@ -129,15 +129,15 @@ def create_analytics_layout(data_dict):
         labels={'negative_ratio': 'Negative Review %', 'cancellation_rate': 'Cancel Rate'}
     )
     fig_neg.update_layout(
-        template='plotly_dark',
+        template='plotly_white',
         plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='#1a1a1a',
+        paper_bgcolor='#FFFFFF',
         margin=dict(l=40, r=40, t=60, b=40)
     )
 
     # --- 解釋文案定義 ---
     help_cp = [
-        html.H5("如何解讀這張圖？", style={'color': '#00cec9'}),
+        html.H5("如何解讀這張圖？", style={'color': '#003580'}),
         html.Ul([
             html.Li("左上象限 (Low Price, High Rating)：高 CP 值的寶藏旅館。"),
             html.Li("右下象限 (High Price, Low Rating)：價格昂貴但評價低，需注意的地雷區。"),
@@ -157,7 +157,7 @@ def create_analytics_layout(data_dict):
     ]
 
     help_dist = [
-        html.H5("評分結構分析", style={'color': '#00cec9'}),
+        html.H5("評分結構分析", style={'color': '#003580'}),
         html.P("顯示該飯店在 1~5 星的評價分佈情況。"),
         html.Ul([
             html.Li("健康的評分結構：應該是 4~5 星居多。"),
@@ -166,7 +166,7 @@ def create_analytics_layout(data_dict):
     ]
 
     help_time = [
-        html.H5("品質趨勢監控", style={'color': '#deb522'}),
+        html.H5("品質趨勢監控", style={'color': '#003580'}),
         html.P("顯示 30 天移動平均線 (Moving Average)，過濾掉單日波動。"),
         html.Ul([
             html.Li("上升趨勢：代表近期服務品質有改善。"),
@@ -179,12 +179,12 @@ def create_analytics_layout(data_dict):
         # Header
         html.Div([
             html.Button([html.I(className='fas fa-arrow-left'), ' Back'], id={'type': 'back-btn', 'index': 'analytics'}, className='btn-secondary'),
-            html.H1("Analytics Dashboard", style={'color': '#deb522', 'marginLeft': '2rem'})
-        ], style={'display': 'flex', 'alignItems': 'center', 'padding': '2rem', 'borderBottom': '1px solid #333'}),
+            html.H1("Analytics Dashboard", style={'color': '#003580', 'marginLeft': '2rem'})
+        ], style={'display': 'flex', 'alignItems': 'center', 'padding': '2rem', 'borderBottom': '1px solid #E8ECEF'}),
 
         # Section 1: Market Insights
         html.Div([
-            html.H2("Market Insights", style={'color': '#fff', 'borderLeft': '4px solid #deb522', 'paddingLeft': '10px'}),
+            html.H2("Market Insights", style={'color': '#1A1A1A', 'borderLeft': '4px solid #003580', 'paddingLeft': '10px'}),
             html.P("Compare all hotels to identify market opportunities and risks.", style={'color': '#888', 'marginBottom': '2rem'}),
             
             html.Div([
@@ -193,21 +193,21 @@ def create_analytics_layout(data_dict):
                     create_help_section('cp-matrix', 'How to read CP Matrix', help_cp),
                     # --- 關鍵修正：加入 style={'height': '500px'} ---
                     dcc.Graph(figure=fig_cp, style={'height': '500px'})
-                ], style={'flex': '1', 'minWidth': '500px', 'backgroundColor': '#1a1a1a', 'padding': '10px', 'borderRadius': '8px'}),
+                ], style={'flex': '1', 'minWidth': '500px', 'backgroundColor': '#FFFFFF', 'padding': '10px', 'borderRadius': '8px'}),
 
                 # 圖表 2 區塊 (Negative Reviews)
                 html.Div([
                     create_help_section('neg-scatter', 'Analysis Logic', help_neg),
                     # --- 關鍵修正：加入 style={'height': '500px'} ---
                     dcc.Graph(figure=fig_neg, style={'height': '500px'})
-                ], style={'flex': '1', 'minWidth': '500px', 'backgroundColor': '#1a1a1a', 'padding': '10px', 'borderRadius': '8px'})
+                ], style={'flex': '1', 'minWidth': '500px', 'backgroundColor': '#FFFFFF', 'padding': '10px', 'borderRadius': '8px'})
             ], style={'display': 'flex', 'flexWrap': 'wrap', 'gap': '2rem'})
         ], style={'padding': '2rem', 'maxWidth': '1600px', 'margin': '0 auto'}),
 
         # Section 2: Specific Hotel Deep Dive
         html.Div([
-            html.Hr(style={'borderColor': '#333', 'margin': '3rem 0'}),
-            html.H2("Hotel Deep Dive", style={'color': '#fff', 'borderLeft': '4px solid #00cec9', 'paddingLeft': '10px'}),
+            html.Hr(style={'borderColor': '#E8ECEF', 'margin': '3rem 0'}),
+            html.H2("Hotel Deep Dive", style={'color': '#1A1A1A', 'borderLeft': '4px solid #003580', 'paddingLeft': '10px'}),
             html.P("Select a hotel to analyze its specific rating trends over time.", style={'color': '#888'}),
 
             # Controls
@@ -224,7 +224,7 @@ def create_analytics_layout(data_dict):
                     max_date_allowed=reviews_df['Review_Date'].max(),
                     start_date=reviews_df['Review_Date'].min(),
                     end_date=reviews_df['Review_Date'].max(),
-                    style={'marginLeft': '20px', 'border': '1px solid #555', 'borderRadius': '5px'}
+                    style={'marginLeft': '20px', 'border': '1px solid #E8ECEF', 'borderRadius': '5px'}
                 )
             ], style={'display': 'flex', 'alignItems': 'center', 'margin': '2rem 0'}),
 
@@ -235,19 +235,19 @@ def create_analytics_layout(data_dict):
                     create_help_section('dist-chart', 'What does this show?', help_dist),
                     # --- 關鍵修正：加入 style={'height': '500px'} ---
                     dcc.Graph(id='rating-distribution-chart', style={'height': '500px'})
-                ], style={'flex': '1', 'minWidth': '500px', 'backgroundColor': '#1a1a1a', 'padding': '10px', 'borderRadius': '8px'}),
+                ], style={'flex': '1', 'minWidth': '500px', 'backgroundColor': '#FFFFFF', 'padding': '10px', 'borderRadius': '8px'}),
 
                 # 圖表 4 區塊 (Rating Trend)
                 html.Div([
                     create_help_section('time-chart', 'About Trend Line', help_time),
                     # --- 關鍵修正：加入 style={'height': '500px'} ---
                     dcc.Graph(id='rating-over-time-chart', style={'height': '500px'})
-                ], style={'flex': '1', 'minWidth': '500px', 'backgroundColor': '#1a1a1a', 'padding': '10px', 'borderRadius': '8px'})
+                ], style={'flex': '1', 'minWidth': '500px', 'backgroundColor': '#FFFFFF', 'padding': '10px', 'borderRadius': '8px'})
             ], style={'display': 'flex', 'flexWrap': 'wrap', 'gap': '2rem'})
 
         ], style={'padding': '2rem', 'maxWidth': '1600px', 'margin': '0 auto', 'paddingBottom': '5rem'})
 
-    ], style={'backgroundColor': '#0a0a0a', 'minHeight': '100vh', 'overflowX': 'hidden'})
+    ], style={'backgroundColor': '#F2F6FA', 'minHeight': '100vh', 'overflowX': 'hidden'})
 
 # --- 3. 註冊互動 Callbacks ---
 def register_analytics_callbacks(app, data_dict):
@@ -288,9 +288,9 @@ def register_analytics_callbacks(app, data_dict):
 
         # 定義空圖表的樣式
         empty_fig_layout = dict(
-            template='plotly_dark', 
+            template='plotly_white', 
             plot_bgcolor='rgba(0,0,0,0)', 
-            paper_bgcolor='#1a1a1a',
+            paper_bgcolor='#FFFFFF',
             xaxis={'visible': False},
             yaxis={'visible': False},
             annotations=[dict(text="No Data Available", xref="paper", yref="paper", showarrow=False, font=dict(size=20))]
@@ -312,8 +312,8 @@ def register_analytics_callbacks(app, data_dict):
             labels={'x': 'Rating', 'y': 'Count'},
             title=f'Rating Distribution: {title_suffix}'
         )
-        fig_dist.update_traces(marker_color='#00cec9')
-        fig_dist.update_layout(template='plotly_dark', plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='#1a1a1a')
+        fig_dist.update_traces(marker_color='#003580')
+        fig_dist.update_layout(template='plotly_white', plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='#FFFFFF')
 
         # 3. 製作時間趨勢圖
         time_df = filtered.sort_values('Review_Date')
@@ -324,8 +324,8 @@ def register_analytics_callbacks(app, data_dict):
             title=f'30-Day Rating Trend: {title_suffix}',
             labels={'rolling_avg': 'Avg Rating', 'Review_Date': 'Date'}
         )
-        fig_time.update_traces(line_color='#deb522', line_width=3)
+        fig_time.update_traces(line_color='#003580', line_width=3)
         fig_time.update_yaxes(range=[0.5, 5.5])
-        fig_time.update_layout(template='plotly_dark', plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='#1a1a1a')
+        fig_time.update_layout(template='plotly_white', plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='#FFFFFF')
 
         return fig_dist, fig_time
