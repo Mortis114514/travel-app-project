@@ -8,12 +8,12 @@
     display: flex;
     gap: 1rem;
     align-items: center;
-    background: rgba(26, 26, 26, 0.95);
+    background: #FFFFFF;
     backdrop-filter: blur(10px);
     border-radius: 60px;
     padding: 1rem 1.5rem;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-    border: 1px solid rgba(222, 181, 34, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 53, 128, 0.12);
+    border: 2px solid #E8ECEF;
     max-width: 1200px;
     margin: 0 auto;
     position: relative;
@@ -26,7 +26,7 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.5rem 1rem;
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    border-right: 1px solid #E8ECEF;
     position: relative;
 }
 
@@ -43,15 +43,15 @@
 }
 
 .clear-btn:hover {
-    background: rgba(222, 181, 34, 0.2);
-    color: #deb522;
+    background: rgba(0, 53, 128, 0.1);
+    color: #003580;
 }
 
 /* ===== Filter Toggle Button ===== */
 .filter-toggle-btn {
-    background: rgba(222, 181, 34, 0.1);
-    border: 1px solid rgba(222, 181, 34, 0.4);
-    color: #deb522;
+    background: rgba(0, 53, 128, 0.1);
+    border: 1px solid rgba(0, 53, 128, 0.4);
+    color: #003580;
     padding: 0.75rem 1.5rem;
     border-radius: 50px;
     font-weight: 600;
@@ -63,14 +63,14 @@
 }
 
 .filter-toggle-btn:hover {
-    background: rgba(222, 181, 34, 0.2);
-    border-color: #deb522;
+    background: rgba(0, 53, 128, 0.15);
+    border-color: #003580;
 }
 
 .filter-toggle-btn.active {
-    background: rgba(222, 181, 34, 0.3);
-    border-color: #deb522;
-    box-shadow: 0 0 15px rgba(222, 181, 34, 0.3);
+    background: rgba(0, 53, 128, 0.2);
+    border-color: #003580;
+    box-shadow: 0 0 15px rgba(0, 53, 128, 0.2);
 }
 
 /* ===== Search Suggestions Dropdown ===== */
@@ -79,10 +79,10 @@
     top: calc(100% + 0.5rem);
     left: 0;
     right: 0;
-    background: rgba(26, 26, 26, 0.98);
-    border: 1px solid rgba(222, 181, 34, 0.3);
+    background: #FFFFFF;
+    border: 1px solid #E8ECEF;
     border-radius: 12px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 8px 24px rgba(0, 53, 128, 0.12);
     z-index: 1000;
     max-height: 400px;
     overflow-y: auto;
@@ -96,7 +96,7 @@
     padding: 0.875rem 1.25rem;
     cursor: pointer;
     transition: all 0.2s ease;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid #F2F6FA;
 }
 
 .suggestion-item:last-child {
@@ -104,7 +104,7 @@
 }
 
 .suggestion-item:hover {
-    background: rgba(222, 181, 34, 0.1);
+    background: rgba(0, 53, 128, 0.1);
 }
 
 .suggestion-main {
@@ -115,7 +115,7 @@
 }
 
 .suggestion-text {
-    color: #ffffff;
+    color: #1A1A1A;
     font-weight: 500;
     font-size: 0.95rem;
 }
@@ -128,7 +128,7 @@
 
 /* Highlight matched text in suggestions */
 .suggestion-highlight {
-    color: #deb522;
+    color: #003580;
     font-weight: 700;
 }
 
@@ -138,12 +138,12 @@
 }
 
 .advanced-filters-container {
-    background: rgba(26, 26, 26, 0.95);
-    border: 1px solid rgba(222, 181, 34, 0.2);
+    background: #FFFFFF;
+    border: 1px solid rgba(0, 53, 128, 0.2);
     border-radius: 20px;
     padding: 2rem;
     margin-top: 1rem;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 4px 20px rgba(0, 53, 128, 0.12);
 }
 
 .advanced-filters-grid {
@@ -160,7 +160,7 @@
 }
 
 .filter-label {
-    color: #ffffff;
+    color: #1A1A1A;
     font-weight: 600;
     font-size: 1rem;
     display: flex;
@@ -180,11 +180,11 @@
     height: 18px;
     margin-right: 0.5rem;
     cursor: pointer;
-    accent-color: #deb522;
+    accent-color: #003580;
 }
 
 .filter-checklist label {
-    color: #e0e0e0;
+    color: #4A5568;
     font-size: 0.95rem;
     cursor: pointer;
     transition: color 0.2s ease;
@@ -193,30 +193,30 @@
 }
 
 .filter-checklist label:hover {
-    color: #deb522;
+    color: #003580;
 }
 
 /* Dropdown Styles */
 .filter-dropdown {
-    background: rgba(0, 0, 0, 0.4) !important;
-    border: 1px solid rgba(222, 181, 34, 0.3) !important;
+    background: #FFFFFF !important;
+    border: 1px solid rgba(0, 53, 128, 0.3) !important;
     border-radius: 8px !important;
-    color: #ffffff !important;
+    color: #1A1A1A !important;
 }
 
 .filter-dropdown .Select-control {
-    background: transparent !important;
-    border-color: rgba(222, 181, 34, 0.3) !important;
+    background: #FFFFFF !important;
+    border-color: rgba(0, 53, 128, 0.3) !important;
 }
 
 .filter-dropdown .Select-menu-outer {
-    background: rgba(26, 26, 26, 0.98) !important;
-    border: 1px solid rgba(222, 181, 34, 0.3) !important;
+    background: #FFFFFF !important;
+    border: 1px solid rgba(0, 53, 128, 0.3) !important;
     border-radius: 8px !important;
 }
 
 .filter-dropdown .Select-option:hover {
-    background: rgba(222, 181, 34, 0.2) !important;
+    background: rgba(0, 53, 128, 0.2) !important;
 }
 
 /* Slider Styles */
@@ -225,17 +225,17 @@
 }
 
 .filter-slider .rc-slider-track {
-    background: linear-gradient(to right, #deb522, #d4a017) !important;
+    background: linear-gradient(to right, #003580, #0051A8) !important;
 }
 
 .filter-slider .rc-slider-handle {
-    border-color: #deb522 !important;
-    background: #deb522 !important;
-    box-shadow: 0 0 10px rgba(222, 181, 34, 0.5) !important;
+    border-color: #003580 !important;
+    background: #003580 !important;
+    box-shadow: 0 0 10px rgba(0, 53, 128, 0.5) !important;
 }
 
 .filter-slider .rc-slider-handle:hover {
-    border-color: #d4a017 !important;
+    border-color: #0051A8 !important;
 }
 
 .filter-slider .rc-slider-mark-text {
@@ -259,11 +259,11 @@
     height: 18px;
     margin-right: 0.5rem;
     cursor: pointer;
-    accent-color: #deb522;
+    accent-color: #003580;
 }
 
 .filter-radioitems label {
-    color: #e0e0e0;
+    color: #4A5568;
     font-size: 0.95rem;
     cursor: pointer;
     transition: color 0.2s ease;
@@ -272,7 +272,7 @@
 }
 
 .filter-radioitems label:hover {
-    color: #deb522;
+    color: #003580;
 }
 
 /* ===== Active Filter Chips ===== */
@@ -287,11 +287,11 @@
 .filter-chip {
     display: inline-flex;
     align-items: center;
-    background: rgba(222, 181, 34, 0.15);
-    border: 1px solid rgba(222, 181, 34, 0.4);
+    background: rgba(0, 53, 128, 0.15);
+    border: 1px solid rgba(0, 53, 128, 0.4);
     border-radius: 20px;
     padding: 0.5rem 1rem;
-    color: #deb522;
+    color: #003580;
     font-size: 0.9rem;
     font-weight: 500;
     animation: chipFadeIn 0.3s ease;
@@ -300,7 +300,7 @@
 .chip-remove-btn {
     background: transparent;
     border: none;
-    color: #deb522;
+    color: #003580;
     cursor: pointer;
     padding: 0 0 0 0.5rem;
     margin-left: 0.5rem;
@@ -308,7 +308,7 @@
 }
 
 .chip-remove-btn:hover {
-    color: #ffffff;
+    color: #1A1A1A;
     transform: scale(1.2);
 }
 
@@ -330,9 +330,9 @@
     gap: 2rem;
     margin-top: 2rem;
     padding: 1.5rem;
-    background: rgba(26, 26, 26, 0.5);
+    background: #F2F6FA;
     border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid #E8ECEF;
 }
 
 .search-sidebar-section {
@@ -342,7 +342,7 @@
 }
 
 .sidebar-title {
-    color: #ffffff;
+    color: #1A1A1A;
     font-weight: 600;
     font-size: 1rem;
     display: flex;
@@ -362,20 +362,20 @@
     justify-content: space-between;
     align-items: center;
     padding: 0.75rem 1rem;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #FFFFFF;
+    border: 1px solid #E8ECEF;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .history-item:hover {
-    background: rgba(222, 181, 34, 0.1);
-    border-color: rgba(222, 181, 34, 0.3);
+    background: rgba(0, 53, 128, 0.1);
+    border-color: rgba(0, 53, 128, 0.3);
 }
 
 .history-text {
-    color: #e0e0e0;
+    color: #4A5568;
     font-size: 0.9rem;
 }
 
@@ -397,27 +397,27 @@
     justify-content: space-between;
     align-items: center;
     padding: 0.75rem 1rem;
-    background: rgba(222, 181, 34, 0.05);
-    border: 1px solid rgba(222, 181, 34, 0.2);
+    background: rgba(0, 53, 128, 0.05);
+    border: 1px solid rgba(0, 53, 128, 0.2);
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .popular-item:hover {
-    background: rgba(222, 181, 34, 0.15);
-    border-color: rgba(222, 181, 34, 0.4);
+    background: rgba(0, 53, 128, 0.15);
+    border-color: rgba(0, 53, 128, 0.4);
     transform: translateX(5px);
 }
 
 .popular-text {
-    color: #ffffff;
+    color: #1A1A1A;
     font-size: 0.95rem;
     font-weight: 500;
 }
 
 .popular-count {
-    color: #deb522;
+    color: #003580;
     font-size: 0.8rem;
     margin-left: 0.5rem;
 }
@@ -428,7 +428,7 @@
     align-items: center;
     justify-content: center;
     padding: 2rem;
-    color: #deb522;
+    color: #003580;
 }
 
 .search-loading i {
@@ -522,9 +522,9 @@
     }
 }
 
-/* ===== Dark Mode Optimizations ===== */
+/* ===== Scrollbar Optimizations ===== */
 body {
-    scrollbar-color: #deb522 #1a1a1a;
+    scrollbar-color: #003580 #F2F6FA;
 }
 
 .suggestions-dropdown::-webkit-scrollbar {
@@ -532,29 +532,29 @@ body {
 }
 
 .suggestions-dropdown::-webkit-scrollbar-track {
-    background: #1a1a1a;
+    background: #F2F6FA;
 }
 
 .suggestions-dropdown::-webkit-scrollbar-thumb {
-    background: #deb522;
+    background: #003580;
     border-radius: 10px;
 }
 
 .suggestions-dropdown::-webkit-scrollbar-thumb:hover {
-    background: #d4a017;
+    background: #0051A8;
 }
 
 /* ===== Accessibility ===== */
 .search-input:focus,
 .filter-dropdown:focus,
 .filter-slider:focus {
-    outline: 2px solid rgba(222, 181, 34, 0.5);
+    outline: 2px solid rgba(0, 53, 128, 0.5);
     outline-offset: 2px;
 }
 
 /* Keyboard navigation for suggestions */
 .suggestion-item:focus {
-    outline: 2px solid #deb522;
+    outline: 2px solid #003580;
     outline-offset: -2px;
 }
 
