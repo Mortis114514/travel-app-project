@@ -72,22 +72,170 @@ body {
 
 /* ===== Buttons ===== */
 .btn-primary {
-    background: linear-gradient(135deg, #FBC02D 0%, #F9A825 100%);
-    color: #1A1A1A;
+    background: linear-gradient(135deg, #003580 0%, #0051A8 100%);
+    color: #FFFFFF;
     border: none;
     padding: 0.75rem 1.75rem;
     border-radius: 50px;
     font-weight: 600;
     font-size: 0.95rem;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(251, 192, 45, 0.3);
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    box-shadow: 0 4px 12px rgba(0, 53, 128, 0.3);
+    position: relative;
+    overflow: visible;
+}
+
+/* Expanding energy ring - like adventure radiating outward */
+.btn-primary::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    border-radius: 50px;
+    border: 3px solid rgba(74, 159, 255, 0.8);
+    background: transparent;
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 0;
+    transition: all 0.7s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    box-shadow: 0 0 20px rgba(74, 159, 255, 0.6),
+                inset 0 0 20px rgba(74, 159, 255, 0.4);
+}
+
+.btn-primary:hover::before {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 1;
+    animation: ringPulse 1.5s ease-out infinite;
+}
+
+@keyframes ringPulse {
+    0% {
+        transform: translate(-50%, -50%) scale(1.2);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1.5);
+        opacity: 0;
+    }
 }
 
 .btn-primary:hover {
-    background: linear-gradient(135deg, #F9A825 0%, #F57F17 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(251, 192, 45, 0.4);
+    background: linear-gradient(135deg, #0051A8 0%, #006FD6 100%, #4A9FFF 100%);
+    transform: translateY(-3px) scale(1.03);
+    box-shadow: 0 12px 30px rgba(0, 81, 168, 0.5),
+                0 0 40px rgba(0, 111, 214, 0.3);
+}
+
+/* Plus icon animation - subtle glow effect */
+.btn-primary .fa-plus {
+    display: inline-block;
+    transition: all 0.4s ease;
+    position: relative;
+    z-index: 2;
+}
+
+.btn-primary:hover .fa-plus {
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.9))
+            drop-shadow(0 0 15px rgba(74, 159, 255, 0.6));
+}
+
+
+/* Idle state - exciting anticipation pulse */
+.btn-primary {
+    animation: anticipationPulse 2.5s ease-in-out infinite;
+}
+
+@keyframes anticipationPulse {
+    0%, 100% {
+        box-shadow: 0 4px 12px rgba(0, 53, 128, 0.3);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 4px 12px rgba(0, 53, 128, 0.3),
+                    0 0 25px rgba(0, 81, 168, 0.5),
+                    0 0 35px rgba(74, 159, 255, 0.3);
+        transform: scale(1.02);
+    }
+}
+
+/* Stop pulse on hover and apply hover animation */
+.btn-primary:hover {
+    animation: hoverExcitement 0.6s ease-out forwards;
+}
+
+@keyframes hoverExcitement {
+    0% {
+        transform: scale(1.02);
+    }
+    50% {
+        transform: translateY(-4px) scale(1.05);
+    }
+    100% {
+        transform: translateY(-3px) scale(1.03);
+    }
+}
+
+/* Active state - LAUNCH! */
+.btn-primary:active {
+    transform: translateY(1px) scale(1.02);
+    box-shadow: 0 2px 8px rgba(0, 53, 128, 0.6),
+                inset 0 2px 8px rgba(0, 0, 0, 0.2);
+    animation: launchPulse 0.3s ease-out;
+}
+
+@keyframes launchPulse {
+    0% {
+        box-shadow: 0 2px 8px rgba(0, 53, 128, 0.6),
+                    inset 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    50% {
+        box-shadow: 0 5px 20px rgba(0, 81, 168, 0.8),
+                    0 0 40px rgba(74, 159, 255, 0.6),
+                    inset 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    100% {
+        box-shadow: 0 2px 8px rgba(0, 53, 128, 0.6),
+                    inset 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+}
+
+/* Text animation on hover - subtle expansion */
+.btn-primary {
+    letter-spacing: 0.5px;
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55),
+                letter-spacing 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.btn-primary:hover {
+    letter-spacing: 1px;
+}
+
+/* Make sure the z-index is proper for layered effects */
+.btn-primary {
+    z-index: 1;
+}
+
+.btn-primary > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* Add subtle sparkle particles around the button on hover */
+@keyframes sparkleFloat {
+    0% {
+        opacity: 0;
+        transform: translateY(0) scale(0);
+    }
+    50% {
+        opacity: 1;
+        transform: translateY(-20px) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-40px) scale(0);
+    }
 }
 
 .user-avatar {
@@ -1754,5 +1902,296 @@ body {
 
     .map-toggle-label::before {
         display: none;
+    }
+}
+
+/* ===== Profile Page Styles ===== */
+/* Upload button animations - Remove all borders */
+#upload-profile-photo {
+    position: relative;
+    overflow: hidden !important;
+    border: none !important;
+    outline: none !important;
+    box-sizing: border-box !important;
+    border-radius: 20px !important;
+    display: inline-block !important;
+}
+
+#upload-profile-photo *,
+#upload-profile-photo > div,
+#upload-profile-photo div {
+    border: none !important;
+    outline: none !important;
+    box-sizing: border-box !important;
+    border-radius: 20px !important;
+}
+
+/* Specifically target the inner content div */
+#upload-profile-photo > div {
+    background-color: transparent;
+    position: relative;
+    z-index: 2;
+    border-radius: 20px !important;
+    overflow: hidden;
+}
+
+/* Remove border on all states */
+#upload-profile-photo:focus,
+#upload-profile-photo:active,
+#upload-profile-photo:focus-visible,
+#upload-profile-photo *:focus,
+#upload-profile-photo *:active,
+#upload-profile-photo div:focus,
+#upload-profile-photo div:active {
+    border: none !important;
+    outline: none !important;
+    box-shadow: 0 2px 8px rgba(0, 53, 128, 0.2) !important;
+}
+
+/* Remove border from parent wrapper */
+#upload-profile-photo::after,
+#upload-profile-photo::before {
+    border: none !important;
+}
+
+/* Ensure no dashed border from Upload component */
+.dash-uploader,
+.dash-uploader *,
+[type="file"] {
+    border: none !important;
+    outline: none !important;
+}
+
+/* Remove border from the parent div wrapper of upload button */
+#upload-profile-photo::-webkit-file-upload-button {
+    display: none;
+}
+
+/* Ensure wrapper div has no borders */
+div[style*="justifyContent: center"] {
+    border: none !important;
+    outline: none !important;
+}
+
+/* Animated gradient background on hover */
+#upload-profile-photo:hover {
+    background: linear-gradient(135deg, #003580 0%, #0051A8 50%, #006FD6 100%) !important;
+    background-size: 200% 200% !important;
+    animation: gradientShift 3s ease infinite !important;
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(0, 53, 128, 0.4) !important;
+    border-radius: 20px !important;
+    overflow: hidden !important;
+    border: none !important;
+    outline: none !important;
+}
+
+/* Camera icon styling */
+#upload-profile-photo .fa-camera {
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+/* Camera icon rotation and scale on hover */
+#upload-profile-photo:hover .fa-camera {
+    animation: cameraRotate 0.6s ease-in-out;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+/* Ripple effect on click */
+#upload-profile-photo:active {
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 3px 10px rgba(0, 53, 128, 0.3) !important;
+}
+
+/* Gradient shift animation */
+@keyframes gradientShift {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Camera icon rotation */
+@keyframes cameraRotate {
+    0% {
+        transform: rotate(0deg) scale(1);
+    }
+    25% {
+        transform: rotate(-15deg) scale(1.2);
+    }
+    50% {
+        transform: rotate(15deg) scale(1.3);
+    }
+    75% {
+        transform: rotate(-10deg) scale(1.2);
+    }
+    100% {
+        transform: rotate(0deg) scale(1);
+    }
+}
+
+/* Subtle pulse effect to draw attention */
+@keyframes gentlePulse {
+    0%, 100% {
+        box-shadow: 0 2px 8px rgba(0, 53, 128, 0.2);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 4px 16px rgba(0, 53, 128, 0.3);
+        transform: scale(1.02);
+    }
+}
+
+/* Apply gentle pulse when not hovering */
+#upload-profile-photo {
+    animation: gentlePulse 3s ease-in-out infinite;
+}
+
+/* Stop pulse animation on hover */
+#upload-profile-photo:hover {
+    animation: gradientShift 3s ease infinite !important;
+}
+
+/* Shimmer effect overlay */
+#upload-profile-photo::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+    transition: left 0.5s ease;
+    border-radius: 20px;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Shimmer sweep on hover */
+#upload-profile-photo:hover::before {
+    left: 100%;
+    transition: left 0.7s ease;
+}
+
+/* Add sparkle effect */
+@keyframes sparkle {
+    0%, 100% {
+        opacity: 0;
+        transform: scale(0);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Text color transition on hover */
+#upload-profile-photo:hover > div {
+    color: #FFFFFF !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Profile card styling */
+.profile-info-card {
+    background-color: #FFFFFF;
+    border: 1px solid #E8ECEF;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 53, 128, 0.12);
+    transition: all 0.3s ease;
+}
+
+.profile-info-card:hover {
+    box-shadow: 0 6px 16px rgba(0, 53, 128, 0.16);
+    transform: translateY(-2px);
+}
+
+/* Profile photo display animations */
+#profile-photo-display {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+#profile-photo-display:hover {
+    transform: scale(1.08) rotate(2deg);
+    box-shadow: 0 8px 24px rgba(0, 53, 128, 0.3);
+    border-width: 4px !important;
+}
+
+/* Default icon pulse effect */
+#profile-default-icon {
+    animation: iconPulse 2s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 1;
+    }
+}
+
+/* Upload feedback message animation */
+#upload-feedback {
+    transition: all 0.3s ease;
+}
+
+/* Glowing border effect for upload button */
+@keyframes glowBorder {
+    0%, 100% {
+        box-shadow: 0 2px 8px rgba(0, 53, 128, 0.2),
+                    0 0 0 0 rgba(0, 53, 128, 0.4);
+    }
+    50% {
+        box-shadow: 0 4px 16px rgba(0, 53, 128, 0.3),
+                    0 0 20px 4px rgba(0, 53, 128, 0.2);
+    }
+}
+
+/* Bounce in entrance animation for upload button */
+@keyframes bounceIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.3) translateY(-50px);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.05) translateY(0);
+    }
+    70% {
+        transform: scale(0.9);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Apply entrance animation on page load */
+#upload-profile-photo > div {
+    animation: bounceIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+/* Profile title fade-in animation */
+@keyframes fadeInDown {
+    0% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
     }
 }

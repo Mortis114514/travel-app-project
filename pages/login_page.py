@@ -2,46 +2,19 @@ from dash import html, dcc
 import dash_bootstrap_components as dbc
 
 def create_login_layout():
-    
-    return html.Div([
-        # 背景裝飾元素
-        html.Div(style={
-            'position': 'fixed',
-            'top': '-50%',
-            'left': '-50%',
-            'width': '200%',
-            'height': '200%',
-            'background': 'radial-gradient(circle at 20% 50%, rgba(222, 181, 34, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(222, 181, 34, 0.08) 0%, transparent 50%)',
-            'zIndex': '0',
-            'pointerEvents': 'none'
-        }),
 
+    return html.Div([
         dbc.Container([
             dbc.Row([
                 dbc.Col([
                     html.Div([
-                        # Logo 和標題區域
+                        # 標題區域
                         html.Div([
-                            html.Div([
-                                html.Img(
-                                    src='/assets/logo.png',
-                                    style={
-                                        'height': '100px',
-                                        'marginBottom': '25px',
-                                        'filter': 'drop-shadow(0 4px 8px rgba(222, 181, 34, 0.4))',
-                                        'animation': 'fadeInDown 0.8s ease-out'
-                                    }
-                                ),
-                            ], style={'textAlign': 'center'}),
-
                             html.H1(
                                 '旅遊平台',
                                 style={
                                     'textAlign': 'center',
-                                    'background': 'linear-gradient(135deg, #deb522 0%, #f5d876 100%)',
-                                    'WebkitBackgroundClip': 'text',
-                                    'WebkitTextFillColor': 'transparent',
-                                    'backgroundClip': 'text',
+                                    'color': '#003580',
                                     'marginBottom': '10px',
                                     'fontWeight': '800',
                                     'fontSize': '2.2rem',
@@ -53,7 +26,7 @@ def create_login_layout():
                                 'Roger Travel Platform',
                                 style={
                                     'textAlign': 'center',
-                                    'color': '#999',
+                                    'color': '#4A5568',
                                     'marginBottom': '50px',
                                     'fontSize': '0.95rem',
                                     'letterSpacing': '2px',
@@ -69,16 +42,16 @@ def create_login_layout():
                                 html.Div([
                                     html.I(className='fas fa-user-circle', style={
                                         'fontSize': '3rem',
-                                        'color': '#deb522',
+                                        'color': '#003580',
                                         'marginBottom': '20px'
                                     }),
                                     html.H3('歡迎回來', style={
-                                        'color': '#fff',
+                                        'color': '#1A1A1A',
                                         'fontWeight': '600',
                                         'marginBottom': '10px'
                                     }),
                                     html.P('請登入您的帳戶', style={
-                                        'color': '#888',
+                                        'color': '#4A5568',
                                         'fontSize': '0.9rem',
                                         'marginBottom': '35px'
                                     })
@@ -95,7 +68,7 @@ def create_login_layout():
                                             'left': '15px',
                                             'top': '50%',
                                             'transform': 'translateY(-50%)',
-                                            'color': '#deb522',
+                                            'color': '#003580',
                                             'fontSize': '1.1rem'
                                         }),
                                         dbc.Input(
@@ -103,9 +76,9 @@ def create_login_layout():
                                             type='text',
                                             placeholder='使用者名稱',
                                             style={
-                                                'backgroundColor': 'rgba(255, 255, 255, 0.05)',
-                                                'color': 'white',
-                                                'border': '2px solid rgba(222, 181, 34, 0.3)',
+                                                'backgroundColor': '#FFFFFF',
+                                                'color': '#1A1A1A',
+                                                'border': '2px solid #E8ECEF',
                                                 'borderRadius': '12px',
                                                 'padding': '15px 15px 15px 45px',
                                                 'fontSize': '1rem',
@@ -123,7 +96,7 @@ def create_login_layout():
                                             'left': '15px',
                                             'top': '50%',
                                             'transform': 'translateY(-50%)',
-                                            'color': '#deb522',
+                                            'color': '#003580',
                                             'fontSize': '1.1rem'
                                         }),
                                         dbc.Input(
@@ -131,9 +104,9 @@ def create_login_layout():
                                             type='password',
                                             placeholder='密碼',
                                             style={
-                                                'backgroundColor': 'rgba(255, 255, 255, 0.05)',
-                                                'color': 'white',
-                                                'border': '2px solid rgba(222, 181, 34, 0.3)',
+                                                'backgroundColor': '#FFFFFF',
+                                                'color': '#1A1A1A',
+                                                'border': '2px solid #E8ECEF',
                                                 'borderRadius': '12px',
                                                 'padding': '15px 15px 15px 45px',
                                                 'fontSize': '1rem',
@@ -152,7 +125,7 @@ def create_login_layout():
                                         style={'display': 'inline-block', 'marginRight': '8px'}
                                     ),
                                     html.Label('記住我 30 天', style={
-                                        'color': '#aaa',
+                                        'color': '#4A5568',
                                         'fontSize': '0.9rem',
                                         'cursor': 'pointer'
                                     })
@@ -167,17 +140,17 @@ def create_login_layout():
                                     id='login-button',
                                     className='w-100',
                                     style={
-                                        'background': 'linear-gradient(135deg, #deb522 0%, #f5d876 100%)',
+                                        'background': 'linear-gradient(135deg, #003580 0%, #0051A8 100%)',
                                         'border': 'none',
                                         'fontWeight': '700',
                                         'fontSize': '1.1rem',
                                         'padding': '15px',
-                                        'borderRadius': '12px',
+                                        'borderRadius': '50px',
                                         'marginBottom': '25px',
-                                        'boxShadow': '0 4px 15px rgba(222, 181, 34, 0.4)',
+                                        'boxShadow': '0 4px 12px rgba(0, 53, 128, 0.3)',
                                         'transition': 'all 0.3s ease',
                                         'cursor': 'pointer',
-                                        'color': '#000'
+                                        'color': '#FFFFFF'
                                     }
                                 ),
 
@@ -186,17 +159,17 @@ def create_login_layout():
                                     html.Div(style={
                                         'flex': '1',
                                         'height': '1px',
-                                        'background': 'rgba(255, 255, 255, 0.1)'
+                                        'background': '#E8ECEF'
                                     }),
                                     html.Span('或', style={
-                                        'color': '#666',
+                                        'color': '#4A5568',
                                         'padding': '0 15px',
                                         'fontSize': '0.85rem'
                                     }),
                                     html.Div(style={
                                         'flex': '1',
                                         'height': '1px',
-                                        'background': 'rgba(255, 255, 255, 0.1)'
+                                        'background': '#E8ECEF'
                                     }),
                                 ], style={
                                     'display': 'flex',
@@ -206,12 +179,12 @@ def create_login_layout():
 
                                 # 註冊連結
                                 html.Div([
-                                    html.Span('還沒有帳號？', style={'color': '#888', 'marginRight': '8px'}),
+                                    html.Span('還沒有帳號？', style={'color': '#4A5568', 'marginRight': '8px'}),
                                     html.A([
                                         '立即註冊',
                                         html.I(className='fas fa-arrow-right', style={'marginLeft': '8px', 'fontSize': '0.85rem'})
                                     ], href='#', id='register-link', style={
-                                        'color': '#deb522',
+                                        'color': '#003580',
                                         'textDecoration': 'none',
                                         'fontWeight': '600',
                                         'transition': 'all 0.3s ease'
@@ -219,11 +192,11 @@ def create_login_layout():
                                 ], style={'textAlign': 'center'}),
                             ], style={'padding': '45px 40px'})
                         ], style={
-                            'backgroundColor': 'rgba(26, 26, 26, 0.95)',
-                            'border': '1px solid rgba(222, 181, 34, 0.2)',
+                            'backgroundColor': '#FFFFFF',
+                            'border': '1px solid #E8ECEF',
                             'borderRadius': '24px',
                             'backdropFilter': 'blur(10px)',
-                            'boxShadow': '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(222, 181, 34, 0.1)',
+                            'boxShadow': '0 8px 32px rgba(0, 53, 128, 0.1), 0 2px 8px rgba(0, 53, 128, 0.06)',
                             'animation': 'slideUp 0.8s ease-out',
                             'marginBottom': '30px'
                         }),
@@ -232,11 +205,11 @@ def create_login_layout():
                         html.Div([
                             html.Div([
                                 html.I(className='fas fa-info-circle', style={
-                                    'color': '#deb522',
+                                    'color': '#003580',
                                     'marginRight': '10px',
                                     'fontSize': '1.1rem'
                                 }),
-                                html.Strong('測試帳號', style={'color': '#deb522'})
+                                html.Strong('測試帳號', style={'color': '#003580'})
                             ], style={
                                 'textAlign': 'center',
                                 'marginBottom': '12px',
@@ -244,21 +217,21 @@ def create_login_layout():
                             }),
                             html.Div([
                                 html.Div([
-                                    html.I(className='fas fa-user-shield', style={'marginRight': '8px', 'color': '#deb522'}),
-                                    html.Span('admin', style={'fontWeight': '600', 'color': '#fff'}),
-                                    html.Span(' / ', style={'color': '#555', 'margin': '0 5px'}),
-                                    html.Span('admin123', style={'color': '#aaa'})
+                                    html.I(className='fas fa-user-shield', style={'marginRight': '8px', 'color': '#003580'}),
+                                    html.Span('admin', style={'fontWeight': '600', 'color': '#1A1A1A'}),
+                                    html.Span(' / ', style={'color': '#4A5568', 'margin': '0 5px'}),
+                                    html.Span('admin123', style={'color': '#4A5568'})
                                 ], style={'marginBottom': '8px'}),
                                 html.Div([
-                                    html.I(className='fas fa-user', style={'marginRight': '8px', 'color': '#deb522'}),
-                                    html.Span('demo', style={'fontWeight': '600', 'color': '#fff'}),
-                                    html.Span(' / ', style={'color': '#555', 'margin': '0 5px'}),
-                                    html.Span('demo123', style={'color': '#aaa'})
+                                    html.I(className='fas fa-user', style={'marginRight': '8px', 'color': '#003580'}),
+                                    html.Span('demo', style={'fontWeight': '600', 'color': '#1A1A1A'}),
+                                    html.Span(' / ', style={'color': '#4A5568', 'margin': '0 5px'}),
+                                    html.Span('demo123', style={'color': '#4A5568'})
                                 ])
                             ], style={'fontSize': '0.9rem', 'textAlign': 'center'})
                         ], style={
-                            'backgroundColor': 'rgba(222, 181, 34, 0.05)',
-                            'border': '1px solid rgba(222, 181, 34, 0.2)',
+                            'backgroundColor': 'rgba(0, 53, 128, 0.05)',
+                            'border': '1px solid rgba(0, 53, 128, 0.15)',
                             'borderRadius': '16px',
                             'padding': '20px',
                             'animation': 'fadeIn 1.5s ease-out'
@@ -274,7 +247,7 @@ def create_login_layout():
                 ], width=12)
             ], justify="center")
         ], style={
-            'background': 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%)',
+            'background': '#F2F6FA',
             'minHeight': '100vh',
             'display': 'flex',
             'alignItems': 'center',
@@ -288,44 +261,17 @@ def create_login_layout():
 def create_register_layout():
     """建立註冊頁面布局 - 專業設計版"""
     return html.Div([
-        # 背景裝飾元素
-        html.Div(style={
-            'position': 'fixed',
-            'top': '-50%',
-            'left': '-50%',
-            'width': '200%',
-            'height': '200%',
-            'background': 'radial-gradient(circle at 20% 50%, rgba(222, 181, 34, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(222, 181, 34, 0.08) 0%, transparent 50%)',
-            'zIndex': '0',
-            'pointerEvents': 'none'
-        }),
-
         dbc.Container([
             dbc.Row([
                 dbc.Col([
                     html.Div([
-                        # Logo 和標題區域
+                        # 標題區域
                         html.Div([
-                            html.Div([
-                                html.Img(
-                                    src='/assets/logo.png',
-                                    style={
-                                        'height': '90px',
-                                        'marginBottom': '25px',
-                                        'filter': 'drop-shadow(0 4px 8px rgba(222, 181, 34, 0.4))',
-                                        'animation': 'fadeInDown 0.8s ease-out'
-                                    }
-                                ),
-                            ], style={'textAlign': 'center'}),
-
                             html.H1(
                                 '建立新帳號',
                                 style={
                                     'textAlign': 'center',
-                                    'background': 'linear-gradient(135deg, #deb522 0%, #f5d876 100%)',
-                                    'WebkitBackgroundClip': 'text',
-                                    'WebkitTextFillColor': 'transparent',
-                                    'backgroundClip': 'text',
+                                    'color': '#003580',
                                     'marginBottom': '10px',
                                     'fontWeight': '800',
                                     'fontSize': '2rem',
@@ -336,7 +282,7 @@ def create_register_layout():
                                 '開始您的數據分析之旅',
                                 style={
                                     'textAlign': 'center',
-                                    'color': '#999',
+                                    'color': '#4A5568',
                                     'marginBottom': '40px',
                                     'fontSize': '0.95rem',
                                     'animation': 'fadeIn 1.2s ease-out'
@@ -350,11 +296,11 @@ def create_register_layout():
                                 html.Div([
                                     html.I(className='fas fa-user-plus', style={
                                         'fontSize': '2.5rem',
-                                        'color': '#deb522',
+                                        'color': '#003580',
                                         'marginBottom': '15px'
                                     }),
                                     html.P('填寫資訊完成註冊', style={
-                                        'color': '#888',
+                                        'color': '#4A5568',
                                         'fontSize': '0.9rem',
                                         'marginBottom': '30px'
                                     })
@@ -371,7 +317,7 @@ def create_register_layout():
                                             'left': '15px',
                                             'top': '50%',
                                             'transform': 'translateY(-50%)',
-                                            'color': '#deb522',
+                                            'color': '#003580',
                                             'fontSize': '1rem'
                                         }),
                                         dbc.Input(
@@ -379,9 +325,9 @@ def create_register_layout():
                                             type='text',
                                             placeholder='使用者名稱',
                                             style={
-                                                'backgroundColor': 'rgba(255, 255, 255, 0.05)',
-                                                'color': 'white',
-                                                'border': '2px solid rgba(222, 181, 34, 0.3)',
+                                                'backgroundColor': '#FFFFFF',
+                                                'color': '#1A1A1A',
+                                                'border': '2px solid #E8ECEF',
                                                 'borderRadius': '12px',
                                                 'padding': '14px 15px 14px 45px',
                                                 'fontSize': '0.95rem',
@@ -399,7 +345,7 @@ def create_register_layout():
                                             'left': '15px',
                                             'top': '50%',
                                             'transform': 'translateY(-50%)',
-                                            'color': '#deb522',
+                                            'color': '#003580',
                                             'fontSize': '1rem'
                                         }),
                                         dbc.Input(
@@ -407,9 +353,9 @@ def create_register_layout():
                                             type='email',
                                             placeholder='電子郵件（選填）',
                                             style={
-                                                'backgroundColor': 'rgba(255, 255, 255, 0.05)',
-                                                'color': 'white',
-                                                'border': '2px solid rgba(222, 181, 34, 0.3)',
+                                                'backgroundColor': '#FFFFFF',
+                                                'color': '#1A1A1A',
+                                                'border': '2px solid #E8ECEF',
                                                 'borderRadius': '12px',
                                                 'padding': '14px 15px 14px 45px',
                                                 'fontSize': '0.95rem',
@@ -427,7 +373,7 @@ def create_register_layout():
                                             'left': '15px',
                                             'top': '50%',
                                             'transform': 'translateY(-50%)',
-                                            'color': '#deb522',
+                                            'color': '#003580',
                                             'fontSize': '1rem'
                                         }),
                                         dbc.Input(
@@ -435,9 +381,9 @@ def create_register_layout():
                                             type='password',
                                             placeholder='密碼（至少 6 位）',
                                             style={
-                                                'backgroundColor': 'rgba(255, 255, 255, 0.05)',
-                                                'color': 'white',
-                                                'border': '2px solid rgba(222, 181, 34, 0.3)',
+                                                'backgroundColor': '#FFFFFF',
+                                                'color': '#1A1A1A',
+                                                'border': '2px solid #E8ECEF',
                                                 'borderRadius': '12px',
                                                 'padding': '14px 15px 14px 45px',
                                                 'fontSize': '0.95rem',
@@ -455,7 +401,7 @@ def create_register_layout():
                                             'left': '15px',
                                             'top': '50%',
                                             'transform': 'translateY(-50%)',
-                                            'color': '#deb522',
+                                            'color': '#003580',
                                             'fontSize': '1rem'
                                         }),
                                         dbc.Input(
@@ -463,9 +409,9 @@ def create_register_layout():
                                             type='password',
                                             placeholder='確認密碼',
                                             style={
-                                                'backgroundColor': 'rgba(255, 255, 255, 0.05)',
-                                                'color': 'white',
-                                                'border': '2px solid rgba(222, 181, 34, 0.3)',
+                                                'backgroundColor': '#FFFFFF',
+                                                'color': '#1A1A1A',
+                                                'border': '2px solid #E8ECEF',
                                                 'borderRadius': '12px',
                                                 'padding': '14px 15px 14px 45px',
                                                 'fontSize': '0.95rem',
@@ -484,17 +430,17 @@ def create_register_layout():
                                     id='register-button',
                                     className='w-100',
                                     style={
-                                        'background': 'linear-gradient(135deg, #deb522 0%, #f5d876 100%)',
+                                        'background': 'linear-gradient(135deg, #003580 0%, #0051A8 100%)',
                                         'border': 'none',
                                         'fontWeight': '700',
                                         'fontSize': '1.05rem',
                                         'padding': '14px',
-                                        'borderRadius': '12px',
+                                        'borderRadius': '50px',
                                         'marginBottom': '25px',
-                                        'boxShadow': '0 4px 15px rgba(222, 181, 34, 0.4)',
+                                        'boxShadow': '0 4px 12px rgba(0, 53, 128, 0.3)',
                                         'transition': 'all 0.3s ease',
                                         'cursor': 'pointer',
-                                        'color': '#000'
+                                        'color': '#FFFFFF'
                                     }
                                 ),
 
@@ -503,17 +449,17 @@ def create_register_layout():
                                     html.Div(style={
                                         'flex': '1',
                                         'height': '1px',
-                                        'background': 'rgba(255, 255, 255, 0.1)'
+                                        'background': '#E8ECEF'
                                     }),
                                     html.Span('或', style={
-                                        'color': '#666',
+                                        'color': '#4A5568',
                                         'padding': '0 15px',
                                         'fontSize': '0.85rem'
                                     }),
                                     html.Div(style={
                                         'flex': '1',
                                         'height': '1px',
-                                        'background': 'rgba(255, 255, 255, 0.1)'
+                                        'background': '#E8ECEF'
                                     }),
                                 ], style={
                                     'display': 'flex',
@@ -523,12 +469,12 @@ def create_register_layout():
 
                                 # 返回登入連結
                                 html.Div([
-                                    html.Span('已有帳號？', style={'color': '#888', 'marginRight': '8px'}),
+                                    html.Span('已有帳號？', style={'color': '#4A5568', 'marginRight': '8px'}),
                                     html.A([
                                         '返回登入',
                                         html.I(className='fas fa-arrow-left', style={'marginLeft': '8px', 'fontSize': '0.85rem'})
                                     ], href='#', id='back-to-login-link', style={
-                                        'color': '#deb522',
+                                        'color': '#003580',
                                         'textDecoration': 'none',
                                         'fontWeight': '600',
                                         'transition': 'all 0.3s ease'
@@ -536,11 +482,11 @@ def create_register_layout():
                                 ], style={'textAlign': 'center'}),
                             ], style={'padding': '40px 35px'})
                         ], style={
-                            'backgroundColor': 'rgba(26, 26, 26, 0.95)',
-                            'border': '1px solid rgba(222, 181, 34, 0.2)',
+                            'backgroundColor': '#FFFFFF',
+                            'border': '1px solid #E8ECEF',
                             'borderRadius': '24px',
                             'backdropFilter': 'blur(10px)',
-                            'boxShadow': '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(222, 181, 34, 0.1)',
+                            'boxShadow': '0 8px 32px rgba(0, 53, 128, 0.1), 0 2px 8px rgba(0, 53, 128, 0.06)',
                             'animation': 'slideUp 0.8s ease-out'
                         }),
 
@@ -554,7 +500,7 @@ def create_register_layout():
                 ], width=12)
             ], justify="center")
         ], style={
-            'background': 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%)',
+            'background': '#F2F6FA',
             'minHeight': '100vh',
             'display': 'flex',
             'alignItems': 'center',

@@ -52,15 +52,15 @@
 
 /* 輸入框聚焦效果 */
 input:focus {
-    border-color: #deb522 !important;
-    box-shadow: 0 0 0 3px rgba(222, 181, 34, 0.2) !important;
+    border-color: #003580 !important;
+    box-shadow: 0 0 0 3px rgba(0, 53, 128, 0.2) !important;
     outline: none !important;
 }
 
 /* 按鈕懸停效果 */
 button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(222, 181, 34, 0.5) !important;
+    /* box-shadow removed - no more yellow shading on hover */
 }
 
 button:active {
