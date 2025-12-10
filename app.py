@@ -863,25 +863,46 @@ def create_map_placeholder_section(data):
         # Google Map
         map_component,
 
-        html.A(
-            [
-                html.I(className='fas fa-external-link-alt', style={'marginRight': '6px'}),
-                'View on Google Maps'
-            ],
-            href=f"https://www.google.com/maps/search/?api=1&query={lat},{long}",
-            target="_blank",
-            style={
-                'display': 'inline-block',
-                'marginTop': '12px',
-                'padding': '8px 16px',
-                'backgroundColor': '#4285f4',
-                'color': 'white',
-                'textDecoration': 'none',
-                'borderRadius': '6px',
-                'fontSize': '0.9rem',
-                'transition': 'background-color 0.3s'
-            }
-        ),
+        # Map action buttons
+        html.Div([
+            html.A(
+                [
+                    html.I(className='fas fa-external-link-alt', style={'marginRight': '6px'}),
+                    'View on Google Maps'
+                ],
+                href=f"https://www.google.com/maps/search/?api=1&query={lat},{long}",
+                target="_blank",
+                style={
+                    'display': 'inline-block',
+                    'padding': '8px 16px',
+                    'backgroundColor': '#4285f4',
+                    'color': 'white',
+                    'textDecoration': 'none',
+                    'borderRadius': '6px',
+                    'fontSize': '0.9rem',
+                    'transition': 'background-color 0.3s'
+                }
+            ),
+            html.A(
+                [
+                    html.I(className='fas fa-directions', style={'marginRight': '6px'}),
+                    'Get Directions'
+                ],
+                href=f"https://www.google.com/maps/dir/?api=1&destination={lat},{long}",
+                target="_blank",
+                style={
+                    'display': 'inline-block',
+                    'padding': '8px 16px',
+                    'backgroundColor': '#34A853',
+                    'color': 'white',
+                    'textDecoration': 'none',
+                    'borderRadius': '6px',
+                    'fontSize': '0.9rem',
+                    'transition': 'background-color 0.3s',
+                    'marginLeft': '10px'
+                }
+            )
+        ], style={'marginTop': '12px'}),
 
         # 附近餐廳列表
         html.Div([
