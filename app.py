@@ -1326,9 +1326,9 @@ def create_hotel_detail_content(hotel_data):
     stars = []
     for i in range(5):
         if i < full_stars:
-            stars.append(html.I(className='fas fa-star', style={'color': '#003580', 'marginRight': '4px'}))
+            stars.append(html.I(className='fas fa-star', style={'color': '#deb522', 'marginRight': '4px', 'textShadow': '1px 1px 3px rgba(0,0,0,0.5)'}))
         else:
-            stars.append(html.I(className='far fa-star', style={'color': '#555555', 'marginRight': '4px'}))
+            stars.append(html.I(className='far fa-star', style={'color': 'rgba(255, 255, 255, 0.5)', 'marginRight': '4px', 'textShadow': '1px 1px 3px rgba(0,0,0,0.5)'}))
     
     # 處理類型列表
     types = hotel_data.get('Types', [])
@@ -1340,37 +1340,35 @@ def create_hotel_detail_content(hotel_data):
     return html.Div([
         # Hero 區域 (大圖)
         html.Div([
-            html.Img(src='/assets/food_dirtyrice.png', style={
-                'width': '100%',
-                'height': '100%',
-                'objectFit': 'cover',
-                'position': 'absolute',
-                'top': '0',
-                'left': '0'
-            }),
+            # 圖片畫廊（替換原本的單一圖片）
+            create_image_gallery(),
+
+            # 漸層遮罩 (subtle shadow for text readability)
             html.Div(style={
                 'position': 'absolute',
                 'bottom': '0',
                 'left': '0',
                 'right': '0',
                 'height': '70%',
-                'background': 'linear-gradient(to top, rgba(0, 53, 128, 0.85) 0%, rgba(0, 53, 128, 0.3) 70%, transparent 100%)'
+                'background': 'linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.2) 70%, transparent 100%)',
+                'pointerEvents': 'none'
             }),
             html.Div([
                 html.H1(hotel_data.get('HotelName', 'Hotel'), style={
-                    'color': '#1A1A1A',
+                    'color': '#FFFFFF',
                     'fontSize': '3rem',
                     'fontWeight': 'bold',
                     'marginBottom': '0.5rem',
-                    'textShadow': '2px 2px 4px rgba(0,0,0,0.5)'
+                    'textShadow': '2px 2px 8px rgba(0,0,0,0.7)'
                 }),
                 html.Div([
                     html.Div(stars + [
                         html.Span(f"{rating:.1f}", style={
-                            'color': '#003580',
+                            'color': '#deb522',
                             'fontSize': '1.8rem',
                             'fontWeight': 'bold',
-                            'marginLeft': '12px'
+                            'marginLeft': '12px',
+                            'textShadow': '1px 1px 3px rgba(0,0,0,0.5)'
                         })
                     ], style={'marginBottom': '1rem'}),
                     html.Div([
@@ -1378,24 +1376,30 @@ def create_hotel_detail_content(hotel_data):
                             html.I(className='fas fa-hotel', style={'marginRight': '6px'}),
                             types_text
                         ], style={
-                            'backgroundColor': 'rgba(222, 181, 34, 0.2)',
-                            'border': '1px solid #003580',
-                            'color': '#003580',
+                            'backgroundColor': 'rgba(255, 255, 255, 0.25)',
+                            'backdropFilter': 'blur(10px)',
+                            'border': '1.5px solid rgba(255, 255, 255, 0.5)',
+                            'color': '#FFFFFF',
                             'padding': '8px 16px',
                             'borderRadius': '20px',
                             'marginRight': '10px',
-                            'fontSize': '1rem'
+                            'fontSize': '1rem',
+                            'fontWeight': '500',
+                            'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)'
                         }),
                         html.Span([
                             html.I(className='fas fa-comment', style={'marginRight': '6px'}),
                             f"{int(hotel_data.get('UserRatingsTotal', 0))} reviews"
                         ], style={
-                            'backgroundColor': 'rgba(222, 181, 34, 0.2)',
-                            'border': '1px solid #003580',
-                            'color': '#003580',
+                            'backgroundColor': 'rgba(255, 255, 255, 0.25)',
+                            'backdropFilter': 'blur(10px)',
+                            'border': '1.5px solid rgba(255, 255, 255, 0.5)',
+                            'color': '#FFFFFF',
                             'padding': '8px 16px',
                             'borderRadius': '20px',
-                            'fontSize': '1rem'
+                            'fontSize': '1rem',
+                            'fontWeight': '500',
+                            'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)'
                         })
                     ])
                 ])
@@ -1405,7 +1409,8 @@ def create_hotel_detail_content(hotel_data):
                 'left': '2rem',
                 'right': '2rem',
                 'maxWidth': '1400px',
-                'margin': '0 auto'
+                'margin': '0 auto',
+                'pointerEvents': 'none'
             })
         ], style={
             'position': 'relative',
@@ -2361,15 +2366,7 @@ def create_pagination_buttons(current_page, total_pages):
             id={'type': 'page-btn', 'index': 'prev'},
             disabled=current_page == 1,
             className='pagination-btn',
-            n_clicks=0,
-            style={
-                'backgroundColor': '#F2F6FA' if current_page == 1 else '#333',
-                'color': '#666' if current_page == 1 else '#deb522',
-                'border': '1px solid #E8ECEF',
-                'padding': '0.5rem 1rem',
-                'cursor': 'not-allowed' if current_page == 1 else 'pointer',
-                'borderRadius': '4px'
-            }
+            n_clicks=0
         )
     )
 
@@ -2385,19 +2382,11 @@ def create_pagination_buttons(current_page, total_pages):
                 '1',
                 id={'type': 'page-btn', 'index': 1},
                 className='pagination-btn',
-                n_clicks=0,
-                style={
-                    'backgroundColor': '#333',
-                    'color': '#003580',
-                    'border': '1px solid #E8ECEF',
-                    'padding': '0.5rem 1rem',
-                    'cursor': 'pointer',
-                    'borderRadius': '4px'
-                }
+                n_clicks=0
             )
         )
         if start_page > 2:
-            buttons.append(html.Span('...', style={'color': '#666', 'padding': '0 0.5rem'}))
+            buttons.append(html.Span('...', style={'color': '#4A5568', 'padding': '0 0.5rem'}))
 
     # Middle pages
     for page in range(start_page, end_page + 1):
@@ -2407,37 +2396,20 @@ def create_pagination_buttons(current_page, total_pages):
                 str(page),
                 id={'type': 'page-btn', 'index': page},
                 className='pagination-btn active' if is_active else 'pagination-btn',
-                n_clicks=0,
-                style={
-                    'backgroundColor': '#FBC02D' if is_active else '#333',
-                    'color': '#000' if is_active else '#deb522',
-                    'border': '2px solid #deb522' if is_active else '1px solid #444',
-                    'padding': '0.5rem 1rem',
-                    'cursor': 'default' if is_active else 'pointer',
-                    'borderRadius': '4px',
-                    'fontWeight': 'bold' if is_active else 'normal'
-                }
+                n_clicks=0
             )
         )
 
     # Last page
     if end_page < total_pages:
         if end_page < total_pages - 1:
-            buttons.append(html.Span('...', style={'color': '#666', 'padding': '0 0.5rem'}))
+            buttons.append(html.Span('...', style={'color': '#4A5568', 'padding': '0 0.5rem'}))
         buttons.append(
             html.Button(
                 str(total_pages),
                 id={'type': 'page-btn', 'index': total_pages},
                 className='pagination-btn',
-                n_clicks=0,
-                style={
-                    'backgroundColor': '#333',
-                    'color': '#003580',
-                    'border': '1px solid #E8ECEF',
-                    'padding': '0.5rem 1rem',
-                    'cursor': 'pointer',
-                    'borderRadius': '4px'
-                }
+                n_clicks=0
             )
         )
 
@@ -2448,15 +2420,7 @@ def create_pagination_buttons(current_page, total_pages):
             id={'type': 'page-btn', 'index': 'next'},
             disabled=current_page == total_pages,
             className='pagination-btn',
-            n_clicks=0,
-            style={
-                'backgroundColor': '#F2F6FA' if current_page == total_pages else '#333',
-                'color': '#666' if current_page == total_pages else '#deb522',
-                'border': '1px solid #E8ECEF',
-                'padding': '0.5rem 1rem',
-                'cursor': 'not-allowed' if current_page == total_pages else 'pointer',
-                'borderRadius': '4px'
-            }
+            n_clicks=0
         )
     )
 

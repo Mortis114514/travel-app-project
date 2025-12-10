@@ -56,7 +56,10 @@ python migrate_to_db.py               # Creates ./data/restaurants.db
 python performance_test.py            # Compare CSV vs database performance
 ```
 
-**Important**: The application requires SQLite database to run. If `restaurants.db` doesn't exist, run `migrate_to_db.py` first.
+**Important**:
+- The application requires SQLite database to run. If `restaurants.db` doesn't exist, run `migrate_to_db.py` first.
+- Both `users.db` and `restaurants.db` are in `.gitignore` and not tracked by git.
+- Database files are auto-created on first run (`users.db`) or via migration script (`restaurants.db`).
 
 ### Data Generation and Testing
 ```bash
@@ -80,20 +83,22 @@ python tests/test_hotel_detail_flow.py           # Test hotel detail page flow
 
 ### Main Application (app.py)
 
-**Large monolithic file** (~3560 lines) organized into sections:
+**Large monolithic file** (~5052 lines) organized into sections:
 
-1. **Imports & Setup** (lines 1-45): Dash, Plotly, Pandas imports; utility imports from `utils/`, `pages/`
-2. **Data Loading** (lines 46-150): Database connection, helper functions for options creation
-3. **Restaurant UI Components** (lines 151-1000): Search bars, cards, list layouts, detail layouts
-4. **Hotel UI Components** (lines 1001-1700): Hotel cards, search bars, list layouts, detail layouts
-5. **Main Layouts** (lines 1701-1900): Homepage layout with stores and navigation
-6. **App Initialization** (lines 1901-1950): Dash app setup, external stylesheets, layout definition
-7. **Callbacks - Authentication** (lines 1951-2100): Login, register, logout, page routing
-8. **Callbacks - Navigation** (lines 2101-2200): Page navigation, back buttons (includes analytics routing)
-9. **Callbacks - Restaurant Features** (lines 2201-2800): Search, filters, pagination, detail pages
-10. **Callbacks - Hotel Features** (lines 2801-3200): Hotel search, filtering, detail pages
-11. **Callbacks - UI Components** (lines 3201-3900): Dropdowns, tabs, user menus, scroll behavior
-12. **App Runner** (line 3926+): `if __name__ == '__main__': app.run(debug=True, port=8050)`
+1. **Imports & Setup** (lines 1-50): Dash, Plotly, Pandas imports; utility imports from `utils/`, `pages/`
+2. **Data Loading** (lines 51-100): Database connection, helper functions for options creation
+3. **Restaurant UI Components** (lines 100-1800): Search bars, cards, list layouts, detail layouts
+4. **Hotel UI Components** (lines 1800-2800): Hotel cards, search bars, list layouts, detail layouts
+5. **Main Layouts** (lines 2800-3100): Homepage layout with stores and navigation
+6. **App Initialization** (lines 3100-3200): Dash app setup, external stylesheets, layout definition
+7. **Callbacks** (77 total callbacks):
+   - Authentication: Login, register, logout, page routing
+   - Navigation: Page navigation, back buttons, analytics routing
+   - Restaurant Features: Search, filters, pagination, detail pages, review filtering
+   - Hotel Features: Search, filtering, pagination, detail pages, nearby hotels
+   - Analytics: Hotel-specific chart updates, help section toggles
+   - UI Components: Dropdowns, tabs, user menus, scroll behavior, profile management
+8. **App Runner** (end of file): `if __name__ == '__main__': app.run(debug=True, port=8050)`
 
 ### Database Module (utils/database.py)
 
@@ -145,12 +150,15 @@ All queries use this context manager for automatic connection cleanup.
 - `get_session(session_id)`: Validate and retrieve session
 - `delete_session(session_id)`: Remove session (logout)
 - `clean_expired_sessions()`: Remove expired sessions
+- `get_user_full_details(user_id)`: Get complete user information including profile photo
+- `update_profile_photo(user_id, photo_data)`: Update user profile photo (base64 encoded)
 
 **Test Accounts**: Auto-created on first run
 - `admin` / `admin123`
 - `demo` / `demo123`
 
-Database: `./data/users.db`
+**Database**: `./data/users.db`
+- Tables: `users` (with profile_photo column), `sessions`
 
 ### Pages Package (pages/)
 
@@ -191,6 +199,8 @@ Database: `./data/users.db`
 **Stylesheets**:
 - `voyage_styles.css`: Main application styles for modern homepage, cards, detail pages
 - `enhanced_search_styles.css`: Advanced search components, filters, chips, suggestions
+- `fontawesome-local.css`: FontAwesome icons (local copy)
+- `bootstrap.min.css`: Bootstrap theme (local copy)
 - `login_styles.css`: Authentication page styles (legacy)
 - `gear_menu.css`: Hamburger menu styles (legacy, unused)
 
@@ -290,7 +300,7 @@ The app uses URL-based routing with multiple page types:
 
 ## Callback Architecture
 
-The app uses 45+ callbacks organized by functionality:
+The app uses 77 callbacks organized by functionality:
 
 **Authentication Callbacks** (6):
 - Page routing based on session state
@@ -438,6 +448,7 @@ The codebase contains legacy code from a previous travel analysis dashboard that
 - App implements modern restaurant and hotel discovery platform (Voyage)
 - SQLite database with 2000+ Kyoto restaurants and hotels
 - Full-featured analytics dashboard with hotel performance metrics
+- User profile management with photo upload (base64 encoded in database)
 - Recent improvements: keyword search optimization, analytics dashboard with 4 interactive charts
 - Personalized features (saved/wishlisted) have UI but no backend yet
 
