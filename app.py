@@ -1896,7 +1896,7 @@ def create_profile_page(user_data):
                                     'height': '150px',
                                     'borderRadius': '50%',
                                     'objectFit': 'cover',
-                                    'border': '3px solid #deb522',
+                                    'border': '3px solid #003580',
                                     'display': 'block' if user_data.get('profile_photo') else 'none'
                                 }
                             ),
@@ -1925,17 +1925,22 @@ def create_profile_page(user_data):
                                     'lineHeight': '40px',
                                     'borderRadius': '20px',
                                     'textAlign': 'center',
-                                    'backgroundColor': '#FBC02D',
-                                    'color': '#1a1a1a',
+                                    'backgroundColor': '#003580',
+                                    'color': '#FFFFFF',
                                     'cursor': 'pointer',
-                                    'fontWeight': 'bold',
+                                    'fontWeight': '600',
                                     'transition': 'all 0.3s ease',
-                                    'margin': '0 auto'
+                                    'margin': '0 auto',
+                                    'boxShadow': '0 2px 8px rgba(0, 53, 128, 0.2)',
+                                    'border': 'none',
+                                    'outline': 'none',
+                                    'display': 'inline-block',
+                                    'overflow': 'hidden'
                                 },
                                 multiple=False,
                                 accept='image/*'
                             )
-                        ], style={'display': 'flex', 'justifyContent': 'center', 'marginBottom': '1rem'}),
+                        ], style={'display': 'flex', 'justifyContent': 'center', 'marginBottom': '1rem', 'border': 'none', 'outline': 'none'}),
 
                         # Upload feedback message
                         html.Div(id='upload-feedback', style={
@@ -1954,7 +1959,7 @@ def create_profile_page(user_data):
                                 html.I(className='fas fa-user', style={'marginRight': '0.5rem', 'color': '#003580'}),
                                 html.Span('Username:', style={'fontWeight': 'bold', 'color': '#003580'})
                             ], style={'marginBottom': '0.5rem'}),
-                            html.Div(user_data.get('username', 'N/A'), style={'fontSize': '1.2rem', 'color': 'white'})
+                            html.Div(user_data.get('username', 'N/A'), style={'fontSize': '1.2rem', 'color': '#1A1A1A'})
                         ], style={'marginBottom': '1.5rem'}),
 
                         # Email
@@ -1963,7 +1968,7 @@ def create_profile_page(user_data):
                                 html.I(className='fas fa-envelope', style={'marginRight': '0.5rem', 'color': '#003580'}),
                                 html.Span('Email:', style={'fontWeight': 'bold', 'color': '#003580'})
                             ], style={'marginBottom': '0.5rem'}),
-                            html.Div(user_data.get('email', 'Not provided'), style={'fontSize': '1.2rem', 'color': 'white'})
+                            html.Div(user_data.get('email', 'Not provided'), style={'fontSize': '1.2rem', 'color': '#1A1A1A'})
                         ], style={'marginBottom': '1.5rem'}),
 
                         # Account Created
@@ -1972,7 +1977,7 @@ def create_profile_page(user_data):
                                 html.I(className='fas fa-calendar-plus', style={'marginRight': '0.5rem', 'color': '#003580'}),
                                 html.Span('Member Since:', style={'fontWeight': 'bold', 'color': '#003580'})
                             ], style={'marginBottom': '0.5rem'}),
-                            html.Div(created_at, style={'fontSize': '1.2rem', 'color': 'white'})
+                            html.Div(created_at, style={'fontSize': '1.2rem', 'color': '#1A1A1A'})
                         ], style={'marginBottom': '1.5rem'}),
 
                         # Last Login
@@ -1981,16 +1986,17 @@ def create_profile_page(user_data):
                                 html.I(className='fas fa-clock', style={'marginRight': '0.5rem', 'color': '#003580'}),
                                 html.Span('Last Login:', style={'fontWeight': 'bold', 'color': '#003580'})
                             ], style={'marginBottom': '0.5rem'}),
-                            html.Div(last_login, style={'fontSize': '1.2rem', 'color': 'white'})
+                            html.Div(last_login, style={'fontSize': '1.2rem', 'color': '#1A1A1A'})
                         ], style={'marginBottom': '1.5rem'}),
                     ], style={'padding': '2rem'})
                 ], style={
-                    'backgroundColor': '#2a2a2a',
+                    'backgroundColor': '#FFFFFF',
                     'borderRadius': '12px',
                     'padding': '2rem',
                     'maxWidth': '600px',
                     'margin': '0 auto',
-                    'boxShadow': '0 4px 6px rgba(0, 0, 0, 0.3)'
+                    'boxShadow': '0 4px 12px rgba(0, 53, 128, 0.12)',
+                    'border': '1px solid #E8ECEF'
                 })
             ], style={
                 'maxWidth': '1200px',
@@ -2577,6 +2583,16 @@ def login(n_clicks, username_n_submit, password_n_submit, username, password, re
     # 只有當登入按鈕被點擊，或者在使用者名稱/密碼字段中按下了 Enter 鍵時才執行登入邏輯
     if trigger_id not in ['login-button', 'login-username', 'login-password']:
         raise PreventUpdate
+
+    # 額外檢查：確保觸發來源有實際的值（不是初始化的 None）
+    # 這防止在頁面初次載入時顯示錯誤訊息
+    if trigger_id == 'login-button' and not n_clicks:
+        raise PreventUpdate
+    if trigger_id == 'login-username' and not username_n_submit:
+        raise PreventUpdate
+    if trigger_id == 'login-password' and not password_n_submit:
+        raise PreventUpdate
+
     # 移除使用者輸入的前後空白，再驗證（避免使用者多打空格造成比對失敗）
     if isinstance (username, str):
         username = username.strip()
