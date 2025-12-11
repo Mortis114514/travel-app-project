@@ -236,6 +236,7 @@ def create_compound_search_bar():
                 dcc.Input(
                     id='search-destination',
                     type='text',
+                    value='',
                     placeholder='Search restaurants by name (English or Japanese)...',
                     className='search-input',
                     debounce=False,  # 即時搜尋
@@ -1231,6 +1232,7 @@ def create_hotel_search_bar():
                 html.I(className='fas fa-search'),
                 dcc.Input(
                     id='search-hotel',
+                    value='',
                     type='text',
                     placeholder='Search hotels by name or location...',
                     className='search-input',
@@ -1558,6 +1560,7 @@ def create_attraction_search_bar():
                 html.I(className='fas fa-search', style={'color': '#003580', 'fontSize': '1.2rem'}),
                 dcc.Input(
                     id='search-attraction', 
+                    value='',
                     type='text', 
                     placeholder='Search shrines, temples, or locations...', 
                     className='search-input',
