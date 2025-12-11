@@ -1534,15 +1534,34 @@ def create_restaurant_map_chart():
                 color='white'
             )
         ),
-        clickmode='event+select'  # Enable click events
+        clickmode='event+select',  # Enable click events
+        hoverdistance=20  # Increase hover detection distance
     )
-    # Update hover template to show it's clickable
+    # Update hover template to show it's clickable and enhance marker appearance
     fig.update_traces(
         hovertemplate='<b>%{hovertext}</b><br>' +
                      'Rating: %{customdata[1]}<br>' +
-                     '<i>Click to view details</i><extra></extra>'
+                     '<i>Click to view details</i><extra></extra>',
+        marker=dict(
+            size=12,  # Slightly larger markers
+            opacity=0.9
+        ),
+        hoverlabel=dict(
+            bgcolor='#003580',
+            font_size=14,
+            font_family='Arial, sans-serif'
+        )
     )
-    return dcc.Graph(id='restaurant-map-graph', figure=fig)
+    return dcc.Graph(
+        id='restaurant-map-graph',
+        figure=fig,
+        config={
+            'displayModeBar': True,
+            'scrollZoom': True,
+            'doubleClick': 'reset',
+            'modeBarButtonsToRemove': ['lasso2d', 'select2d']
+        }
+    )
 
 
 def create_hotel_map_chart():
@@ -1592,15 +1611,34 @@ def create_hotel_map_chart():
                 color='white'
             )
         ),
-        clickmode='event+select'  # Enable click events
+        clickmode='event+select',  # Enable click events
+        hoverdistance=20  # Increase hover detection distance
     )
-    # Update hover template to show it's clickable
+    # Update hover template to show it's clickable and enhance marker appearance
     fig.update_traces(
         hovertemplate='<b>%{hovertext}</b><br>' +
                      'Hotel: %{customdata[1]}<br>' +
-                     '<i>Click to view details</i><extra></extra>'
+                     '<i>Click to view details</i><extra></extra>',
+        marker=dict(
+            size=12,  # Slightly larger markers
+            opacity=0.9
+        ),
+        hoverlabel=dict(
+            bgcolor='#003580',
+            font_size=14,
+            font_family='Arial, sans-serif'
+        )
     )
-    return dcc.Graph(id='hotel-map-graph', figure=fig)
+    return dcc.Graph(
+        id='hotel-map-graph',
+        figure=fig,
+        config={
+            'displayModeBar': True,
+            'scrollZoom': True,
+            'doubleClick': 'reset',
+            'modeBarButtonsToRemove': ['lasso2d', 'select2d']
+        }
+    )
 
 # --- 新增這個輔助函式 ---
 def create_help_section(index_id, button_text, explanation_content):
@@ -1761,6 +1799,7 @@ app.index_string = '''
             {%config%}
             {%scripts%}
             {%renderer%}
+            <script src="/assets/map_cursor_handler.js"></script>
         </footer>
     </body>
 </html>
@@ -1783,6 +1822,7 @@ app.layout = html.Div([
     # 餐廳詳細頁面狀態管理
     dcc.Store(id='selected-restaurant-id', storage_type='memory'),  # 選中的餐廳 ID
     dcc.Store(id='previous-page-location', storage_type='memory'),  # 上一頁位置 (用於返回導航)
+    dcc.Store(id='from-map-navigation', storage_type='memory'),  # 標記是否從地圖點擊進入
     dcc.Store(id='restaurant-detail-data', storage_type='memory'),  # 餐廳詳細資料
     # Stores for restaurant list page
     dcc.Store(id='search-results-store', storage_type='memory'),
@@ -2126,7 +2166,7 @@ def create_main_layout():
 
         # ===== NEW: Map Section =====
         html.Div([
-            html.H2('Distribution in Kyoto', className='section-title'),
+            html.H2('Distribution in Kyoto', className='section-title', id='distribution-map-section'),
             html.Div([
                 dcc.RadioItems(
                     id='map-type-switch',
@@ -4310,20 +4350,27 @@ def handle_nearby_card_click(n_clicks_list, card_ids):
 # Callback 5: Back Button Handler - 處理返回按鈕
 @app.callback(
     [Output('url', 'pathname', allow_duplicate=True),
-     Output('view-mode', 'data', allow_duplicate=True)],
+     Output('view-mode', 'data', allow_duplicate=True),
+     Output('from-map-navigation', 'data', allow_duplicate=True)],
     [Input('restaurant-detail-back-btn', 'n_clicks')],
-    [State('previous-page-location', 'data')],
+    [State('previous-page-location', 'data'),
+     State('from-map-navigation', 'data')],
     prevent_initial_call=True
 )
-def handle_back_button(n_clicks, previous_page):
+def handle_back_button(n_clicks, previous_page, from_map):
     """處理返回按鈕點擊，導航回上一頁"""
     if not n_clicks:
         raise PreventUpdate
 
+    # If came from map, go directly to home with map section hash
+    if from_map:
+        return '/#distribution-map-section', 'home', False
+
+    # Otherwise use normal navigation logic
     if previous_page and previous_page.get('from') == 'restaurant-list':
-        return '/restaurant-list', 'restaurant-list'
+        return '/restaurant-list', 'restaurant-list', False
     else:
-        return '/', 'home'
+        return '/', 'home', False
 
 # Callback 6: Error Back Button Handler - 處理錯誤頁面的返回按鈕
 @app.callback(
@@ -4733,14 +4780,20 @@ def handle_nearby_hotel_click(n_clicks_list, card_ids):
 
 # Callback 6: Handle back button
 @app.callback(
-    Output('url', 'pathname', allow_duplicate=True),
+    [Output('url', 'pathname', allow_duplicate=True),
+     Output('from-map-navigation', 'data', allow_duplicate=True)],
     [Input('hotel-detail-back-btn', 'n_clicks')],
+    [State('from-map-navigation', 'data')],
     prevent_initial_call=True
 )
-def handle_hotel_back_button(n_clicks):
+def handle_hotel_back_button(n_clicks, from_map):
     """處理旅館詳情頁返回按鈕"""
     if n_clicks:
-        return '/'
+        # If came from map, go directly to home with map section hash
+        if from_map:
+            return '/#distribution-map-section', False
+        else:
+            return '/', False
     raise PreventUpdate
 ##########################################################
 
@@ -4897,7 +4950,8 @@ def update_map(selected_map):
 
 # ===== Callback: Restaurant Map Click Navigation =====
 @app.callback(
-    Output('url', 'pathname', allow_duplicate=True),
+    [Output('url', 'pathname', allow_duplicate=True),
+     Output('from-map-navigation', 'data', allow_duplicate=True)],
     Input('restaurant-map-graph', 'clickData'),
     prevent_initial_call=True
 )
@@ -4910,8 +4964,8 @@ def navigate_from_restaurant_map(click_data):
         restaurant_id = click_data['points'][0]['customdata'][0]
         print(f"Restaurant map clicked - ID: {restaurant_id}")  # Debug log
 
-        # Navigate to restaurant detail page
-        return f'/restaurant/{int(restaurant_id)}'
+        # Navigate to restaurant detail page and mark that we came from map
+        return f'/restaurant/{int(restaurant_id)}', True
     except (KeyError, IndexError, TypeError) as e:
         print(f"Error handling restaurant map click: {e}")
         print(f"Click data: {click_data}")
@@ -4919,7 +4973,8 @@ def navigate_from_restaurant_map(click_data):
 
 # ===== Callback: Hotel Map Click Navigation =====
 @app.callback(
-    Output('url', 'pathname', allow_duplicate=True),
+    [Output('url', 'pathname', allow_duplicate=True),
+     Output('from-map-navigation', 'data', allow_duplicate=True)],
     Input('hotel-map-graph', 'clickData'),
     prevent_initial_call=True
 )
@@ -4932,8 +4987,8 @@ def navigate_from_hotel_map(click_data):
         hotel_id = click_data['points'][0]['customdata'][0]
         print(f"Hotel map clicked - ID: {hotel_id}")  # Debug log
 
-        # Navigate to hotel detail page
-        return f'/hotel/{int(hotel_id)}'
+        # Navigate to hotel detail page and mark that we came from map
+        return f'/hotel/{int(hotel_id)}', True
     except (KeyError, IndexError, TypeError) as e:
         print(f"Error handling hotel map click: {e}")
         print(f"Click data: {click_data}")
@@ -4956,6 +5011,29 @@ app.clientside_callback(
     """,
     Output('scroll-trigger', 'children'),
     Input('current-page-store', 'data')
+)
+
+# ===== Clientside Callback: Scroll to Map Section on Hash Navigation =====
+app.clientside_callback(
+    """
+    function(pathname) {
+        // Check if URL contains hash for distribution map section
+        if (pathname && pathname.includes('#distribution-map-section')) {
+            setTimeout(function() {
+                const mapSection = document.getElementById('distribution-map-section');
+                if (mapSection) {
+                    mapSection.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            }, 300);  // Wait for page to render
+        }
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output('distribution-map-section', 'className'),
+    Input('url', 'pathname')
 )
 
 # ===== Clientside Callback: Close Dropdowns on Outside Click =====

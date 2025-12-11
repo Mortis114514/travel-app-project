@@ -2255,3 +2255,30 @@ div[style*="justifyContent: center"] {
         transform: translateY(0);
     }
 }
+
+/* ===== Scatter Map Point Clickable Styles ===== */
+/* Make scatter map points show pointer cursor on hover */
+.js-plotly-plot .plotly .scattermapbox .point {
+    cursor: pointer !important;
+}
+
+/* Override mapbox default drag cursor for points */
+#restaurant-map-graph .js-plotly-plot .plotly .scattermapbox path,
+#hotel-map-graph .js-plotly-plot .plotly .scattermapbox path {
+    cursor: pointer !important;
+}
+
+/* Ensure the graph container shows pointer on scatter points */
+.js-plotly-plot .plotly .mapboxgl-canvas-container.mapboxgl-interactive {
+    cursor: grab;
+}
+
+.js-plotly-plot .plotly .mapboxgl-canvas-container.mapboxgl-interactive:active {
+    cursor: grabbing;
+}
+
+/* When hovering over a point, override to pointer */
+#restaurant-map-graph:hover .scattermapbox,
+#hotel-map-graph:hover .scattermapbox {
+    cursor: pointer !important;
+}
