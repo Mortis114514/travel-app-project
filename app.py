@@ -2635,46 +2635,29 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
                         html.Button('切換為中文', id='language-switch-btn', n_clicks=0, className='btn-primary', style={'marginLeft': 'auto'})
                     ], style={'display': 'flex', 'alignItems': 'center', 'padding': '2rem', 'borderBottom': '1px solid #E8ECEF'}),
                     
-                    # Two-column layout
+                    # Single column layout - just map and calculator
                     html.Div([
-                        # Left column: Guide
-                        html.Div(traffic_guide_content, style={
-                            'flex': '1', 
-                            'paddingRight': '1rem',
-                            'overflowY': 'auto',
-                            'maxHeight': '600px'
-                        }),
-                        
-                        # Right column: Map and Calculator
-                        html.Div([
-                            html.H2("Distance Calculator", style={'color': '#003580', 'textAlign': 'center'}),
-                            create_traffic_map_chart(),
-                            html.Div(id='distance-calculation-result', style={
-                                'padding': '2rem', 
-                                'fontSize': '1.2rem', 
-                                'fontWeight': 'bold', 
-                                'textAlign': 'center',
-                                'whiteSpace': 'pre-wrap',
-                                'wordWrap': 'break-word'
-                            })
-                        ], style={
-                            'flex': '1', 
-                            'paddingLeft': '1rem',
-                            'overflowY': 'auto',
-                            'maxHeight': '800px'
+                        html.H2("Distance Calculator", style={'color': '#003580', 'textAlign': 'center', 'marginBottom': '1rem'}),
+                        html.P("Click on two points on the map to calculate distance and get directions", 
+                            style={'textAlign': 'center', 'color': '#666', 'marginBottom': '2rem', 'fontSize': '1.1rem'}),
+                        create_traffic_map_chart(),
+                        html.Div(id='distance-calculation-result', style={
+                            'padding': '2rem',
+                            'minHeight': '80px',
+                            'backgroundColor': '#FFFFFF',
+                            'borderRadius': '8px',
+                            'border': '2px solid #E8ECEF',
+                            'marginTop': '2rem',
+                            'boxShadow': '0 2px 8px rgba(0,0,0,0.1)'
                         })
-                        
                     ], style={
-                        'display': 'flex', 
                         'padding': '2rem',
-                        'minHeight': 'calc(100vh - 200px)',
-                        'overflow': 'hidden'
+                        'maxWidth': '1200px',
+                        'margin': '0 auto'
                     })
                 ], style={
-                    'display': 'flex',
-                    'flexDirection': 'column',
-                    'height': '100vh',
-                    'overflow': 'hidden'
+                    'backgroundColor': '#F2F6FA',
+                    'minHeight': '100vh'
                 })
                 return traffic_layout, 'main'
 
@@ -5371,7 +5354,11 @@ def create_traffic_map_chart(points=None):
     prevent_initial_call=True
 )
 def handle_distance_calculation(click_data, store_data):
+    print("=== CALLBACK TRIGGERED ===")  # Debug
+    print(f"Click data: {click_data}")  # Debug
+    
     if click_data is None:
+        print("Click data is None")  # Debug
         raise PreventUpdate
     
     # Initialize store_data if it's None
@@ -5379,97 +5366,176 @@ def handle_distance_calculation(click_data, store_data):
         store_data = {'points': []}
     
     points = store_data.get('points', [])
+    print(f"Current points: {points}")  # Debug
     
     try:
         clicked_point = click_data['points'][0]
         lat = clicked_point['lat']
         lon = clicked_point['lon']
         name = clicked_point.get('customdata', ['Unknown'])[0] if clicked_point.get('customdata') else 'Unknown Point'
+        
+        print(f"Extracted: lat={lat}, lon={lon}, name={name}")  # Debug
+        
     except (KeyError, IndexError, TypeError) as e:
         print(f"Error extracting point: {e}")
-        print(f"Click data: {click_data}")
-        return {'points': points}, html.Div("Error: Could not extract point information. Please try clicking on a marker.", style={'color': 'red'})
+        error_div = html.Div(
+            "❌ Error: Could not extract point. Please click directly on a marker.", 
+            style={
+                'color': '#FF0000', 
+                'fontWeight': 'bold', 
+                'padding': '20px',
+                'textAlign': 'center',
+                'fontSize': '1.2rem',
+                'backgroundColor': '#FFE6E6',
+                'borderRadius': '8px',
+                'border': '2px solid #FF0000'
+            }
+        )
+        print(f"Returning error div: {error_div}")  # Debug
+        return {'points': points}, error_div
 
     points.append({'lat': lat, 'lon': lon, 'name': name})
-    print(f"Points collected: {len(points)}, Latest: {name}")
+    print(f"Points after append: {points}")  # Debug
 
     if len(points) == 1:
-        return {'points': points}, html.Div([
-            html.P(f"✓ First point selected: {name}", style={'marginBottom': '10px', 'fontWeight': '600', 'color': '#32CD32'}),
-            html.P("📍 Click on another point to calculate distance and view directions.", style={'color': '#666'})
-        ])
+        result = html.Div([
+            html.Div("✅", style={'fontSize': '3rem', 'textAlign': 'center', 'marginBottom': '1rem'}),
+            html.H3(
+                "First Point Selected", 
+                style={'color': '#32CD32', 'textAlign': 'center', 'marginBottom': '1rem'}
+            ),
+            html.P(
+                f"{name}", 
+                style={'fontSize': '1.2rem', 'fontWeight': 'bold', 'textAlign': 'center', 'color': '#1A1A1A', 'marginBottom': '1rem'}
+            ),
+            html.P(
+                "🗺️ Click on another point to calculate distance", 
+                style={'color': '#666', 'textAlign': 'center', 'fontSize': '1.1rem'}
+            )
+        ], style={
+            'backgroundColor': '#F0FFF4',
+            'padding': '2rem',
+            'borderRadius': '8px',
+            'border': '2px solid #32CD32'
+        })
+        print("Returning first point result")  # Debug
+        return {'points': points}, result
+    
     elif len(points) >= 2:
         p1 = points[0]
         p2 = points[1]
         
         try:
             # Haversine distance calculation
-            R = 6371  # Earth radius in kilometers
-            lat1 = float(p1['lat'])
-            lon1 = float(p1['lon'])
-            lat2 = float(p2['lat'])
-            lon2 = float(p2['lon'])
-
+            R = 6371
+            lat1, lon1, lat2, lon2 = float(p1['lat']), float(p1['lon']), float(p2['lat']), float(p2['lon'])
             lat1_rad, lon1_rad, lat2_rad, lon2_rad = map(np.radians, [lat1, lon1, lat2, lon2])
-
+            
             dlon = lon2_rad - lon1_rad
             dlat = lat2_rad - lat1_rad
             a = np.sin(dlat / 2.0)**2 + np.cos(lat1_rad) * np.cos(lat2_rad) * np.sin(dlon / 2.0)**2
             c = 2 * np.arcsin(np.sqrt(a))
             distance = R * c
             
-            # Create Google Maps directions URL
+            print(f"Calculated distance: {distance:.2f} km")  # Debug
+            
             google_maps_url = f"https://www.google.com/maps/dir/?api=1&origin={lat1},{lon1}&destination={lat2},{lon2}&travelmode=transit"
             
-            print(f"Distance calculated: {distance:.2f} km")
-            print(f"Google Maps URL: {google_maps_url}")
-            
             result_content = html.Div([
+                html.Div("🎯", style={'fontSize': '3rem', 'textAlign': 'center', 'marginBottom': '1rem'}),
+                html.H3("Route Calculated!", style={'color': '#003580', 'textAlign': 'center', 'marginBottom': '2rem'}),
+                
+                # From/To display
                 html.Div([
-                    html.I(className='fas fa-map-marker-alt', style={'color': '#32CD32', 'marginRight': '8px'}),
-                    html.Strong("From: "),
-                    html.Span(p1['name'])
-                ], style={'marginBottom': '8px', 'fontSize': '1rem'}),
+                    html.Div([
+                        html.Span("📍 ", style={'fontSize': '1.5rem'}),
+                        html.Strong("From: ", style={'color': '#1A1A1A', 'fontSize': '1.1rem'}),
+                        html.Span(p1['name'], style={'color': '#1A1A1A', 'fontSize': '1.1rem'})
+                    ], style={'marginBottom': '1rem', 'textAlign': 'center'}),
+                    html.Div([
+                        html.Span("📍 ", style={'fontSize': '1.5rem'}),
+                        html.Strong("To: ", style={'color': '#1A1A1A', 'fontSize': '1.1rem'}),
+                        html.Span(p2['name'], style={'color': '#1A1A1A', 'fontSize': '1.1rem'})
+                    ], style={'marginBottom': '2rem', 'textAlign': 'center'}),
+                ]),
+                
+                # Distance
                 html.Div([
-                    html.I(className='fas fa-map-marker-alt', style={'color': '#FF6347', 'marginRight': '8px'}),
-                    html.Strong("To: "),
-                    html.Span(p2['name'])
-                ], style={'marginBottom': '12px', 'fontSize': '1rem'}),
+                    html.Div("🚶", style={'fontSize': '2rem', 'marginBottom': '0.5rem'}),
+                    html.Div(f"{distance:.2f} km", style={
+                        'fontSize': '2.5rem',
+                        'fontWeight': 'bold',
+                        'color': '#003580',
+                        'marginBottom': '2rem'
+                    })
+                ], style={'textAlign': 'center'}),
+                
+                # Google Maps button
                 html.Div([
-                    html.I(className='fas fa-route', style={'color': '#003580', 'marginRight': '8px'}),
-                    html.Strong("Distance: "),
-                    html.Span(f"{distance:.2f} km")
-                ], style={'marginBottom': '16px', 'fontSize': '1.1rem', 'color': '#003580', 'fontWeight': 'bold'}),
-                html.A([
-                    html.I(className='fas fa-directions', style={'marginRight': '8px'}),
-                    'View Directions on Google Maps'
-                ], href=google_maps_url, target="_blank", style={
-                    'display': 'inline-block',
-                    'padding': '12px 24px',
-                    'backgroundColor': '#4285f4',
-                    'color': 'white',
-                    'textDecoration': 'none',
-                    'borderRadius': '6px',
-                    'fontWeight': '600',
-                    'transition': 'background-color 0.3s',
-                    'cursor': 'pointer'
-                }),
-                html.Div("Click on two new points to calculate another route", style={
-                    'marginTop': '16px',
+                    html.A([
+                        html.I(className='fas fa-directions', style={'marginRight': '10px', 'fontSize': '1.2rem'}),
+                        'View Directions on Google Maps'
+                    ], href=google_maps_url, target="_blank", style={
+                        'display': 'inline-block',
+                        'padding': '15px 30px',
+                        'backgroundColor': '#4285f4',
+                        'color': 'white',
+                        'textDecoration': 'none',
+                        'borderRadius': '8px',
+                        'fontWeight': '600',
+                        'fontSize': '1.1rem',
+                        'boxShadow': '0 4px 6px rgba(66, 133, 244, 0.3)',
+                        'transition': 'all 0.3s'
+                    })
+                ], style={'textAlign': 'center', 'marginBottom': '2rem'}),
+                
+                html.Div("Click two new points for another route", style={
+                    'textAlign': 'center',
                     'fontSize': '0.9rem',
                     'color': '#888',
                     'fontStyle': 'italic'
                 })
-            ])
+            ], style={
+                'backgroundColor': '#E6F3FF',
+                'padding': '2rem',
+                'borderRadius': '8px',
+                'border': '2px solid #003580'
+            })
             
-            # Reset points after showing result
+            print("Returning final result with distance")  # Debug
             return {'points': []}, result_content
+            
         except (ValueError, TypeError) as e:
-            print(f"Error calculating distance: {e}")
-            return {'points': []}, html.Div(f"Error calculating distance: {str(e)}", style={'color': 'red'})
+            print(f"Error calculating distance: {e}")  # Debug
+            error_result = html.Div(
+                f"❌ Error: {str(e)}", 
+                style={
+                    'color': '#FF0000', 
+                    'fontWeight': 'bold', 
+                    'textAlign': 'center', 
+                    'fontSize': '1.2rem',
+                    'backgroundColor': '#FFE6E6',
+                    'padding': '2rem',
+                    'borderRadius': '8px',
+                    'border': '2px solid #FF0000'
+                }
+            )
+            return {'points': []}, error_result
     
-    return {'points': points}, html.Div(f"Selected {len(points)} point(s). Click on another point to calculate distance.", style={'color': '#666'})
-
+    default_result = html.Div(
+        f"Selected {len(points)} point. Click another point.", 
+        style={
+            'color': '#1A1A1A', 
+            'textAlign': 'center', 
+            'fontSize': '1.1rem',
+            'padding': '2rem',
+            'backgroundColor': '#F0F0F0',
+            'borderRadius': '8px',
+            'border': '2px solid #CCC'
+        }
+    )
+    print("Returning default result")  # Debug
+    return {'points': points}, default_result
 
 if __name__ == '__main__':
     app.run(debug=True, port=8050)
