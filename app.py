@@ -11,6 +11,7 @@ from dash import Dash, html, dcc, Input, State, Output, dash_table, no_update, c
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 import pandas as pd
+import numpy as np
 import dash_leaflet as dl
 import plotly.express as px
 from geopy.geocoders import Nominatim
@@ -21,6 +22,7 @@ import json
 import base64
 import io
 from datetime import datetime, timedelta
+import functools
 
 # 從./utils導入所有自定義函數
 from utils.auth import verify_user, create_user, get_session, create_session, delete_session, clean_expired_sessions, get_user_full_details, update_profile_photo
@@ -2135,6 +2137,7 @@ app.layout = html.Div([
     dcc.Store(id='search-cuisine', storage_type='memory'),  # 選中的料理類型
     dcc.Store(id='search-rating', storage_type='memory'),  # 選中的評分範圍
     dcc.Store(id='active-dropdown', storage_type='memory', data=None),  # 當前打開的下拉菜單 ('cuisine', 'rating', or None)
+    dcc.Store(id='language-store', storage_type='session', data='en'),  # 'en' or 'zh'
     dcc.Store(id='close-dropdowns-trigger', storage_type='memory'),  # 觸發關閉所有下拉菜單
     # 餐廳詳細頁面狀態管理
     dcc.Store(id='selected-restaurant-id', storage_type='memory'),  # 選中的餐廳 ID
@@ -2155,6 +2158,7 @@ app.layout = html.Div([
     dcc.Store(id='dropdown-open-hotel-list', data=False, storage_type='memory'),  # User dropdown state for hotel list page
     dcc.Store(id='dropdown-open-detail', data=False, storage_type='memory'),  # User dropdown state for detail pages
     dcc.Store(id='previous-view-mode', storage_type='memory'),  # Track previous view mode before navigating to profile
+    dcc.Store(id='traffic-map-store', storage_type='memory', data={'points': []}),
     html.Div(id='scroll-trigger', style={'display': 'none'}),  # 隱藏的滾動觸發器
     html.Div(id='page-content', style={'minHeight': '100vh'})
 ], style={'backgroundColor': '#F2F6FA', 'minHeight': '100vh'})
@@ -2388,7 +2392,8 @@ def create_main_layout():
                 html.Div([
                     html.Div('Destinations', className='nav-link', id='nav-destinations', n_clicks=0),
                     html.Div('Trip Planner', className='nav-link', id='nav-planner', n_clicks=0),
-                    html.Div('Analytics', className='nav-link', id='nav-analytics', n_clicks=0)
+                    html.Div('Analytics', className='nav-link', id='nav-analytics', n_clicks=0),
+                    html.Div('Traffic', className='nav-link', id='nav-traffic', n_clicks=0)
                 ], className='header-nav'),
 
                 # Actions
@@ -2813,6 +2818,80 @@ def create_pagination_buttons(current_page, total_pages):
 
     return buttons
 
+
+TRAFFIC_GUIDE_EN = """
+# Navigating Kyoto: A Guide to Public Transportation
+
+Kyoto has an excellent public transport system. For most travelers, the most efficient way to get around is by using a combination of the city's subways, buses, and trains.
+
+## 1. The Kyoto Bus System
+
+- **How it Works:** The city is primarily served by the green Kyoto City Buses and the red-and-cream Kyoto Buses. Most of central Kyoto is a "flat-fare zone."
+- **How to Ride:** Board from the rear door, and exit from the front door, next to the driver.
+- **Payment:** The flat fare is typically ¥230. You can pay with cash (exact change is appreciated) or by tapping a major IC card (like Suica, Pasmo, or ICOCA) on the reader as you exit.
+
+## 2. The Kyoto Subway System
+
+- **The Lines:** There are two simple-to-use subway lines:
+    - **Karasuma Line:** Runs north-south.
+    - **Tozai Line:** Runs east-west.
+- **Why Use It:** Subways are the fastest way to travel longer distances across the city, bypassing all traffic. They are great for reaching major hubs like Kyoto Station.
+
+## 3. Popular Travel Passes
+
+- **Bus & Subway 1-Day Pass:**
+    - **Price:** Adults ¥1100, Children ¥550.
+    - **Coverage:** Unlimited rides on all Kyoto City Buses, Kyoto Buses, and both subway lines for one calendar day. A great all-in-one option.
+- **Subway 1-Day Pass:**
+    - **Price:** Adults ¥800, Children ¥400.
+    - **Coverage:** Unlimited rides on both the Karasuma and Tozai subway lines. Best if you plan to cover long distances quickly.
+
+## 4. Route Map
+
+For a detailed, zoomable map of the entire bus and subway network, it is highly recommended to download the official PDF guide.
+
+[**Download Official Kyoto Bus & Subway Route Map (PDF)**](https://www2.city.kyoto.lg.jp/kotsu/webguide/files/tikabusnavi/en_tikabusnavi_2.pdf)
+
+This map is invaluable for planning your routes and seeing how different lines connect.
+"""
+
+TRAFFIC_GUIDE_ZH = """
+# 京都導航：公共交通指南
+
+京都有一個優秀的公共交通系統。對於大多數遊客來說，最有效的出行方式是結合使用市內的地下鐵、巴士和火車。
+
+## 1. 京都巴士系統
+
+- **如何運作：** 該市主要由綠色的京都市營巴士和紅白相間的京都巴士提供服務。京都市中心大部分地區為「單一票價區」。
+- **如何乘車：** 從後門上車，從司機旁邊的前門下車。
+- **付款方式：** 單一票價通常為230日元。您可以使用現金（請準備好零錢）或在下車時在讀卡器上輕觸主要的IC卡（如Suica、Pasmo或ICOCA）支付。
+
+## 2. 京都地下鐵系統
+
+- **線路：** 有兩條簡單易用的地下鐵線路：
+    - **烏丸線：** 南北運行。
+    - **東西線：** 東西運行。
+- **為何使用：** 地下鐵是穿越城市長距離最快的方式，可避開所有交通擁堵。非常適合到達京都站等主要樞紐。
+
+## 3. 熱門交通票券
+
+- **巴士與地下鐵一日通票：**
+    - **價格：** 成人1100日元，兒童550日元。
+    - **覆蓋範圍：** 在一個日曆日內無限次乘坐所有京都市營巴士、京都巴士以及兩條地下鐵線路。是一個極佳的一體化選擇。
+- **地下鐵一日通票：**
+    - **價格：** 成人800日元，兒童400日元。
+    - **覆蓋範圍：** 無限次乘坐烏丸線和東西線兩條地下鐵線路。如果您計劃快速覆蓋長距離，這是最佳選擇。
+
+## 4. 路線圖
+
+為了獲得整個巴士和地下鐵網絡的詳細、可縮放的地圖，強烈建議下載官方的PDF指南。
+
+[**下載官方京都巴士和地下鐵路線圖（PDF）**](https://www2.city.kyoto.lg.jp/kotsu/webguide/files/tikabusnavi/ja_tikabusnavi_2.pdf)
+
+這張地圖對於規劃您的路線和了解不同線路的連接方式非常有價值。
+"""
+
+
 # ====== 認證相關 Callbacks ======
 
 # 頁面路由控制
@@ -2879,6 +2958,52 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
             elif view_mode == 'hotel-list':
                 return create_hotel_list_page(), 'main'
 
+            # 檢查分析頁面
+            elif view_mode == 'analytics':
+                return create_analytics_layout(analytics_df), 'main'
+            
+            elif view_mode == 'traffic':
+                traffic_guide_content = dcc.Markdown(
+                    TRAFFIC_GUIDE_EN, 
+                    id='traffic-guide-content',
+                    style={'padding': '2rem', 'color': '#1A1A1A', 'maxWidth': '800px', 'margin': '0 auto'}
+                )
+
+                traffic_layout = html.Div([
+                    # Header
+                    html.Div([
+                        html.Button([html.I(className='fas fa-arrow-left'), ' Back'], id={'type': 'back-btn', 'index': 'traffic'}, className='btn-secondary'),
+                        html.H1("Kyoto Transportation Guide", style={'color': '#003580', 'marginLeft': '2rem'}),
+                        html.Button('切換為中文', id='language-switch-btn', n_clicks=0, className='btn-primary', style={'marginLeft': 'auto'})
+                    ], style={'display': 'flex', 'alignItems': 'center', 'padding': '2rem', 'borderBottom': '1px solid #E8ECEF'}),
+                    
+                    # Single column layout - just map and calculator
+                    html.Div([
+                        html.H2("Distance Calculator", style={'color': '#003580', 'textAlign': 'center', 'marginBottom': '1rem'}),
+                        html.P("Click on two points on the map to calculate distance and get directions", 
+                            style={'textAlign': 'center', 'color': '#666', 'marginBottom': '2rem', 'fontSize': '1.1rem'}),
+                        create_traffic_map_chart(),
+                        html.Div(id='distance-calculation-result', style={
+                            'padding': '2rem',
+                            'minHeight': '80px',
+                            'backgroundColor': '#FFFFFF',
+                            'borderRadius': '8px',
+                            'border': '2px solid #E8ECEF',
+                            'marginTop': '2rem',
+                            'boxShadow': '0 2px 8px rgba(0,0,0,0.1)'
+                        })
+                    ], style={
+                        'padding': '2rem',
+                        'maxWidth': '1200px',
+                        'margin': '0 auto'
+                    })
+                ], style={
+                    'backgroundColor': '#F2F6FA',
+                    'minHeight': '100vh'
+                })
+                return traffic_layout, 'main'
+
+            # 檢查餐廳列表頁面
             elif view_mode == 'restaurant-list':
                 return create_restaurant_list_page(), 'main'
             
@@ -2898,6 +3023,24 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
         return create_register_layout(), 'register'
 
     return create_login_layout(), 'login'
+
+@app.callback(
+    [Output('traffic-guide-content', 'children'),
+     Output('language-switch-btn', 'children'),
+     Output('language-store', 'data')],
+    [Input('language-switch-btn', 'n_clicks')],
+    [State('language-store', 'data')],
+    prevent_initial_call=True
+)
+def update_traffic_guide_language(n_clicks, current_language):
+    if n_clicks > 0:
+        if current_language == 'en':
+            return TRAFFIC_GUIDE_ZH, 'Switch to English', 'zh'
+        else:
+            return TRAFFIC_GUIDE_EN, '切換為中文', 'en'
+    return no_update, no_update, no_update
+
+
 
 # Load user data (including profile photo) on page load/refresh
 @app.callback(
@@ -3215,6 +3358,17 @@ def view_all_hotels(n_clicks, current_view):
 def view_analytics(n_clicks, current_view):
     if n_clicks and current_view != 'analytics':
         return 'analytics'
+    raise PreventUpdate
+
+@app.callback(
+    Output('view-mode', 'data', allow_duplicate=True),
+    [Input('nav-traffic', 'n_clicks')],
+    [State('view-mode', 'data')],
+    prevent_initial_call=True
+)
+def view_traffic(n_clicks, current_view):
+    if n_clicks and current_view != 'traffic':
+        return 'traffic'
     raise PreventUpdate
 
 
@@ -5541,116 +5695,270 @@ def toggle_detail_help(n_clicks, is_open):
         return not is_open
     return is_open
 
-# --- Attractions Callbacks ---
+def create_traffic_map_chart(points=None):
+    """Creates a mapbox scatter plot of all restaurants and hotels."""
+    # Get restaurant data
+    df_restaurants = get_all_restaurants()
+    df_restaurants = df_restaurants.dropna(subset=['Lat', 'Long'])
+    df_restaurants['type'] = 'Restaurant'
 
-# 1. 填充首頁卡片
-@app.callback(
-    Output('attractions-card-container', 'children'),
-    [Input('url', 'pathname')]
-)
-def populate_attractions_cards(pathname):
-    df = get_random_top_attractions(6)
-    if df.empty: return html.Div("No attractions data")
-    return [create_attraction_card(row) for _, row in df.iterrows()]
+    # Get hotel data
+    df_hotels = get_all_hotels()
+    df_hotels = df_hotels.dropna(subset=['Lat', 'Long'])
+    df_hotels['type'] = 'Hotel'
 
-# 2. View All 按鈕 -> 跳轉列表頁
+    # Combine dataframes
+    df_combined = pd.concat([
+        df_restaurants[['Name', 'Lat', 'Long', 'type']],
+        df_hotels[['HotelName', 'Lat', 'Long', 'type']].rename(columns={'HotelName': 'Name'})
+    ])
+
+    fig = px.scatter_map(
+        df_combined,
+        lat="Lat",
+        lon="Long",
+        hover_name="Name",
+        color="type",
+        color_discrete_map={
+            "Restaurant": "#32CD32",  # Green
+            "Hotel": "#FF6347"       # Red
+        },
+        zoom=11,
+        center={"lat": 35.0116, "lon": 135.7681},
+        height=600,
+        map_style="carto-positron",
+        custom_data=['Name', 'type']
+    )
+    fig.update_layout(
+        margin={"r":0,"t":0,"l":0,"b":0},
+        showlegend=True,
+        legend_title_text='Type',
+        legend=dict(
+            yanchor="top",
+            y=0.99,
+            xanchor="left",
+            x=0.01,
+            bgcolor='rgba(0, 53, 128, 0.5)',
+            font=dict(
+                color='white'
+            )
+        ),
+        clickmode='event+select',
+        hoverdistance=20,
+        uirevision='constant' # Add this line to preserve map state
+    )
+    fig.update_traces(
+        marker=dict(
+            size=12,
+            opacity=0.9
+        ),
+        hoverlabel=dict(
+            bgcolor='#003580',
+            font_size=14,
+            font_family='Arial, sans-serif'
+        )
+    )
+    return dcc.Graph(
+        id='traffic-map-graph',
+        figure=fig,
+        config={
+            'displayModeBar': True,
+            'scrollZoom': True,
+            'doubleClick': 'reset',
+            'modeBarButtonsToRemove': ['lasso2d', 'select2d']
+        }
+    )
+
 @app.callback(
-    Output('view-mode', 'data', allow_duplicate=True),
-    [Input('view-all-attractions', 'n_clicks')],
+    [Output('traffic-map-store', 'data'),
+     Output('distance-calculation-result', 'children')],
+    [Input('traffic-map-graph', 'clickData')],
+    [State('traffic-map-store', 'data')],
     prevent_initial_call=True
 )
-def view_all_attractions(n):
-    if n: return 'attraction-list'
-    raise PreventUpdate
-
-# 3. 處理景點列表頁搜尋 & 排版 (Fix Grid Issue)
-@app.callback(
-    Output('attraction-grid', 'children'),
-    [Input('search-attraction-btn', 'n_clicks')],
-    [State('search-attraction', 'value'), 
-     State('attraction-type-filter', 'value'), 
-     State('view-mode', 'data')]
-)
-def update_attraction_list(n, keyword, atype, view_mode):
-    # 確保只在景點列表頁觸發
-    if view_mode != 'attraction-list':
-        raise PreventUpdate
-
-    # 搜尋邏輯
-    if n is None or n == 0:
-        df = search_attractions() # 預設顯示所有
-    else:
-        df = search_attractions(keyword=keyword, attr_type=atype)
-
-    if df.empty:
-        return html.Div([
-            html.I(className='fas fa-torii-gate', style={'fontSize': '4rem', 'color': '#003580', 'marginBottom': '2rem'}),
-            html.H3('No attractions found', style={'color': '#1A1A1A'}),
-            html.P('Try adjusting your search criteria', style={'color': '#888888'})
-        ], style={'textAlign': 'center', 'padding': '4rem', 'width': '100%'})
+def handle_distance_calculation(click_data, store_data):
+    print("=== CALLBACK TRIGGERED ===")  # Debug
+    print(f"Click data: {click_data}")  # Debug
     
-    # 產生卡片列表 (顯示前 50 筆)
-    cards = [create_attraction_card(row) for _, row in df.head(50).iterrows()]
-    
-    # [關鍵修正]：使用 Grid 樣式包覆，讓它變成 4 個一排
-    return html.Div(cards, style={
-        'display': 'grid',
-        'gridTemplateColumns': 'repeat(auto-fill, minmax(300px, 1fr))', # 自動適應寬度
-        'gap': '1.5rem',
-        'maxWidth': '1400px',
-        'margin': '0 auto'
-    })
-
-# 4. 卡片點擊 -> 導航至詳細頁 (終極修正版：防止幽靈點擊)
-@app.callback(
-    [Output('url', 'pathname', allow_duplicate=True),
-     Output('view-mode', 'data', allow_duplicate=True)],
-    [Input({'type': 'attraction-card', 'index': ALL}, 'n_clicks')],
-    prevent_initial_call=True
-)
-def go_to_attraction_detail(n_clicks_list):
-    ctx = callback_context
-    if not ctx.triggered: 
+    if click_data is None:
+        print("Click data is None")  # Debug
         raise PreventUpdate
     
-    # 取得觸發的元件資訊
-    triggered_input = ctx.triggered[0]
-    prop_id = triggered_input['prop_id']
-    value = triggered_input['value']
-
-    # [關鍵修正] 如果值是 None 或 0 (代表只是元件剛載入，使用者沒點)，直接忽略！
-    if not value or value == 0:
-        raise PreventUpdate
-
+    # Initialize store_data if it's None
+    if store_data is None:
+        store_data = {'points': []}
+    
+    points = store_data.get('points', [])
+    print(f"Current points: {points}")  # Debug
+    
     try:
-        # 解析 ID
-        # prop_id 格式例如: {"index":1,"type":"attraction-card"}.n_clicks
-        triggered_id_str = prop_id.split('.')[0]
-        triggered_id = json.loads(triggered_id_str)
+        clicked_point = click_data['points'][0]
+        lat = clicked_point['lat']
+        lon = clicked_point['lon']
+        name = clicked_point.get('customdata', ['Unknown'])[0] if clicked_point.get('customdata') else 'Unknown Point'
         
-        print(f"DEBUG: Real Click Detected -> ID: {triggered_id['index']}")
+        print(f"Extracted: lat={lat}, lon={lon}, name={name}")  # Debug
         
-        # 正常導航，並強制清除 view-mode
-        return f"/attraction/{triggered_id['index']}", None
-        
-    except Exception as e:
-        print(f"Error in navigation: {e}")
-        raise PreventUpdate
+    except (KeyError, IndexError, TypeError) as e:
+        print(f"Error extracting point: {e}")
+        error_div = html.Div(
+            "❌ Error: Could not extract point. Please click directly on a marker.", 
+            style={
+                'color': '#FF0000', 
+                'fontWeight': 'bold', 
+                'padding': '20px',
+                'textAlign': 'center',
+                'fontSize': '1.2rem',
+                'backgroundColor': '#FFE6E6',
+                'borderRadius': '8px',
+                'border': '2px solid #FF0000'
+            }
+        )
+        print(f"Returning error div: {error_div}")  # Debug
+        return {'points': points}, error_div
 
+    points.append({'lat': lat, 'lon': lon, 'name': name})
+    print(f"Points after append: {points}")  # Debug
 
-# 5. 詳細頁返回按鈕 (修正版：同時更新網址與 View Mode)
-@app.callback(
-    [Output('url', 'pathname', allow_duplicate=True),
-     Output('view-mode', 'data', allow_duplicate=True)],
-    [Input('attraction-detail-back-btn', 'n_clicks')],
-    prevent_initial_call=True
-)
-def back_from_attraction_detail(n):
-    if n: 
-        # [關鍵]：一定要明確告訴系統 "我現在是 attraction-list 模式"
-        # 這樣 display_page 才會進入正確的 elif 區塊
-        return '/attraction-list', 'attraction-list'
-    raise PreventUpdate
+    if len(points) == 1:
+        result = html.Div([
+            html.Div("✅", style={'fontSize': '3rem', 'textAlign': 'center', 'marginBottom': '1rem'}),
+            html.H3(
+                "First Point Selected", 
+                style={'color': '#32CD32', 'textAlign': 'center', 'marginBottom': '1rem'}
+            ),
+            html.P(
+                f"{name}", 
+                style={'fontSize': '1.2rem', 'fontWeight': 'bold', 'textAlign': 'center', 'color': '#1A1A1A', 'marginBottom': '1rem'}
+            ),
+            html.P(
+                "🗺️ Click on another point to calculate distance", 
+                style={'color': '#666', 'textAlign': 'center', 'fontSize': '1.1rem'}
+            )
+        ], style={
+            'backgroundColor': '#F0FFF4',
+            'padding': '2rem',
+            'borderRadius': '8px',
+            'border': '2px solid #32CD32'
+        })
+        print("Returning first point result")  # Debug
+        return {'points': points}, result
+    
+    elif len(points) >= 2:
+        p1 = points[0]
+        p2 = points[1]
+        
+        try:
+            # Haversine distance calculation
+            R = 6371
+            lat1, lon1, lat2, lon2 = float(p1['lat']), float(p1['lon']), float(p2['lat']), float(p2['lon'])
+            lat1_rad, lon1_rad, lat2_rad, lon2_rad = map(np.radians, [lat1, lon1, lat2, lon2])
+            
+            dlon = lon2_rad - lon1_rad
+            dlat = lat2_rad - lat1_rad
+            a = np.sin(dlat / 2.0)**2 + np.cos(lat1_rad) * np.cos(lat2_rad) * np.sin(dlon / 2.0)**2
+            c = 2 * np.arcsin(np.sqrt(a))
+            distance = R * c
+            
+            print(f"Calculated distance: {distance:.2f} km")  # Debug
+            
+            google_maps_url = f"https://www.google.com/maps/dir/?api=1&origin={lat1},{lon1}&destination={lat2},{lon2}&travelmode=transit"
+            
+            result_content = html.Div([
+                html.Div("🎯", style={'fontSize': '3rem', 'textAlign': 'center', 'marginBottom': '1rem'}),
+                html.H3("Route Calculated!", style={'color': '#003580', 'textAlign': 'center', 'marginBottom': '2rem'}),
+                
+                # From/To display
+                html.Div([
+                    html.Div([
+                        html.Span("📍 ", style={'fontSize': '1.5rem'}),
+                        html.Strong("From: ", style={'color': '#1A1A1A', 'fontSize': '1.1rem'}),
+                        html.Span(p1['name'], style={'color': '#1A1A1A', 'fontSize': '1.1rem'})
+                    ], style={'marginBottom': '1rem', 'textAlign': 'center'}),
+                    html.Div([
+                        html.Span("📍 ", style={'fontSize': '1.5rem'}),
+                        html.Strong("To: ", style={'color': '#1A1A1A', 'fontSize': '1.1rem'}),
+                        html.Span(p2['name'], style={'color': '#1A1A1A', 'fontSize': '1.1rem'})
+                    ], style={'marginBottom': '2rem', 'textAlign': 'center'}),
+                ]),
+                
+                # Distance
+                html.Div([
+                    html.Div("🚶", style={'fontSize': '2rem', 'marginBottom': '0.5rem'}),
+                    html.Div(f"{distance:.2f} km", style={
+                        'fontSize': '2.5rem',
+                        'fontWeight': 'bold',
+                        'color': '#003580',
+                        'marginBottom': '2rem'
+                    })
+                ], style={'textAlign': 'center'}),
+                
+                # Google Maps button
+                html.Div([
+                    html.A([
+                        html.I(className='fas fa-directions', style={'marginRight': '10px', 'fontSize': '1.2rem'}),
+                        'View Directions on Google Maps'
+                    ], href=google_maps_url, target="_blank", style={
+                        'display': 'inline-block',
+                        'padding': '15px 30px',
+                        'backgroundColor': '#4285f4',
+                        'color': 'white',
+                        'textDecoration': 'none',
+                        'borderRadius': '8px',
+                        'fontWeight': '600',
+                        'fontSize': '1.1rem',
+                        'boxShadow': '0 4px 6px rgba(66, 133, 244, 0.3)',
+                        'transition': 'all 0.3s'
+                    })
+                ], style={'textAlign': 'center', 'marginBottom': '2rem'}),
+                
+                html.Div("Click two new points for another route", style={
+                    'textAlign': 'center',
+                    'fontSize': '0.9rem',
+                    'color': '#888',
+                    'fontStyle': 'italic'
+                })
+            ], style={
+                'backgroundColor': '#E6F3FF',
+                'padding': '2rem',
+                'borderRadius': '8px',
+                'border': '2px solid #003580'
+            })
+            
+            print("Returning final result with distance")  # Debug
+            return {'points': []}, result_content
+            
+        except (ValueError, TypeError) as e:
+            print(f"Error calculating distance: {e}")  # Debug
+            error_result = html.Div(
+                f"❌ Error: {str(e)}", 
+                style={
+                    'color': '#FF0000', 
+                    'fontWeight': 'bold', 
+                    'textAlign': 'center', 
+                    'fontSize': '1.2rem',
+                    'backgroundColor': '#FFE6E6',
+                    'padding': '2rem',
+                    'borderRadius': '8px',
+                    'border': '2px solid #FF0000'
+                }
+            )
+            return {'points': []}, error_result
+    
+    default_result = html.Div(
+        f"Selected {len(points)} point. Click another point.", 
+        style={
+            'color': '#1A1A1A', 
+            'textAlign': 'center', 
+            'fontSize': '1.1rem',
+            'padding': '2rem',
+            'backgroundColor': '#F0F0F0',
+            'borderRadius': '8px',
+            'border': '2px solid #CCC'
+        }
+    )
+    print("Returning default result")  # Debug
+    return {'points': points}, default_result
 
 if __name__ == '__main__':
     app.run(debug=True, port=8050)
