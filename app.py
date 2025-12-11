@@ -11,6 +11,7 @@ from dash import Dash, html, dcc, Input, State, Output, dash_table, no_update, c
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 import pandas as pd
+import numpy as np
 import dash_leaflet as dl
 import plotly.express as px
 from geopy.geocoders import Nominatim
@@ -21,6 +22,7 @@ import json
 import base64
 import io
 from datetime import datetime, timedelta
+import functools
 
 # 從./utils導入所有自定義函數
 from utils.auth import verify_user, create_user, get_session, create_session, delete_session, clean_expired_sessions, get_user_full_details, update_profile_photo
@@ -1839,6 +1841,7 @@ app.layout = html.Div([
     dcc.Store(id='dropdown-open-hotel-list', data=False, storage_type='memory'),  # User dropdown state for hotel list page
     dcc.Store(id='dropdown-open-detail', data=False, storage_type='memory'),  # User dropdown state for detail pages
     dcc.Store(id='previous-view-mode', storage_type='memory'),  # Track previous view mode before navigating to profile
+    dcc.Store(id='traffic-map-store', storage_type='memory', data={'points': []}),
     html.Div(id='scroll-trigger', style={'display': 'none'}),  # 隱藏的滾動觸發器
     html.Div(id='page-content', style={'minHeight': '100vh'})
 ], style={'backgroundColor': '#F2F6FA', 'minHeight': '100vh'})
@@ -2631,9 +2634,48 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
                         html.H1("Kyoto Transportation Guide", style={'color': '#003580', 'marginLeft': '2rem'}),
                         html.Button('切換為中文', id='language-switch-btn', n_clicks=0, className='btn-primary', style={'marginLeft': 'auto'})
                     ], style={'display': 'flex', 'alignItems': 'center', 'padding': '2rem', 'borderBottom': '1px solid #E8ECEF'}),
-                    # Guide content
-                    traffic_guide_content
-                ])
+                    
+                    # Two-column layout
+                    html.Div([
+                        # Left column: Guide
+                        html.Div(traffic_guide_content, style={
+                            'flex': '1', 
+                            'paddingRight': '1rem',
+                            'overflowY': 'auto',
+                            'maxHeight': '600px'
+                        }),
+                        
+                        # Right column: Map and Calculator
+                        html.Div([
+                            html.H2("Distance Calculator", style={'color': '#003580', 'textAlign': 'center'}),
+                            create_traffic_map_chart(),
+                            html.Div(id='distance-calculation-result', style={
+                                'padding': '2rem', 
+                                'fontSize': '1.2rem', 
+                                'fontWeight': 'bold', 
+                                'textAlign': 'center',
+                                'whiteSpace': 'pre-wrap',
+                                'wordWrap': 'break-word'
+                            })
+                        ], style={
+                            'flex': '1', 
+                            'paddingLeft': '1rem',
+                            'overflowY': 'auto',
+                            'maxHeight': '800px'
+                        })
+                        
+                    ], style={
+                        'display': 'flex', 
+                        'padding': '2rem',
+                        'minHeight': 'calc(100vh - 200px)',
+                        'overflow': 'hidden'
+                    })
+                ], style={
+                    'display': 'flex',
+                    'flexDirection': 'column',
+                    'height': '100vh',
+                    'overflow': 'hidden'
+                })
                 return traffic_layout, 'main'
 
             # 檢查餐廳列表頁面
@@ -5246,6 +5288,137 @@ def toggle_detail_help(n_clicks, is_open):
     if n_clicks:
         return not is_open
     return is_open
+
+def create_traffic_map_chart(points=None):
+    """Creates a mapbox scatter plot of all restaurants and hotels."""
+    # Get restaurant data
+    df_restaurants = get_all_restaurants()
+    df_restaurants = df_restaurants.dropna(subset=['Lat', 'Long'])
+    df_restaurants['type'] = 'Restaurant'
+
+    # Get hotel data
+    df_hotels = get_all_hotels()
+    df_hotels = df_hotels.dropna(subset=['Lat', 'Long'])
+    df_hotels['type'] = 'Hotel'
+
+    # Combine dataframes
+    df_combined = pd.concat([
+        df_restaurants[['Name', 'Lat', 'Long', 'type']],
+        df_hotels[['HotelName', 'Lat', 'Long', 'type']].rename(columns={'HotelName': 'Name'})
+    ])
+
+    fig = px.scatter_map(
+        df_combined,
+        lat="Lat",
+        lon="Long",
+        hover_name="Name",
+        color="type",
+        color_discrete_map={
+            "Restaurant": "#32CD32",  # Green
+            "Hotel": "#FF6347"       # Red
+        },
+        zoom=11,
+        center={"lat": 35.0116, "lon": 135.7681},
+        height=600,
+        map_style="carto-positron",
+        custom_data=['Name', 'type']
+    )
+    fig.update_layout(
+        margin={"r":0,"t":0,"l":0,"b":0},
+        showlegend=True,
+        legend_title_text='Type',
+        legend=dict(
+            yanchor="top",
+            y=0.99,
+            xanchor="left",
+            x=0.01,
+            bgcolor='rgba(0, 53, 128, 0.5)',
+            font=dict(
+                color='white'
+            )
+        ),
+        clickmode='event+select',
+        hoverdistance=20,
+        uirevision='constant' # Add this line to preserve map state
+    )
+    fig.update_traces(
+        marker=dict(
+            size=12,
+            opacity=0.9
+        ),
+        hoverlabel=dict(
+            bgcolor='#003580',
+            font_size=14,
+            font_family='Arial, sans-serif'
+        )
+    )
+    return dcc.Graph(
+        id='traffic-map-graph',
+        figure=fig,
+        config={
+            'displayModeBar': True,
+            'scrollZoom': True,
+            'doubleClick': 'reset',
+            'modeBarButtonsToRemove': ['lasso2d', 'select2d']
+        }
+    )
+
+@app.callback(
+    [Output('traffic-map-store', 'data'),
+     Output('distance-calculation-result', 'children')],
+    [Input('traffic-map-graph', 'clickData')],
+    [State('traffic-map-store', 'data')],
+    prevent_initial_call=True
+)
+def handle_distance_calculation(click_data, store_data):
+    if click_data is None:
+        raise PreventUpdate
+    
+    # Initialize store_data if it's None
+    if store_data is None:
+        store_data = {'points': []}
+    
+    points = store_data.get('points', [])
+    
+    try:
+        clicked_point = click_data['points'][0]
+        lat = clicked_point['lat']
+        lon = clicked_point['lon']
+        name = clicked_point.get('customdata', ['Unknown'])[0] if clicked_point.get('customdata') else 'Unknown Point'
+    except (KeyError, IndexError, TypeError):
+        return {'points': points}, "Error: Could not extract point information. Please try clicking on a marker."
+
+    points.append({'lat': lat, 'lon': lon, 'name': name})
+
+    if len(points) == 1:
+        return {'points': points}, f"First point selected: {name}\nClick on another point to calculate the distance."
+    elif len(points) == 2:
+        p1 = points[0]
+        p2 = points[1]
+        
+        try:
+            # Haversine distance calculation
+            R = 6371  # Earth radius in kilometers
+            lat1 = float(p1['lat'])
+            lon1 = float(p1['lon'])
+            lat2 = float(p2['lat'])
+            lon2 = float(p2['lon'])
+
+            lat1_rad, lon1_rad, lat2_rad, lon2_rad = map(np.radians, [lat1, lon1, lat2, lon2])
+
+            dlon = lon2_rad - lon1_rad
+            dlat = lat2_rad - lat1_rad
+            a = np.sin(dlat / 2.0)**2 + np.cos(lat1_rad) * np.cos(lat2_rad) * np.sin(dlon / 2.0)**2
+            c = 2 * np.arcsin(np.sqrt(a))
+            distance = R * c
+            
+            result_text = f"Distance between {p1['name']} and {p2['name']}:\n{distance:.2f} km"
+            return {'points': []}, result_text
+        except (ValueError, TypeError) as e:
+            return {'points': []}, f"Error calculating distance: {str(e)}"
+    
+    return {'points': points}, f"Selected {len(points)} point(s). Click on another point to calculate distance."
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=8050)
