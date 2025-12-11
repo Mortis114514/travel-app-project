@@ -49,7 +49,11 @@ from utils.database import (
     search_hotels,
     get_unique_hotel_types,
     get_nearby_hotels,
-    get_hotels_by_type
+    get_hotels_by_type,
+    get_random_top_attractions, 
+    search_attractions, 
+    get_unique_attraction_types, 
+    get_attraction_by_id
 )
 
 
@@ -1489,6 +1493,319 @@ def create_hotel_detail_content(hotel_data):
         })
     ])
 
+# --- Attractions UI Components ---
+
+def create_attraction_card(attr):
+    """建立景點小卡 (樣式與 Hotel/Restaurant 完全一致)"""
+    # 處理 Price Level
+    price_level = attr.get('PriceLevel')
+    price_display = ''
+    if price_level and pd.notna(price_level):
+        try:
+            p_val = float(price_level)
+            price_display = '💰' * int(p_val)
+        except:
+            pass
+            
+    # 使用與 Hotel Card 相同的 CSS class 結構
+    card_content = html.Div([
+        # 上半部：圖片區
+        html.Div([
+            html.Img(
+                src='/assets/food_dirtyrice.png', 
+                className='card-image'
+            )
+        ], className='card-image-section'),
+        
+        # 下半部：內容區
+        html.Div([
+            html.Div(attr['Name'], className='card-title'),
+            html.Div([
+                html.Span(attr.get('Type', 'Spot'), className='card-subtitle'),
+                html.Span(price_display, style={'marginLeft': '10px', 'color': '#FBC02D', 'fontSize': '0.9rem'})
+            ], style={'marginBottom': '0.5rem'}),
+            
+            html.Div([
+                html.I(className='fas fa-star'),
+                html.I(className='fas fa-star'),
+                html.I(className='fas fa-star'),
+                html.I(className='fas fa-star'),
+                html.I(className='fas fa-star'),
+                html.Span(f"{attr.get('Rating', 0):.1f}", style={'marginLeft': '5px'})
+            ], className='card-rating'),
+            
+            html.Div([
+                html.I(className='fas fa-map-marker-alt', style={'marginRight': '5px', 'fontSize': '0.8rem'}),
+                html.Span(str(attr.get('Address', ''))[:30] + '...', style={'fontSize': '0.75rem', 'color': '#888'})
+            ], style={'marginTop': '5px'})
+            
+        ], className='card-content-section') 
+    ], className='destination-card')
+
+    return html.Div(
+        card_content,
+        id={'type': 'attraction-card', 'index': attr['ID']},
+        style={'cursor': 'pointer'},
+        n_clicks=0  # <--- 🚨 關鍵修正：必須加上這一行，點擊才會生效！
+    )
+
+def create_attraction_search_bar():
+    """建立景點搜尋欄 (樣式與餐廳/旅館一致)"""
+    return html.Div([
+        html.Div([
+            # 關鍵字搜尋
+            html.Div([
+                html.I(className='fas fa-search', style={'color': '#003580', 'fontSize': '1.2rem'}),
+                dcc.Input(
+                    id='search-attraction', 
+                    type='text', 
+                    placeholder='Search shrines, temples, or locations...', 
+                    className='search-input',
+                    debounce=False,
+                    style={
+                        'background': 'transparent',
+                        'border': 'none',
+                        'color': '#1A1A1A',
+                        'fontSize': '0.95rem',
+                        'width': '100%',
+                        'outline': 'none',
+                        'paddingLeft': '0.75rem'
+                    }
+                )
+            ], className='search-input-group', style={'flex': '2', 'display': 'flex', 'alignItems': 'center', 'gap': '0.75rem'}),
+            
+            # 類型篩選 (Dropdown)
+            html.Div([
+                html.Div([
+                    html.I(className='fas fa-torii-gate', style={'cursor': 'pointer', 'color': '#003580'}),
+                    dcc.Dropdown(
+                        id='attraction-type-filter',
+                        options=[{'label': t, 'value': t} for t in get_unique_attraction_types()],
+                        placeholder='Type',
+                        style={'border': 'none', 'width': '100%'},
+                        className='border-0' # Bootstrap helper to remove border
+                    )
+                ], style={'display': 'flex', 'alignItems': 'center', 'width': '100%', 'gap': '10px'})
+            ], className='search-input-group', style={'flex': '1', 'minWidth': '200px'}),
+            
+            # 搜尋按鈕
+            html.Button([
+                html.I(className='fas fa-search', style={'marginRight': '8px'}),
+                'Search'
+            ], id='search-attraction-btn', className='search-btn', n_clicks=0)
+            
+        ], className='search-container')
+    ], style={'width': '100%'})
+
+def create_attraction_list_page():
+    """建立景點列表頁 (樣式與餐廳列表一致)"""
+    return html.Div([
+        # ===== Header with back button =====
+        html.Div([
+            html.Div([
+                # Back button and title
+                html.Div([
+                    html.Button([
+                        html.I(className='fas fa-arrow-left'),
+                        html.Span('Back', style={'marginLeft': '8px'})
+                    ], id={'type': 'back-btn', 'index': 'attraction-list'}, className='btn-back', n_clicks=0),
+                    html.H1('Kyoto Attractions', style={
+                        'color': '#003580',
+                        'marginLeft': '2rem',
+                        'fontSize': '2rem',
+                        'fontWeight': 'bold'
+                    })
+                ], style={'display': 'flex', 'alignItems': 'center'}),
+
+                # User Avatar (新增這塊以保持一致)
+                html.Div([
+                    html.Div([
+                        html.Img(
+                            id='user-avatar-img-attraction-list',
+                            src=None,
+                            style={'width': '40px', 'height': '40px', 'borderRadius': '50%', 'objectFit': 'cover', 'display': 'none'}
+                        ),
+                        html.I(
+                            id='user-avatar-icon-attraction-list',
+                            className='fas fa-user',
+                            style={'display': 'block'}
+                        )
+                    ], className='user-avatar', id='user-avatar-attraction-list', n_clicks=0),
+
+                    # Dropdown Menu
+                    html.Div([
+                        html.Div([
+                            html.I(className='fas fa-user-circle'),
+                            html.Span('Profile')
+                        ], className='dropdown-item', id='dropdown-profile-attraction-list', n_clicks=0),
+                        html.Div([
+                            html.I(className='fas fa-sign-out-alt'),
+                            html.Span('Logout')
+                        ], className='dropdown-item', id='menu-logout-attraction-list', n_clicks=0),
+                    ], id='user-dropdown-attraction-list', className='user-dropdown')
+                ], style={'position': 'relative'})
+            ], style={
+                'display': 'flex',
+                'justifyContent': 'space-between',
+                'alignItems': 'center',
+                'maxWidth': '1400px',
+                'margin': '0 auto',
+                'padding': '1.5rem 2rem'
+            })
+        ], style={
+            'backgroundColor': '#F2F6FA',
+            'borderBottom': '1px solid #E8ECEF',
+            'position': 'sticky',
+            'top': '0',
+            'zIndex': '1000'
+        }),
+        
+        # ===== Search Section =====
+        html.Div([
+            html.Div([
+                create_attraction_search_bar(),
+                # Search stats
+                html.Div(id='attraction-search-stats', style={
+                    'color': '#555555',
+                    'fontSize': '0.95rem',
+                    'marginTop': '1rem',
+                    'fontWeight': '500'
+                })
+            ], style={'maxWidth': '1000px', 'margin': '0 auto'})
+        ], style={'backgroundColor': '#F2F6FA', 'padding': '2rem', 'borderBottom': '1px solid #222'}),
+        
+        # ===== Grid Section =====
+        html.Div([
+            html.Div(id='attraction-grid', className='restaurant-list-grid')
+        ], style={'backgroundColor': '#F2F6FA', 'padding': '2rem', 'minHeight': '60vh'}),
+        
+        # ===== Pagination (Placeholder for consistency) =====
+        html.Div(style={'padding': '2rem', 'backgroundColor': '#F2F6FA'})
+
+    ], style={'backgroundColor': '#F2F6FA', 'minHeight': '100vh'})
+
+def create_attraction_detail_page(attr_id):
+    """建立景點詳細頁 (直接載入模式)"""
+    # 1. 直接在這裡抓資料！
+    print(f"DEBUG: Fetching data directly for Attraction ID: {attr_id}")
+    data = get_attraction_by_id(attr_id)
+    
+    # 2. 生成內容
+    if data:
+        content = create_attraction_detail_content(data)
+    else:
+        content = create_error_state("Attraction not found in database")
+
+    return html.Div([
+        # Header (保持不變)
+        html.Div([
+            html.Div([
+                html.Button([html.I(className='fas fa-arrow-left', style={'marginRight': '8px'}), 'Back'], 
+                            id='attraction-detail-back-btn', className='btn-secondary', n_clicks=0, style={'marginRight': 'auto'}),
+                
+                # User Avatar
+                html.Div([
+                    html.Div([
+                        html.Img(id='user-avatar-img-attraction-detail', src=None, style={'width': '40px', 'height': '40px', 'borderRadius': '50%', 'objectFit': 'cover', 'display': 'none'}),
+                        html.I(id='user-avatar-icon-attraction-detail', className='fas fa-user', style={'display': 'block'})
+                    ], id='user-avatar-attraction-detail', className='user-avatar', n_clicks=0),
+                    # Dropdown
+                    html.Div([
+                        html.Div([html.I(className='fas fa-user-circle'), html.Span('Profile')], className='dropdown-item', id='menu-profile-attraction-detail', n_clicks=0),
+                        html.Div([html.I(className='fas fa-sign-out-alt'), html.Span('Logout')], className='dropdown-item', id='menu-logout-attraction-detail', n_clicks=0)
+                    ], id='user-dropdown-attraction-detail', className='user-dropdown')
+                ], style={'position': 'relative'})
+            ], style={'maxWidth': '1400px', 'margin': '0 auto', 'padding': '1rem 2rem', 'display': 'flex', 'alignItems': 'center', 'justifyContent': 'space-between'})
+        ], style={'backgroundColor': '#F2F6FA', 'borderBottom': '1px solid #E8ECEF', 'position': 'sticky', 'top': '0', 'zIndex': '1000'}),
+
+        # 3. 直接放入內容 (不再顯示 Loading)
+        html.Div(id='attraction-detail-content', children=[content])
+
+    ], style={'backgroundColor': '#F2F6FA', 'minHeight': '100vh'})
+
+def create_attraction_detail_content(data):
+    """建立景點詳細內容 (包含超強防呆機制)"""
+    # 1. 基礎檢查
+    if not data or 'error' in data:
+        return create_error_state("Attraction not found")
+
+    # 2. 安全地處理資料 (防止 None/NaN 導致崩潰)
+    name = data.get('Name', 'Unknown Spot')
+    attr_type = data.get('Type', 'Spot')
+    address = data.get('Address', 'Address not available')
+    
+    # --- [關鍵修正] 安全轉換數值 ---
+    try:
+        # 處理評分 (若為 None 轉為 0.0)
+        raw_rating = data.get('Rating')
+        rating = round(float(raw_rating), 1) if pd.notna(raw_rating) else 0.0
+        
+        # 處理評論數 (若為 None 轉為 0)
+        raw_reviews = data.get('UserRatingsTotal')
+        review_count = int(float(raw_reviews)) if pd.notna(raw_reviews) else 0
+        
+        # 處理經緯度
+        lat = data.get('Lat')
+        lng = data.get('Lng')
+        
+        # 處理價格 (PriceLevel)
+        price_level = data.get('PriceLevel')
+        price_text = "Free / Unknown"
+        if pd.notna(price_level):
+            try:
+                p_val = int(float(price_level))
+                if p_val > 0:
+                    price_text = "💰" * p_val
+            except:
+                pass
+    except Exception as e:
+        print(f"Error parsing attraction data: {e}")
+        return create_error_state(f"Data Error: {e}")
+
+    return html.Div([
+        # Hero Image Area
+        html.Div([
+            html.Img(src='/assets/food_dirtyrice.png', style={'width':'100%', 'height':'100%', 'objectFit':'cover', 'position': 'absolute', 'top': '0', 'left': '0'}),
+            html.Div(style={'position': 'absolute', 'bottom': '0', 'left': '0', 'right': '0', 'height': '70%', 'background': 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)'}),
+            html.Div([
+                html.H1(name, style={'color': '#fff', 'fontSize': '3rem', 'fontWeight': 'bold', 'textShadow': '2px 2px 4px rgba(0,0,0,0.8)', 'marginBottom': '0.5rem'}),
+                html.Div([
+                    html.Span(attr_type, style={'backgroundColor': 'rgba(255,255,255,0.2)', 'backdropFilter': 'blur(5px)', 'color': '#fff', 'padding': '5px 15px', 'borderRadius': '20px', 'marginRight': '10px', 'border': '1px solid rgba(255,255,255,0.5)'}),
+                    html.Span(f"{rating} ★ ({review_count} reviews)", style={'color': '#FBC02D', 'fontSize': '1.2rem', 'fontWeight': 'bold', 'textShadow': '1px 1px 2px rgba(0,0,0,0.8)'})
+                ])
+            ], style={'position': 'absolute', 'bottom': '3rem', 'left': '2rem', 'maxWidth': '1200px'})
+        ], style={'position': 'relative', 'height': '50vh', 'minHeight': '400px', 'overflow': 'hidden'}),
+
+        # Info Grid
+        html.Div([
+            html.Div([
+                html.H3("Information", style={'color': '#003580', 'marginBottom': '1rem'}),
+                html.Div([
+                    html.P([html.I(className='fas fa-map-marker-alt', style={'marginRight':'12px', 'color':'#003580'}), str(address)], style={'color': '#1A1A1A', 'fontSize': '1.1rem', 'marginBottom': '0.8rem'}),
+                    html.P([html.I(className='fas fa-tag', style={'marginRight':'12px', 'color':'#003580'}), f"Type: {attr_type}"], style={'color': '#555', 'marginBottom': '0.8rem'}),
+                    html.P([html.I(className='fas fa-yen-sign', style={'marginRight':'12px', 'color':'#003580'}), f"Price Level: {price_text}"], style={'color': '#555'}),
+                ], style={'backgroundColor': '#fff', 'padding': '1.5rem', 'borderRadius': '12px', 'boxShadow': '0 1px 3px rgba(0,0,0,0.08)', 'border': '1.5px solid #D0D5DD', 'marginBottom': '2rem'}),
+                
+                html.H3("Location", style={'color': '#003580', 'marginBottom': '1rem'}),
+                html.Div([
+                     html.Iframe(
+                        src=f"https://www.google.com/maps?q={lat},{lng}&z=15&output=embed",
+                        style={'width': '100%', 'height': '300px', 'border': 'none', 'borderRadius': '8px'}
+                    )
+                ], style={'backgroundColor': '#fff', 'padding': '1rem', 'borderRadius': '12px', 'boxShadow': '0 1px 3px rgba(0,0,0,0.08)', 'border': '1.5px solid #D0D5DD'})
+            ], style={'flex': '1', 'minWidth': '300px'}),
+            
+            # 右側區塊
+            html.Div([
+                html.H3("Overview", style={'color': '#003580', 'marginBottom': '1rem'}),
+                html.Div([
+                    html.P(f"Welcome to {name}. Experience the rich history and culture of Kyoto at this location.", style={'color': '#555', 'lineHeight': '1.6'}),
+                    html.P("Check the map for exact location and plan your visit!", style={'color': '#555', 'lineHeight': '1.6'})
+                ], style={'backgroundColor': '#fff', 'padding': '2rem', 'borderRadius': '12px', 'boxShadow': '0 1px 3px rgba(0,0,0,0.08)', 'border': '1.5px solid #D0D5DD'})
+            ], style={'flex': '1', 'minWidth': '300px'})
+        ], style={'display': 'flex', 'gap': '2rem', 'maxWidth': '1400px', 'margin': '0 auto', 'padding': '3rem 2rem', 'flexWrap': 'wrap'})
+    ])
+
 def create_restaurant_map_chart():
     """Creates a mapbox scatter plot of all restaurants."""
     df = get_all_restaurants()
@@ -2153,6 +2470,18 @@ def create_main_layout():
                 html.Div(id='hotels-card-container', className='card-row')
             ], className='card-scroll-container')
         ], className='content-section'),
+
+        # ===== Attractions Section (新增) =====
+        html.Div([
+            html.Div([
+                html.H2('Must-Visit Attractions', className='section-title'),
+                html.A(['View All', html.I(className='fas fa-arrow-right')], 
+                       className='view-all-link', id='view-all-attractions', n_clicks=0)
+            ], className='section-header'),
+            html.Div([
+                html.Div(id='attractions-card-container', className='card-row')
+            ], className='card-scroll-container')
+        ], className='content-section'),
         
         # ===== Personalized Content Section - Your Saved Trips & Favorites =====
         html.Div([
@@ -2566,6 +2895,7 @@ TRAFFIC_GUIDE_ZH = """
 # ====== 認證相關 Callbacks ======
 
 # 頁面路由控制
+# 頁面路由控制 (修正版：優先權調整)
 @app.callback(
     [Output('page-content', 'children'),
      Output('page-mode', 'data')],
@@ -2578,41 +2908,53 @@ TRAFFIC_GUIDE_ZH = """
 )
 def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_data):
     """根據 session 狀態、view_mode 和 pathname 顯示對應頁面"""
-    # 清理過期 sessions
     clean_expired_sessions()
 
     # 檢查 session
     if session_data and 'session_id' in session_data:
         user_id = get_session(session_data['session_id'])
         if user_id:
-            # 已登入，根據 pathname 和 view_mode 顯示不同頁面
+            # === [關鍵修正] 優先檢查 URL pathname (詳細頁面優先) ===
 
-            # === 優先檢查 pathname (URL 直接導航) ===
-
-            # 檢查是否為旅館詳細頁面路由
+            # 1. 檢查是否為旅館詳細頁面
             if pathname and pathname.startswith('/hotel/'):
                 try:
                     hotel_id = int(pathname.split('/')[-1])
                     return create_hotel_detail_page(hotel_id), 'main'
-                except (ValueError, IndexError):
-                    # 無效的旅館 ID，重定向到首頁
+                except:
                     return create_main_layout(), 'main'
 
-            # 檢查是否為餐廳詳細頁面路由
+            # 2. 檢查是否為餐廳詳細頁面
             elif pathname and pathname.startswith('/restaurant/'):
                 if restaurant_id_data and restaurant_id_data.get('id'):
                     return create_restaurant_detail_page(restaurant_id_data['id']), 'main'
                 else:
-                    return create_restaurant_list_page(), 'main'
+                    # 如果直接輸入網址但沒有 ID store，嘗試從網址解析
+                    try:
+                         r_id = int(pathname.split('/')[-1])
+                         return create_restaurant_detail_page(r_id), 'main'
+                    except:
+                         return create_restaurant_list_page(), 'main'
+            
+            # 3. 檢查景點詳細頁面
+            elif pathname and pathname.startswith('/attraction/') and 'list' not in pathname:
+                try:
+                    # 解析 ID
+                    url_parts = [p for p in pathname.split('/') if p]
+                    if url_parts and url_parts[-1].isdigit():
+                        a_id = int(url_parts[-1])
+                        # 直接呼叫新的頁面生成器 (它會自己抓資料)
+                        return create_attraction_detail_page(a_id), 'main'
+                except Exception as e:
+                    print(f"Error in display_page for attraction: {e}")
+                    return create_main_layout(), 'main'
 
-            # === 然後檢查 view_mode (用於從任何頁面導航) ===
+            # === 然後才檢查 view_mode (列表頁與功能頁) ===
 
-            # 檢查個人檔案頁面
             elif view_mode == 'profile':
                 user_data = get_user_full_details(user_id)
                 return create_profile_page(user_data), 'main'
 
-            # 檢查旅館列表頁面
             elif view_mode == 'hotel-list':
                 return create_hotel_list_page(), 'main'
 
@@ -2664,12 +3006,19 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
             # 檢查餐廳列表頁面
             elif view_mode == 'restaurant-list':
                 return create_restaurant_list_page(), 'main'
+            
+            elif view_mode == 'attraction-list':
+                return create_attraction_list_page(), 'main'
+
+            elif view_mode == 'analytics':
+                return create_analytics_layout(analytics_df), 'main'
 
             # 預設顯示首頁
             else:
                 return create_main_layout(), 'main'
+            
 
-    # 未登入，根據當前模式顯示登入或註冊頁
+    # 未登入
     if current_mode == 'register':
         return create_register_layout(), 'register'
 
@@ -3689,6 +4038,78 @@ def logout_from_dropdown_hotel_list(n_clicks, session_data):
     if session_data and 'session_id' in session_data:
         delete_session(session_data['session_id'])
 
+    return None
+
+# ====== Attraction List Page Callbacks (NEW) ======
+
+# Update attraction list page avatar
+@app.callback(
+    [Output('user-avatar-img-attraction-list', 'src'),
+     Output('user-avatar-img-attraction-list', 'style'),
+     Output('user-avatar-icon-attraction-list', 'style')],
+    [Input('current-user-data', 'data'),
+     Input('view-mode', 'data')]
+)
+def update_attraction_list_avatar(user_data, view_mode):
+    """更新景點列表頁使用者頭像"""
+    if view_mode != 'attraction-list':
+        raise PreventUpdate
+
+    if not user_data:
+        profile_photo = None
+    else:
+        profile_photo = user_data.get('profile_photo')
+
+    if profile_photo:
+        img_style = {'width': '40px', 'height': '40px', 'borderRadius': '50%', 'objectFit': 'cover', 'display': 'block'}
+        icon_style = {'display': 'none'}
+        return profile_photo, img_style, icon_style
+    else:
+        img_style = {'width': '40px', 'height': '40px', 'borderRadius': '50%', 'objectFit': 'cover', 'display': 'none'}
+        icon_style = {'display': 'block'}
+        return None, img_style, icon_style
+
+# Toggle user dropdown in attraction list page
+@app.callback(
+    [Output('user-dropdown-attraction-list', 'className'),
+     Output('dropdown-open', 'data', allow_duplicate=True)], # Using generic dropdown-open for simplicity or create specific
+    [Input('user-avatar-attraction-list', 'n_clicks')],
+    [State('dropdown-open', 'data')],
+    prevent_initial_call=True
+)
+def toggle_user_dropdown_attraction_list(n_clicks, is_open):
+    """切換景點列表頁的使用者下拉選單"""
+    if n_clicks:
+        new_state = not is_open
+        className = 'user-dropdown show' if new_state else 'user-dropdown'
+        return className, new_state
+    raise PreventUpdate
+
+# Navigate to profile from attraction list
+@app.callback(
+    [Output('view-mode', 'data', allow_duplicate=True),
+     Output('previous-view-mode', 'data', allow_duplicate=True)],
+    [Input('dropdown-profile-attraction-list', 'n_clicks')],
+    [State('view-mode', 'data')],
+    prevent_initial_call=True
+)
+def navigate_to_profile_from_attraction_list(n_clicks, current_view_mode):
+    if n_clicks:
+        return 'profile', current_view_mode or 'attraction-list'
+    raise PreventUpdate
+
+# Handle logout from attraction list page dropdown
+@app.callback(
+    Output('session-store', 'data', allow_duplicate=True),
+    [Input('menu-logout-attraction-list', 'n_clicks')],
+    [State('session-store', 'data')],
+    prevent_initial_call=True
+)
+def logout_from_dropdown_attraction_list(n_clicks, session_data):
+    if not n_clicks:
+        raise PreventUpdate
+    if session_data and 'session_id' in session_data:
+        delete_session(session_data['session_id'])
     return None
 
 # ====== Profile Page Callbacks ======
@@ -5196,7 +5617,8 @@ app.clientside_callback(
                     'user-dropdown',
                     'user-dropdown-list',
                     'user-dropdown-hotel-list',
-                    'user-dropdown-detail'
+                    'user-dropdown-detail',
+                    'user-dropdown-attraction-list'
                 ];
 
                 const avatarIds = [
@@ -5204,7 +5626,8 @@ app.clientside_callback(
                     'user-avatar-list',
                     'user-avatar-hotel-list',
                     'user-avatar-detail',
-                    'user-avatar-hotel-detail'
+                    'user-avatar-hotel-detail',
+                    'user-avatar-attraction-list'
                 ];
 
                 // Check if click is on avatar (toggle should handle it)
