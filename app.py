@@ -1818,6 +1818,7 @@ app.layout = html.Div([
     dcc.Store(id='search-cuisine', storage_type='memory'),  # 選中的料理類型
     dcc.Store(id='search-rating', storage_type='memory'),  # 選中的評分範圍
     dcc.Store(id='active-dropdown', storage_type='memory', data=None),  # 當前打開的下拉菜單 ('cuisine', 'rating', or None)
+    dcc.Store(id='language-store', storage_type='session', data='en'),  # 'en' or 'zh'
     dcc.Store(id='close-dropdowns-trigger', storage_type='memory'),  # 觸發關閉所有下拉菜單
     # 餐廳詳細頁面狀態管理
     dcc.Store(id='selected-restaurant-id', storage_type='memory'),  # 選中的餐廳 ID
@@ -2071,7 +2072,8 @@ def create_main_layout():
                 html.Div([
                     html.Div('Destinations', className='nav-link', id='nav-destinations', n_clicks=0),
                     html.Div('Trip Planner', className='nav-link', id='nav-planner', n_clicks=0),
-                    html.Div('Analytics', className='nav-link', id='nav-analytics', n_clicks=0)
+                    html.Div('Analytics', className='nav-link', id='nav-analytics', n_clicks=0),
+                    html.Div('Traffic', className='nav-link', id='nav-traffic', n_clicks=0)
                 ], className='header-nav'),
 
                 # Actions
@@ -2484,6 +2486,80 @@ def create_pagination_buttons(current_page, total_pages):
 
     return buttons
 
+
+TRAFFIC_GUIDE_EN = """
+# Navigating Kyoto: A Guide to Public Transportation
+
+Kyoto has an excellent public transport system. For most travelers, the most efficient way to get around is by using a combination of the city's subways, buses, and trains.
+
+## 1. The Kyoto Bus System
+
+- **How it Works:** The city is primarily served by the green Kyoto City Buses and the red-and-cream Kyoto Buses. Most of central Kyoto is a "flat-fare zone."
+- **How to Ride:** Board from the rear door, and exit from the front door, next to the driver.
+- **Payment:** The flat fare is typically ¥230. You can pay with cash (exact change is appreciated) or by tapping a major IC card (like Suica, Pasmo, or ICOCA) on the reader as you exit.
+
+## 2. The Kyoto Subway System
+
+- **The Lines:** There are two simple-to-use subway lines:
+    - **Karasuma Line:** Runs north-south.
+    - **Tozai Line:** Runs east-west.
+- **Why Use It:** Subways are the fastest way to travel longer distances across the city, bypassing all traffic. They are great for reaching major hubs like Kyoto Station.
+
+## 3. Popular Travel Passes
+
+- **Bus & Subway 1-Day Pass:**
+    - **Price:** Adults ¥1100, Children ¥550.
+    - **Coverage:** Unlimited rides on all Kyoto City Buses, Kyoto Buses, and both subway lines for one calendar day. A great all-in-one option.
+- **Subway 1-Day Pass:**
+    - **Price:** Adults ¥800, Children ¥400.
+    - **Coverage:** Unlimited rides on both the Karasuma and Tozai subway lines. Best if you plan to cover long distances quickly.
+
+## 4. Route Map
+
+For a detailed, zoomable map of the entire bus and subway network, it is highly recommended to download the official PDF guide.
+
+[**Download Official Kyoto Bus & Subway Route Map (PDF)**](https://www2.city.kyoto.lg.jp/kotsu/webguide/files/tikabusnavi/en_tikabusnavi_2.pdf)
+
+This map is invaluable for planning your routes and seeing how different lines connect.
+"""
+
+TRAFFIC_GUIDE_ZH = """
+# 京都導航：公共交通指南
+
+京都有一個優秀的公共交通系統。對於大多數遊客來說，最有效的出行方式是結合使用市內的地下鐵、巴士和火車。
+
+## 1. 京都巴士系統
+
+- **如何運作：** 該市主要由綠色的京都市營巴士和紅白相間的京都巴士提供服務。京都市中心大部分地區為「單一票價區」。
+- **如何乘車：** 從後門上車，從司機旁邊的前門下車。
+- **付款方式：** 單一票價通常為230日元。您可以使用現金（請準備好零錢）或在下車時在讀卡器上輕觸主要的IC卡（如Suica、Pasmo或ICOCA）支付。
+
+## 2. 京都地下鐵系統
+
+- **線路：** 有兩條簡單易用的地下鐵線路：
+    - **烏丸線：** 南北運行。
+    - **東西線：** 東西運行。
+- **為何使用：** 地下鐵是穿越城市長距離最快的方式，可避開所有交通擁堵。非常適合到達京都站等主要樞紐。
+
+## 3. 熱門交通票券
+
+- **巴士與地下鐵一日通票：**
+    - **價格：** 成人1100日元，兒童550日元。
+    - **覆蓋範圍：** 在一個日曆日內無限次乘坐所有京都市營巴士、京都巴士以及兩條地下鐵線路。是一個極佳的一體化選擇。
+- **地下鐵一日通票：**
+    - **價格：** 成人800日元，兒童400日元。
+    - **覆蓋範圍：** 無限次乘坐烏丸線和東西線兩條地下鐵線路。如果您計劃快速覆蓋長距離，這是最佳選擇。
+
+## 4. 路線圖
+
+為了獲得整個巴士和地下鐵網絡的詳細、可縮放的地圖，強烈建議下載官方的PDF指南。
+
+[**下載官方京都巴士和地下鐵路線圖（PDF）**](https://www2.city.kyoto.lg.jp/kotsu/webguide/files/tikabusnavi/ja_tikabusnavi_2.pdf)
+
+這張地圖對於規劃您的路線和了解不同線路的連接方式非常有價值。
+"""
+
+
 # ====== 認證相關 Callbacks ======
 
 # 頁面路由控制
@@ -2540,6 +2616,25 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
             # 檢查分析頁面
             elif view_mode == 'analytics':
                 return create_analytics_layout(analytics_df), 'main'
+            
+            elif view_mode == 'traffic':
+                traffic_guide_content = dcc.Markdown(
+                    TRAFFIC_GUIDE_EN, 
+                    id='traffic-guide-content',
+                    style={'padding': '2rem', 'color': '#1A1A1A', 'maxWidth': '800px', 'margin': '0 auto'}
+                )
+
+                traffic_layout = html.Div([
+                    # Header
+                    html.Div([
+                        html.Button([html.I(className='fas fa-arrow-left'), ' Back'], id={'type': 'back-btn', 'index': 'traffic'}, className='btn-secondary'),
+                        html.H1("Kyoto Transportation Guide", style={'color': '#003580', 'marginLeft': '2rem'}),
+                        html.Button('切換為中文', id='language-switch-btn', n_clicks=0, className='btn-primary', style={'marginLeft': 'auto'})
+                    ], style={'display': 'flex', 'alignItems': 'center', 'padding': '2rem', 'borderBottom': '1px solid #E8ECEF'}),
+                    # Guide content
+                    traffic_guide_content
+                ])
+                return traffic_layout, 'main'
 
             # 檢查餐廳列表頁面
             elif view_mode == 'restaurant-list':
@@ -2554,6 +2649,23 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
         return create_register_layout(), 'register'
 
     return create_login_layout(), 'login'
+
+@app.callback(
+    [Output('traffic-guide-content', 'children'),
+     Output('language-switch-btn', 'children'),
+     Output('language-store', 'data')],
+    [Input('language-switch-btn', 'n_clicks')],
+    [State('language-store', 'data')],
+    prevent_initial_call=True
+)
+def update_traffic_guide_language(n_clicks, current_language):
+    if n_clicks > 0:
+        if current_language == 'en':
+            return TRAFFIC_GUIDE_ZH, 'Switch to English', 'zh'
+        else:
+            return TRAFFIC_GUIDE_EN, '切換為中文', 'en'
+    return no_update, no_update, no_update
+
 
 
 # Load user data (including profile photo) on page load/refresh
@@ -2872,6 +2984,17 @@ def view_all_hotels(n_clicks, current_view):
 def view_analytics(n_clicks, current_view):
     if n_clicks and current_view != 'analytics':
         return 'analytics'
+    raise PreventUpdate
+
+@app.callback(
+    Output('view-mode', 'data', allow_duplicate=True),
+    [Input('nav-traffic', 'n_clicks')],
+    [State('view-mode', 'data')],
+    prevent_initial_call=True
+)
+def view_traffic(n_clicks, current_view):
+    if n_clicks and current_view != 'traffic':
+        return 'traffic'
     raise PreventUpdate
 
 
