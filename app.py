@@ -150,10 +150,13 @@ def create_primary_button(text, button_id=None, icon=None):
         children.append(html.I(className=icon, style={'marginRight': '8px'}))
     children.append(text)
 
+    # Use btn-create-trip class for Create a Trip button, otherwise use btn-primary
+    btn_class = 'btn-primary btn-create-trip' if button_id == 'create-trip-btn' else 'btn-primary'
+
     return html.Button(
         children,
         id=button_id,
-        className='btn-primary',
+        className=btn_class,
         n_clicks=0
     )
 

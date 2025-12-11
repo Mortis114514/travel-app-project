@@ -84,7 +84,7 @@ def create_help_section(index_id, button_text, explanation_content):
             className="btn-outline-info",
             size="sm",
             n_clicks=0,
-            style={'marginBottom': '10px', 'borderColor': '#003580', 'color': '#003580'}
+            style={'marginBottom': '10px', 'borderColor': '#003580', 'color': '#FFFFFF'}
         ),
         dbc.Collapse(
             dbc.Card(
