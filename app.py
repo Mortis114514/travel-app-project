@@ -5385,14 +5385,20 @@ def handle_distance_calculation(click_data, store_data):
         lat = clicked_point['lat']
         lon = clicked_point['lon']
         name = clicked_point.get('customdata', ['Unknown'])[0] if clicked_point.get('customdata') else 'Unknown Point'
-    except (KeyError, IndexError, TypeError):
-        return {'points': points}, "Error: Could not extract point information. Please try clicking on a marker."
+    except (KeyError, IndexError, TypeError) as e:
+        print(f"Error extracting point: {e}")
+        print(f"Click data: {click_data}")
+        return {'points': points}, html.Div("Error: Could not extract point information. Please try clicking on a marker.", style={'color': 'red'})
 
     points.append({'lat': lat, 'lon': lon, 'name': name})
+    print(f"Points collected: {len(points)}, Latest: {name}")
 
     if len(points) == 1:
-        return {'points': points}, f"First point selected: {name}\nClick on another point to calculate the distance."
-    elif len(points) == 2:
+        return {'points': points}, html.Div([
+            html.P(f"✓ First point selected: {name}", style={'marginBottom': '10px', 'fontWeight': '600', 'color': '#32CD32'}),
+            html.P("📍 Click on another point to calculate distance and view directions.", style={'color': '#666'})
+        ])
+    elif len(points) >= 2:
         p1 = points[0]
         p2 = points[1]
         
@@ -5412,12 +5418,57 @@ def handle_distance_calculation(click_data, store_data):
             c = 2 * np.arcsin(np.sqrt(a))
             distance = R * c
             
-            result_text = f"Distance between {p1['name']} and {p2['name']}:\n{distance:.2f} km"
-            return {'points': []}, result_text
+            # Create Google Maps directions URL
+            google_maps_url = f"https://www.google.com/maps/dir/?api=1&origin={lat1},{lon1}&destination={lat2},{lon2}&travelmode=transit"
+            
+            print(f"Distance calculated: {distance:.2f} km")
+            print(f"Google Maps URL: {google_maps_url}")
+            
+            result_content = html.Div([
+                html.Div([
+                    html.I(className='fas fa-map-marker-alt', style={'color': '#32CD32', 'marginRight': '8px'}),
+                    html.Strong("From: "),
+                    html.Span(p1['name'])
+                ], style={'marginBottom': '8px', 'fontSize': '1rem'}),
+                html.Div([
+                    html.I(className='fas fa-map-marker-alt', style={'color': '#FF6347', 'marginRight': '8px'}),
+                    html.Strong("To: "),
+                    html.Span(p2['name'])
+                ], style={'marginBottom': '12px', 'fontSize': '1rem'}),
+                html.Div([
+                    html.I(className='fas fa-route', style={'color': '#003580', 'marginRight': '8px'}),
+                    html.Strong("Distance: "),
+                    html.Span(f"{distance:.2f} km")
+                ], style={'marginBottom': '16px', 'fontSize': '1.1rem', 'color': '#003580', 'fontWeight': 'bold'}),
+                html.A([
+                    html.I(className='fas fa-directions', style={'marginRight': '8px'}),
+                    'View Directions on Google Maps'
+                ], href=google_maps_url, target="_blank", style={
+                    'display': 'inline-block',
+                    'padding': '12px 24px',
+                    'backgroundColor': '#4285f4',
+                    'color': 'white',
+                    'textDecoration': 'none',
+                    'borderRadius': '6px',
+                    'fontWeight': '600',
+                    'transition': 'background-color 0.3s',
+                    'cursor': 'pointer'
+                }),
+                html.Div("Click on two new points to calculate another route", style={
+                    'marginTop': '16px',
+                    'fontSize': '0.9rem',
+                    'color': '#888',
+                    'fontStyle': 'italic'
+                })
+            ])
+            
+            # Reset points after showing result
+            return {'points': []}, result_content
         except (ValueError, TypeError) as e:
-            return {'points': []}, f"Error calculating distance: {str(e)}"
+            print(f"Error calculating distance: {e}")
+            return {'points': []}, html.Div(f"Error calculating distance: {str(e)}", style={'color': 'red'})
     
-    return {'points': points}, f"Selected {len(points)} point(s). Click on another point to calculate distance."
+    return {'points': points}, html.Div(f"Selected {len(points)} point(s). Click on another point to calculate distance.", style={'color': '#666'})
 
 
 if __name__ == '__main__':
