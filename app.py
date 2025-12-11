@@ -163,12 +163,17 @@ def create_primary_button(text, button_id=None, icon=None):
 def create_destination_card(restaurant):
     """創建目的地卡片 (使用餐廳資料) - 可點擊並導航到詳細頁面"""
     card_content = html.Div([
-        html.Img(
-            src='/assets/food_dirtyrice.png',  # 使用相同圖片作為佔位符
-            className='card-image'
-        ),
+        # Image section (top)
+        html.Div([
+            html.Img(
+                src='/assets/food_dirtyrice.png',  # 使用相同圖片作為佔位符
+                className='card-image'
+            )
+        ], className='card-image-section'),
+        # Content section (bottom)
         html.Div([
             html.Div(restaurant['Name'], className='card-title'),
+            html.Div(restaurant.get('JapaneseName', ''), className='card-japanese-name'),
             html.Div(restaurant.get('FirstCategory', 'Restaurant'), className='card-subtitle'),
             html.Div([
                 html.I(className='fas fa-star'),
@@ -178,7 +183,7 @@ def create_destination_card(restaurant):
                 html.I(className='fas fa-star'),
                 html.Span(f"{restaurant['TotalRating']:.1f}")
             ], className='card-rating')
-        ], className='card-overlay')
+        ], className='card-content-section')
     ], className='destination-card')
 
     # 包裝在可點擊的容器中，使用 pattern-matching ID
@@ -1147,12 +1152,16 @@ def create_hotel_card(hotel):
     """創建旅館卡片 (類似餐廳卡片)"""
     # 處理類型列表
     types_text = ', '.join(hotel['Types'][:2]) if isinstance(hotel['Types'], list) and hotel['Types'] else 'Hotel'
-    
+
     card_content = html.Div([
-        html.Img(
-            src='/assets/food_dirtyrice.png',  # 可以替換為旅館圖片
-            className='card-image'
-        ),
+        # Image section (top)
+        html.Div([
+            html.Img(
+                src='/assets/food_dirtyrice.png',  # 可以替換為旅館圖片
+                className='card-image'
+            )
+        ], className='card-image-section'),
+        # Content section (bottom)
         html.Div([
             html.Div(hotel['HotelName'], className='card-title'),
             html.Div(types_text, className='card-subtitle'),
@@ -1169,9 +1178,9 @@ def create_hotel_card(hotel):
                 html.Span(hotel['Address'][:30] + '...' if len(hotel['Address']) > 30 else hotel['Address'],
                          style={'fontSize': '0.75rem', 'color': '#888'})
             ], style={'marginTop': '5px'})
-        ], className='card-overlay')
+        ], className='card-content-section')
     ], className='destination-card')
-    
+
     return html.Div(
         card_content,
         id={'type': 'hotel-card', 'index': hotel['Hotel_ID']},
@@ -3332,6 +3341,12 @@ def update_restaurant_grid(search_results, current_page):
                     'color': '#1A1A1A',
                     'fontSize': '1.2rem',
                     'fontWeight': 'bold',
+                    'marginBottom': '0.3rem'
+                }),
+                html.Div(restaurant.get('JapaneseName', ''), style={
+                    'color': '#666666',
+                    'fontSize': '0.9rem',
+                    'fontWeight': '400',
                     'marginBottom': '0.5rem'
                 }),
                 html.Div(f"{restaurant.get('FirstCategory', 'Restaurant')} - {restaurant.get('SecondCategory', '')}",
