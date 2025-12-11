@@ -9,7 +9,7 @@ from contextlib import contextmanager
 import math
 
 # 数据库路径
-DB_PATH = './data/restaurants.db'
+DB_PATH = './data/travel.db'
 
 @contextmanager
 def get_db_connection():
@@ -728,3 +728,65 @@ def get_market_analysis_data():
     final_df['avg_price'] = final_df['avg_price'].round(0)
     
     return final_df
+
+# ==========================================
+#   Attractions Functions (景點專用)
+# ==========================================
+
+def get_random_top_attractions(n=5, min_rating=4.0) -> pd.DataFrame:
+    """隨機獲取高評分景點 (用於首頁推薦)"""
+    with get_db_connection() as conn:
+        query = """
+            SELECT * FROM attractions 
+            WHERE Rating >= ? 
+            ORDER BY RANDOM() LIMIT ?
+        """
+        return pd.read_sql_query(query, conn, params=(min_rating, n))
+
+def get_unique_attraction_types() -> list:
+    """獲取所有景點類型 (用於篩選下拉選單)"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT Type FROM attractions WHERE Type IS NOT NULL ORDER BY Type")
+        return [row[0] for row in cursor.fetchall()]
+
+def search_attractions(keyword=None, attr_type=None, min_rating=None, sort_by='rating_desc') -> pd.DataFrame:
+    """搜尋景點 (支援關鍵字、類型、評分)"""
+    with get_db_connection() as conn:
+        query = "SELECT * FROM attractions WHERE 1=1"
+        params = []
+
+        if keyword:
+            query += " AND (Name LIKE ? OR Address LIKE ?)"
+            wildcard = f"%{keyword}%"
+            params.extend([wildcard, wildcard])
+        
+        if attr_type:
+            query += " AND Type = ?"
+            params.append(attr_type)
+            
+        if min_rating:
+            query += " AND Rating >= ?"
+            params.append(min_rating)
+            
+        # 排序邏輯
+        if sort_by == 'rating_desc':
+            query += " ORDER BY Rating DESC, UserRatingsTotal DESC"
+        elif sort_by == 'reviews_desc':
+            query += " ORDER BY UserRatingsTotal DESC"
+        elif sort_by == 'name_asc':
+            query += " ORDER BY Name ASC"
+            
+        return pd.read_sql_query(query, conn, params=params)
+
+def get_attraction_by_id(attraction_id: int):
+    """根據 ID 獲取單一景點詳細資料"""
+    print(f"DEBUG: Querying DB for ID {attraction_id} in {DB_PATH}") # 加這行
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        # 這裡的 "ID" 必須跟你的資料庫欄位名稱完全一樣 (你的資料庫是 ID 大寫)
+        cursor.execute("SELECT * FROM attractions WHERE ID = ?", (attraction_id,))
+        row = cursor.fetchone()
+        if row:
+            return dict(row)
+    return None
