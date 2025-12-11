@@ -2118,7 +2118,6 @@ app.index_string = '''
             {%config%}
             {%scripts%}
             {%renderer%}
-            <script src="/assets/map_cursor_handler.js"></script>
         </footer>
     </body>
 </html>
@@ -2137,7 +2136,6 @@ app.layout = html.Div([
     dcc.Store(id='search-cuisine', storage_type='memory'),  # 選中的料理類型
     dcc.Store(id='search-rating', storage_type='memory'),  # 選中的評分範圍
     dcc.Store(id='active-dropdown', storage_type='memory', data=None),  # 當前打開的下拉菜單 ('cuisine', 'rating', or None)
-    dcc.Store(id='language-store', storage_type='session', data='en'),  # 'en' or 'zh'
     dcc.Store(id='close-dropdowns-trigger', storage_type='memory'),  # 觸發關閉所有下拉菜單
     # 餐廳詳細頁面狀態管理
     dcc.Store(id='selected-restaurant-id', storage_type='memory'),  # 選中的餐廳 ID
@@ -2963,18 +2961,11 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
                 return create_analytics_layout(analytics_df), 'main'
             
             elif view_mode == 'traffic':
-                traffic_guide_content = dcc.Markdown(
-                    TRAFFIC_GUIDE_EN, 
-                    id='traffic-guide-content',
-                    style={'padding': '2rem', 'color': '#1A1A1A', 'maxWidth': '800px', 'margin': '0 auto'}
-                )
-
                 traffic_layout = html.Div([
                     # Header
                     html.Div([
                         html.Button([html.I(className='fas fa-arrow-left'), ' Back'], id={'type': 'back-btn', 'index': 'traffic'}, className='btn-secondary'),
-                        html.H1("Kyoto Transportation Guide", style={'color': '#003580', 'marginLeft': '2rem'}),
-                        html.Button('切換為中文', id='language-switch-btn', n_clicks=0, className='btn-primary', style={'marginLeft': 'auto'})
+                        html.H1("Kyoto Transportation Guide", style={'color': '#003580', 'marginLeft': '2rem'})
                     ], style={'display': 'flex', 'alignItems': 'center', 'padding': '2rem', 'borderBottom': '1px solid #E8ECEF'}),
                     
                     # Single column layout - just map and calculator
@@ -3023,24 +3014,6 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
         return create_register_layout(), 'register'
 
     return create_login_layout(), 'login'
-
-@app.callback(
-    [Output('traffic-guide-content', 'children'),
-     Output('language-switch-btn', 'children'),
-     Output('language-store', 'data')],
-    [Input('language-switch-btn', 'n_clicks')],
-    [State('language-store', 'data')],
-    prevent_initial_call=True
-)
-def update_traffic_guide_language(n_clicks, current_language):
-    if n_clicks > 0:
-        if current_language == 'en':
-            return TRAFFIC_GUIDE_ZH, 'Switch to English', 'zh'
-        else:
-            return TRAFFIC_GUIDE_EN, '切換為中文', 'en'
-    return no_update, no_update, no_update
-
-
 
 # Load user data (including profile photo) on page load/refresh
 @app.callback(
