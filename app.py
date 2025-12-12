@@ -5753,11 +5753,7 @@ def create_traffic_map_chart(points=None):
     prevent_initial_call=True
 )
 def handle_distance_calculation(click_data, store_data):
-    print("=== CALLBACK TRIGGERED ===")  # Debug
-    print(f"Click data: {click_data}")  # Debug
-    
     if click_data is None:
-        print("Click data is None")  # Debug
         raise PreventUpdate
     
     # Initialize store_data if it's None
@@ -5765,7 +5761,6 @@ def handle_distance_calculation(click_data, store_data):
         store_data = {'points': []}
     
     points = store_data.get('points', [])
-    print(f"Current points: {points}")  # Debug
     
     try:
         clicked_point = click_data['points'][0]
@@ -5773,12 +5768,9 @@ def handle_distance_calculation(click_data, store_data):
         lon = clicked_point['lon']
         name = clicked_point.get('customdata', ['Unknown'])[0] if clicked_point.get('customdata') else 'Unknown Point'
         
-        print(f"Extracted: lat={lat}, lon={lon}, name={name}")  # Debug
-        
-    except (KeyError, IndexError, TypeError) as e:
-        print(f"Error extracting point: {e}")
+    except (KeyError, IndexError, TypeError):
         error_div = html.Div(
-            "❌ Error: Could not extract point. Please click directly on a marker.", 
+            "âŒ Error: Could not extract point. Please click directly on a marker.", 
             style={
                 'color': '#FF0000', 
                 'fontWeight': 'bold', 
@@ -5790,11 +5782,9 @@ def handle_distance_calculation(click_data, store_data):
                 'border': '2px solid #FF0000'
             }
         )
-        print(f"Returning error div: {error_div}")  # Debug
         return {'points': points}, error_div
 
     points.append({'lat': lat, 'lon': lon, 'name': name})
-    print(f"Points after append: {points}")  # Debug
 
     if len(points) == 1:
         result = html.Div([
@@ -5808,7 +5798,7 @@ def handle_distance_calculation(click_data, store_data):
                 style={'fontSize': '1.2rem', 'fontWeight': 'bold', 'textAlign': 'center', 'color': '#1A1A1A', 'marginBottom': '1rem'}
             ),
             html.P(
-                "🗺️ Click on another point to calculate distance", 
+                "First point selected. Click on another point to calculate distance", 
                 style={'color': '#666', 'textAlign': 'center', 'fontSize': '1.1rem'}
             )
         ], style={
@@ -5817,7 +5807,6 @@ def handle_distance_calculation(click_data, store_data):
             'borderRadius': '8px',
             'border': '2px solid #32CD32'
         })
-        print("Returning first point result")  # Debug
         return {'points': points}, result
     
     elif len(points) >= 2:
@@ -5836,8 +5825,6 @@ def handle_distance_calculation(click_data, store_data):
             c = 2 * np.arcsin(np.sqrt(a))
             distance = R * c
             
-            print(f"Calculated distance: {distance:.2f} km")  # Debug
-            
             google_maps_url = f"https://www.google.com/maps/dir/?api=1&origin={lat1},{lon1}&destination={lat2},{lon2}&travelmode=transit"
             
             result_content = html.Div([
@@ -5847,12 +5834,12 @@ def handle_distance_calculation(click_data, store_data):
                 # From/To display
                 html.Div([
                     html.Div([
-                        html.Span("📍 ", style={'fontSize': '1.5rem'}),
+                        html.Span("📍", style={'fontSize': '1.5rem'}),
                         html.Strong("From: ", style={'color': '#1A1A1A', 'fontSize': '1.1rem'}),
                         html.Span(p1['name'], style={'color': '#1A1A1A', 'fontSize': '1.1rem'})
                     ], style={'marginBottom': '1rem', 'textAlign': 'center'}),
                     html.Div([
-                        html.Span("📍 ", style={'fontSize': '1.5rem'}),
+                        html.Span("📍", style={'fontSize': '1.5rem'}),
                         html.Strong("To: ", style={'color': '#1A1A1A', 'fontSize': '1.1rem'}),
                         html.Span(p2['name'], style={'color': '#1A1A1A', 'fontSize': '1.1rem'})
                     ], style={'marginBottom': '2rem', 'textAlign': 'center'}),
@@ -5860,7 +5847,7 @@ def handle_distance_calculation(click_data, store_data):
                 
                 # Distance
                 html.Div([
-                    html.Div("🚶", style={'fontSize': '2rem', 'marginBottom': '0.5rem'}),
+                    html.Div("Distance:", style={'fontSize': '2rem', 'marginBottom': '0.5rem'}),
                     html.Div(f"{distance:.2f} km", style={
                         'fontSize': '2.5rem',
                         'fontWeight': 'bold',
@@ -5901,11 +5888,9 @@ def handle_distance_calculation(click_data, store_data):
                 'border': '2px solid #003580'
             })
             
-            print("Returning final result with distance")  # Debug
             return {'points': []}, result_content
             
         except (ValueError, TypeError) as e:
-            print(f"Error calculating distance: {e}")  # Debug
             error_result = html.Div(
                 f"❌ Error: {str(e)}", 
                 style={
@@ -5933,7 +5918,6 @@ def handle_distance_calculation(click_data, store_data):
             'border': '2px solid #CCC'
         }
     )
-    print("Returning default result")  # Debug
     return {'points': points}, default_result
 
 if __name__ == '__main__':
