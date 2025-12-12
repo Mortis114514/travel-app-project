@@ -1221,6 +1221,10 @@ def create_hotel_card(hotel):
     # 處理類型列表
     types_text = ', '.join(hotel['Types'][:2]) if isinstance(hotel['Types'], list) and hotel['Types'] else 'Hotel'
 
+    # 安全處理 Rating (防止 None 值)
+    rating = hotel.get('Rating', 0)
+    rating_text = f"{rating:.1f}" if rating is not None else "N/A"
+
     card_content = html.Div([
         # Image section (top)
         html.Div([
@@ -1239,7 +1243,7 @@ def create_hotel_card(hotel):
                 html.I(className='fas fa-star'),
                 html.I(className='fas fa-star'),
                 html.I(className='fas fa-star'),
-                html.Span(f"{hotel['Rating']:.1f}")
+                html.Span(rating_text)
             ], className='card-rating'),
             html.Div([
                 html.I(className='fas fa-map-marker-alt', style={'marginRight': '5px', 'fontSize': '0.8rem'}),
@@ -1286,21 +1290,44 @@ def create_hotel_type_options():
     return options
 
 def create_hotel_search_bar():
-    """創建旅館搜尋欄 (類似餐廳搜尋)"""
+    """創建旅館搜尋欄 (與餐廳搜尋相同的佈局)"""
     return html.Div([
+        # Keyword search bar (separate row for full width) - Row 1
         html.Div([
             html.Div([
-                html.I(className='fas fa-search'),
+                html.I(className='fas fa-search', style={'color': '#003580', 'fontSize': '1.2rem'}),
                 dcc.Input(
                     id='search-hotel',
-                    value='',
                     type='text',
-                    placeholder='Search hotels by name or location...',
+                    value='',
+                    placeholder='Search hotels by name (English or Japanese)...',
                     className='search-input',
-                    debounce=False
+                    debounce=False,  # 即時搜尋
+                    style={
+                        'background': 'transparent',
+                        'border': 'none',
+                        'color': '#1A1A1A',
+                        'fontSize': '0.95rem',
+                        'width': '100%',
+                        'outline': 'none',
+                        'paddingLeft': '0.75rem'
+                    }
                 )
-            ], className='search-input-group', style={'position': 'relative', 'flex': '2'}),
-            
+            ], style={'flex': '1', 'display': 'flex', 'alignItems': 'center', 'gap': '0.75rem'})
+        ], className='keyword-search-bar', style={
+            'display': 'flex',
+            'alignItems': 'center',
+            'backgroundColor': '#FFFFFF',
+            'padding': '0.75rem 1.5rem',
+            'borderRadius': '8px',
+            'border': '2px solid #E8ECEF',
+            'marginBottom': '1rem',
+            'gap': '1rem',
+            'boxShadow': '0 2px 4px rgba(0, 0, 0, 0.05)'
+        }),
+
+        # Filters row - Row 2 (no search button, auto-search like restaurants)
+        html.Div([
             html.Div([
                 html.Div([
                     html.I(className='fas fa-hotel', id='hotel-type-icon',
@@ -1309,18 +1336,14 @@ def create_hotel_search_bar():
                              children='Hotel Type',
                              style={'cursor': 'pointer', 'marginLeft': '10px', 'color': '#888888'})
                 ], id='hotel-type-trigger', style={'display': 'flex', 'alignItems': 'center'}, n_clicks=0),
-                
+
+                # Hidden dropdown list
                 html.Div([
                     html.Div(create_hotel_type_options(),
                             style={'maxHeight': '300px', 'overflowY': 'auto'})
                 ], id='hotel-type-dropdown-menu', className='custom-dropdown-menu',
                    style={'display': 'none'})
-            ], className='search-input-group', style={'flex': '1.3', 'minWidth': '200px', 'position': 'relative'}),
-            
-            html.Button([
-                html.I(className='fas fa-search', style={'marginRight': '8px'}),
-                'Search'
-            ], id='search-hotel-btn', className='search-btn', n_clicks=0)
+            ], className='search-input-group', style={'flex': '1', 'minWidth': '200px', 'position': 'relative'})
         ], className='search-container')
     ], style={'width': '100%'})
 
@@ -1367,8 +1390,8 @@ def create_hotel_detail_page(hotel_id):
                         html.Div([
                             html.I(className='fas fa-sign-out-alt'),
                             html.Span('Logout')
-                        ], className='dropdown-item', id='menu-logout-detail', n_clicks=0)
-                    ], id='user-dropdown-detail', className='user-dropdown')
+                        ], className='dropdown-item', id='menu-logout-hotel-detail', n_clicks=0)
+                    ], id='user-dropdown-hotel-detail', className='user-dropdown')
                 ], style={'position': 'relative'})
 
             ], style={
@@ -2278,6 +2301,7 @@ app.layout = html.Div([
     dcc.Store(id='dropdown-open-hotel-list', data=False, storage_type='memory'),  # User dropdown state for hotel list page
     dcc.Store(id='dropdown-open-detail', data=False, storage_type='memory'),  # User dropdown state for detail pages
     dcc.Store(id='previous-view-mode', storage_type='memory'),  # Track previous view mode before navigating to profile
+    dcc.Store(id='previous-pathname', storage_type='memory'),  # Track previous pathname before navigating to profile
     dcc.Store(id='traffic-map-store', storage_type='memory', data={'points': []}),
     html.Div(id='scroll-trigger', style={'display': 'none'}),  # 隱藏的滾動觸發器
     html.Div(id='page-content', style={'minHeight': '100vh'})
@@ -3409,19 +3433,18 @@ def populate_hotels_cards(pathname):
 
 @app.callback(
     Output('hotels-card-container', 'children', allow_duplicate=True),
-    [Input('search-hotel-btn', 'n_clicks'),
+    [Input('search-hotel', 'value'),
      Input('search-hotel-type', 'data')],
-    [State('search-hotel', 'value')],
     prevent_initial_call=True
 )
-def handle_hotel_search(n_clicks, hotel_type, keyword):
-    """處理旅館搜尋（主頁預覽）"""
+def handle_hotel_search(keyword, hotel_type):
+    """處理旅館搜尋（主頁預覽，自動搜尋）"""
     filtered_hotels = search_hotels(
         keyword=keyword,
         hotel_type=hotel_type,
         sort_by='rating_desc'
     )
-    
+
     if len(filtered_hotels) > 0:
         preview = filtered_hotels.head(10)
         cards = [create_hotel_card(row) for _, row in preview.iterrows()]
@@ -4239,14 +4262,15 @@ def toggle_user_dropdown_attraction_list(n_clicks, is_open):
 # Navigate to profile from attraction list
 @app.callback(
     [Output('view-mode', 'data', allow_duplicate=True),
-     Output('previous-view-mode', 'data', allow_duplicate=True)],
+     Output('previous-view-mode', 'data', allow_duplicate=True),
+     Output('url', 'pathname', allow_duplicate=True)],
     [Input('dropdown-profile-attraction-list', 'n_clicks')],
     [State('view-mode', 'data')],
     prevent_initial_call=True
 )
 def navigate_to_profile_from_attraction_list(n_clicks, current_view_mode):
     if n_clicks:
-        return 'profile', current_view_mode or 'attraction-list'
+        return 'profile', current_view_mode or 'attraction-list', '/'
     raise PreventUpdate
 
 # Handle logout from attraction list page dropdown
@@ -4300,7 +4324,8 @@ def navigate_to_profile_from_restaurant_list(n_clicks, current_view_mode):
 # Navigate to profile page from hotel list dropdown
 @app.callback(
     [Output('view-mode', 'data', allow_duplicate=True),
-     Output('previous-view-mode', 'data', allow_duplicate=True)],
+     Output('previous-view-mode', 'data', allow_duplicate=True),
+     Output('url', 'pathname', allow_duplicate=True)],
     [Input('dropdown-profile-hotel-list', 'n_clicks')],
     [State('view-mode', 'data')],
     prevent_initial_call=True
@@ -4308,8 +4333,8 @@ def navigate_to_profile_from_restaurant_list(n_clicks, current_view_mode):
 def navigate_to_profile_from_hotel_list(n_clicks, current_view_mode):
     """從旅館列表頁下拉選單導航到個人檔案頁"""
     if n_clicks:
-        # Store current view mode
-        return 'profile', current_view_mode or 'hotel-list'
+        # Store current view mode and change URL to prevent detail page from showing
+        return 'profile', current_view_mode or 'hotel-list', '/'
     raise PreventUpdate
 
 # Back button from profile page
@@ -4318,16 +4343,23 @@ def navigate_to_profile_from_hotel_list(n_clicks, current_view_mode):
      Output('url', 'pathname', allow_duplicate=True)],
     [Input('back-from-profile', 'n_clicks')],
     [State('previous-view-mode', 'data'),
-     State('selected-restaurant-id', 'data')],
+     State('selected-restaurant-id', 'data'),
+     State('previous-pathname', 'data')],
     prevent_initial_call=True
 )
-def back_from_profile(n_clicks, previous_view_mode, restaurant_id_data):
+def back_from_profile(n_clicks, previous_view_mode, restaurant_id_data, previous_pathname):
     """從個人檔案頁返回上一頁"""
     if n_clicks:
         # If we came from a restaurant detail page, restore the restaurant URL
         if previous_view_mode == 'restaurant-detail' and restaurant_id_data and restaurant_id_data.get('id'):
             restaurant_id = restaurant_id_data['id']
             return 'home', f'/restaurant/{restaurant_id}'
+        # If we came from a hotel detail page, restore the hotel URL
+        elif previous_view_mode == 'hotel-detail' and previous_pathname:
+            return 'home', previous_pathname
+        # If we came from an attraction detail page, restore the attraction URL
+        elif previous_view_mode == 'attraction-detail' and previous_pathname:
+            return 'home', previous_pathname
         # Otherwise, return to the previous view mode normally
         return previous_view_mode or 'home', '/'
     raise PreventUpdate
@@ -4701,16 +4733,20 @@ def navigate_to_profile_from_restaurant_detail(n_clicks, current_view_mode, rest
 # Navigate to profile page from hotel detail page dropdown
 @app.callback(
     [Output('view-mode', 'data', allow_duplicate=True),
-     Output('previous-view-mode', 'data', allow_duplicate=True)],
+     Output('previous-view-mode', 'data', allow_duplicate=True),
+     Output('previous-pathname', 'data', allow_duplicate=True),
+     Output('url', 'pathname', allow_duplicate=True)],
     [Input('menu-profile-hotel-detail', 'n_clicks')],
-    [State('view-mode', 'data')],
+    [State('view-mode', 'data'),
+     State('url', 'pathname')],
     prevent_initial_call=True
 )
-def navigate_to_profile_from_hotel_detail(n_clicks, current_view_mode):
+def navigate_to_profile_from_hotel_detail(n_clicks, current_view_mode, current_pathname):
     """從旅館詳細頁下拉選單導航到個人檔案頁"""
     if n_clicks:
-        # Store that we came from hotel-list (since we were on hotel detail)
-        return 'profile', 'hotel-list'
+        # Store the current pathname to return to the same hotel detail page
+        # Set previous-view-mode to 'hotel-detail' to indicate we came from a detail page
+        return 'profile', 'hotel-detail', current_pathname, '/'
     raise PreventUpdate
 
 # ====== Hotel List Page Callbacks ======
@@ -4733,26 +4769,26 @@ def display_hotel_list_page(view_mode, session_data):
     raise PreventUpdate
 
 # Handle hotel list search
+# 自动搜索：当输入关键字或选择旅馆类型时自动触发搜索
 @app.callback(
     [Output('hotel-search-results-store', 'data'),
      Output('hotel-current-page-store', 'data')],
-    [Input('search-hotel-btn', 'n_clicks'),
+    [Input('search-hotel', 'value'),
      Input('search-hotel-type', 'data')],
-    [State('search-hotel', 'value'),
-     State('view-mode', 'data')],
+    [State('view-mode', 'data')],
     prevent_initial_call=True
 )
-def handle_hotel_list_search(n_clicks, hotel_type, keyword, view_mode):
-    """處理旅館列表頁搜尋"""
+def handle_hotel_list_search(keyword, hotel_type, view_mode):
+    """處理旅館列表頁搜尋（自動搜尋，與餐廳搜尋功能相同）"""
     if view_mode != 'hotel-list':
         raise PreventUpdate
-    
+
     filtered_hotels = search_hotels(
         keyword=keyword,
         hotel_type=hotel_type,
         sort_by='rating_desc'
     )
-    
+
     search_results = filtered_hotels.to_dict('records') if len(filtered_hotels) > 0 else []
     return search_results, 1
 
@@ -4795,7 +4831,15 @@ def update_hotel_grid(search_results, current_page):
     cards = []
     for hotel in current_items:
         types_text = ', '.join(hotel['Types'][:2]) if isinstance(hotel['Types'], list) and hotel['Types'] else 'Hotel'
-        
+
+        # 安全處理 Rating (防止 None 值)
+        rating = hotel.get('Rating', 0)
+        rating_text = f"{rating:.1f}" if rating is not None else "N/A"
+
+        # 安全處理 UserRatingsTotal (防止 None 值)
+        user_ratings_total = hotel.get('UserRatingsTotal', 0)
+        reviews_count = int(user_ratings_total) if user_ratings_total is not None else 0
+
         card_content = html.Div([
             html.Img(
                 src='/assets/food_dirtyrice.png',
@@ -4807,11 +4851,11 @@ def update_hotel_grid(search_results, current_page):
                 html.Div([
                     html.Span([
                         html.I(className='fas fa-star', style={'color': '#003580', 'marginRight': '5px'}),
-                        f"{hotel['Rating']:.1f}"
+                        rating_text
                     ], style={'marginRight': '1rem'}),
                     html.Span([
                         html.I(className='fas fa-comment', style={'color': '#888', 'marginRight': '5px'}),
-                        f"{int(hotel.get('UserRatingsTotal', 0))} reviews"
+                        f"{reviews_count} reviews"
                     ])
                 ], style={'color': '#aaaaaa', 'fontSize': '0.85rem', 'marginBottom': '0.5rem'}),
                 html.Div([
@@ -5124,7 +5168,7 @@ def toggle_user_dropdown_detail(n_clicks, is_open):
 
 # Callback 7b: User Dropdown Toggle (Hotel Detail Page) - 旅館詳細頁面用戶下拉菜單
 @app.callback(
-    [Output('user-dropdown-detail', 'className', allow_duplicate=True),
+    [Output('user-dropdown-hotel-detail', 'className'),
      Output('dropdown-open-detail', 'data', allow_duplicate=True)],
     [Input('user-avatar-hotel-detail', 'n_clicks')],
     [State('dropdown-open-detail', 'data')],
@@ -5153,15 +5197,32 @@ def reset_all_dropdown_states(trigger):
         return False, False, False, False
     raise PreventUpdate
 
-# Callback 8: Logout from Detail Page - 從詳細頁面登出
+# Callback 8: Logout from Restaurant Detail Page - 從餐廳詳細頁面登出
 @app.callback(
     Output('session-store', 'data', allow_duplicate=True),
     [Input('menu-logout-detail', 'n_clicks')],
     [State('session-store', 'data')],
     prevent_initial_call=True
 )
-def logout_from_detail_page(n_clicks, session_data):
-    """從詳細頁面下拉選單登出"""
+def logout_from_restaurant_detail_page(n_clicks, session_data):
+    """從餐廳詳細頁面下拉選單登出"""
+    if not n_clicks:
+        raise PreventUpdate
+
+    if session_data and 'session_id' in session_data:
+        delete_session(session_data['session_id'])
+
+    return None
+
+# Callback 8b: Logout from Hotel Detail Page - 從旅館詳細頁面登出
+@app.callback(
+    Output('session-store', 'data', allow_duplicate=True),
+    [Input('menu-logout-hotel-detail', 'n_clicks')],
+    [State('session-store', 'data')],
+    prevent_initial_call=True
+)
+def logout_from_hotel_detail_page(n_clicks, session_data):
+    """從旅館詳細頁面下拉選單登出"""
     if not n_clicks:
         raise PreventUpdate
 
@@ -5729,6 +5790,72 @@ def handle_attraction_rating_selection(n_clicks_list, option_ids):
         display_text = rating_text_map.get(selected_index, 'Rating')
         return selected_index, display_text, {'display': 'none'}
 
+# ====== Attraction Detail Page Callbacks ======
+
+# Toggle user dropdown on attraction detail page
+@app.callback(
+    [Output('user-dropdown-attraction-detail', 'className'),
+     Output('dropdown-open-detail', 'data', allow_duplicate=True)],
+    [Input('user-avatar-attraction-detail', 'n_clicks')],
+    [State('dropdown-open-detail', 'data')],
+    prevent_initial_call=True
+)
+def toggle_user_dropdown_attraction_detail(n_clicks, is_open):
+    """Toggle user dropdown menu on attraction detail page"""
+    if n_clicks:
+        new_state = not is_open
+        className = 'user-dropdown show' if new_state else 'user-dropdown'
+        return className, new_state
+    raise PreventUpdate
+
+# Navigate to profile from attraction detail page
+@app.callback(
+    [Output('view-mode', 'data', allow_duplicate=True),
+     Output('previous-view-mode', 'data', allow_duplicate=True),
+     Output('previous-pathname', 'data', allow_duplicate=True),
+     Output('url', 'pathname', allow_duplicate=True)],
+    [Input('menu-profile-attraction-detail', 'n_clicks')],
+    [State('view-mode', 'data'),
+     State('url', 'pathname')],
+    prevent_initial_call=True
+)
+def navigate_to_profile_from_attraction_detail(n_clicks, current_view_mode, current_pathname):
+    """Navigate to profile page from attraction detail page dropdown"""
+    if n_clicks:
+        # Store the current pathname to return to the same attraction detail page
+        # Set previous-view-mode to 'attraction-detail' to indicate we came from a detail page
+        return 'profile', 'attraction-detail', current_pathname, '/'
+    raise PreventUpdate
+
+# Logout from attraction detail page
+@app.callback(
+    Output('session-store', 'data', allow_duplicate=True),
+    [Input('menu-logout-attraction-detail', 'n_clicks')],
+    [State('session-store', 'data')],
+    prevent_initial_call=True
+)
+def logout_from_attraction_detail(n_clicks, session_data):
+    """Logout from attraction detail page dropdown"""
+    if not n_clicks:
+        raise PreventUpdate
+    if session_data and 'session_id' in session_data:
+        delete_session(session_data['session_id'])
+    return None
+
+# Handle back button from attraction detail page
+@app.callback(
+    [Output('view-mode', 'data', allow_duplicate=True),
+     Output('url', 'pathname', allow_duplicate=True)],
+    [Input('attraction-detail-back-btn', 'n_clicks')],
+    [State('view-mode', 'data')],
+    prevent_initial_call=True
+)
+def navigate_back_from_attraction_detail(n_clicks, current_view_mode):
+    """Navigate back from attraction detail page to attraction list"""
+    if n_clicks:
+        return 'attraction-list', '/'
+    raise PreventUpdate
+
 ##########################################################
 
 # ====== Image Gallery Carousel Callbacks ======
@@ -5983,6 +6110,7 @@ app.clientside_callback(
                     'user-dropdown-list',
                     'user-dropdown-hotel-list',
                     'user-dropdown-detail',
+                    'user-dropdown-hotel-detail',
                     'user-dropdown-attraction-list'
                 ];
 
