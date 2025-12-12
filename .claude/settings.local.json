@@ -3,7 +3,8 @@
     "allow": [
       "Bash(powershell -Command \"Get-Content ''D:\\travel-app-project\\assets\\voyage_styles.css'' | Select-Object -Last 50\")",
       "Bash(powershell -Command:*)",
-      "Bash(python app.py:*)"
+      "Bash(python app.py:*)",
+      "mcp__puppeteer__puppeteer_evaluate"
     ],
     "deny": [],
     "ask": []
