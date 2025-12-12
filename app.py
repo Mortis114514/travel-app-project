@@ -145,6 +145,67 @@ def create_rating_options():
                             n_clicks=0))
     return options
 
+def create_attraction_type_options():
+    """創建景點類型選項列表（包含清除選項）"""
+    options = []
+    # 清除選擇選項
+    options.append(
+        html.Div([
+            html.I(className='fas fa-times', style={'marginRight': '8px'}),
+            'Clear Selection'
+        ],
+        className='custom-dropdown-item',
+        id={'type': 'attraction-type-option', 'index': '__CLEAR__'},
+        n_clicks=0,
+        style={'borderBottom': '2px solid rgba(222, 181, 34, 0.3)', 'fontWeight': '500'})
+    )
+
+    # 從數據庫獲取唯一的景點類型
+    all_types = get_unique_attraction_types()
+
+    # 其他選項
+    for attr_type in all_types:
+        options.append(
+            html.Div(attr_type,
+                    className='custom-dropdown-item',
+                    id={'type': 'attraction-type-option', 'index': attr_type},
+                    n_clicks=0)
+        )
+    return options
+
+def create_attraction_rating_options():
+    """創建景點評分選項列表（包含清除選項）"""
+    options = []
+    # 清除選擇選項
+    options.append(
+        html.Div([
+            html.I(className='fas fa-times', style={'marginRight': '8px'}),
+            'Clear Selection'
+        ],
+        className='custom-dropdown-item',
+        id={'type': 'attraction-rating-option', 'index': '__CLEAR__'},
+        n_clicks=0,
+        style={'borderBottom': '2px solid rgba(222, 181, 34, 0.3)', 'fontWeight': '500'})
+    )
+    # 評分選項
+    options.append(html.Div('⭐⭐⭐⭐⭐ 4~5 Stars',
+                            className='custom-dropdown-item',
+                            id={'type': 'attraction-rating-option', 'index': '4-5'},
+                            n_clicks=0))
+    options.append(html.Div('⭐⭐⭐⭐ 3~4 Stars',
+                            className='custom-dropdown-item',
+                            id={'type': 'attraction-rating-option', 'index': '3-4'},
+                            n_clicks=0))
+    options.append(html.Div('⭐⭐⭐ 2~3 Stars',
+                            className='custom-dropdown-item',
+                            id={'type': 'attraction-rating-option', 'index': '2-3'},
+                            n_clicks=0))
+    options.append(html.Div('⭐⭐ 1~2 Stars',
+                            className='custom-dropdown-item',
+                            id={'type': 'attraction-rating-option', 'index': '1-2'},
+                            n_clicks=0))
+    return options
+
 ########################
 #### UI Component Functions ####
 ########################
@@ -1552,17 +1613,17 @@ def create_attraction_card(attr):
     )
 
 def create_attraction_search_bar():
-    """建立景點搜尋欄 (樣式與餐廳/旅館一致)"""
+    """創建優化的景點搜尋欄（帶篩選功能）"""
     return html.Div([
+        # Keyword search bar (separate row for full width)
         html.Div([
-            # 關鍵字搜尋
             html.Div([
                 html.I(className='fas fa-search', style={'color': '#003580', 'fontSize': '1.2rem'}),
                 dcc.Input(
-                    id='search-attraction', 
+                    id='search-attraction',
+                    type='text',
                     value='',
-                    type='text', 
-                    placeholder='Search shrines, temples, or locations...', 
+                    placeholder='Search attractions by name (shrines, temples, parks, etc.)...',
                     className='search-input',
                     debounce=False,
                     style={
@@ -1575,28 +1636,54 @@ def create_attraction_search_bar():
                         'paddingLeft': '0.75rem'
                     }
                 )
-            ], className='search-input-group', style={'flex': '2', 'display': 'flex', 'alignItems': 'center', 'gap': '0.75rem'}),
-            
-            # 類型篩選 (Dropdown)
+            ], style={'flex': '1', 'display': 'flex', 'alignItems': 'center', 'gap': '0.75rem'})
+        ], className='keyword-search-bar', style={
+            'display': 'flex',
+            'alignItems': 'center',
+            'backgroundColor': '#FFFFFF',
+            'padding': '0.75rem 1.5rem',
+            'borderRadius': '8px',
+            'border': '2px solid #E8ECEF',
+            'marginBottom': '1rem',
+            'gap': '1rem',
+            'boxShadow': '0 2px 4px rgba(0, 0, 0, 0.05)'
+        }),
+
+        # Filters and buttons row
+        html.Div([
             html.Div([
                 html.Div([
-                    html.I(className='fas fa-torii-gate', style={'cursor': 'pointer', 'color': '#003580'}),
-                    dcc.Dropdown(
-                        id='attraction-type-filter',
-                        options=[{'label': t, 'value': t} for t in get_unique_attraction_types()],
-                        placeholder='Type',
-                        style={'border': 'none', 'width': '100%'},
-                        className='border-0' # Bootstrap helper to remove border
-                    )
-                ], style={'display': 'flex', 'alignItems': 'center', 'width': '100%', 'gap': '10px'})
-            ], className='search-input-group', style={'flex': '1', 'minWidth': '200px'}),
-            
-            # 搜尋按鈕
-            html.Button([
-                html.I(className='fas fa-search', style={'marginRight': '8px'}),
-                'Search'
-            ], id='search-attraction-btn', className='search-btn', n_clicks=0)
-            
+                    html.I(className='fas fa-torii-gate', id='attraction-type-icon',
+                           style={'cursor': 'pointer', 'color': '#003580'}, n_clicks=0),
+                    html.Span(id='attraction-type-selected-text',
+                             children='Attraction Type',
+                             style={'cursor': 'pointer', 'marginLeft': '10px', 'color': '#888888'})
+                ], id='attraction-type-trigger', style={'display': 'flex', 'alignItems': 'center'}, n_clicks=0),
+
+                # Hidden dropdown list
+                html.Div([
+                    html.Div(create_attraction_type_options(),
+                            style={'maxHeight': '300px', 'overflowY': 'auto'})
+                ], id='attraction-type-dropdown-menu', className='custom-dropdown-menu',
+                   style={'display': 'none'})
+            ], className='search-input-group', style={'flex': '1', 'minWidth': '200px', 'position': 'relative'}),
+
+            html.Div([
+                html.Div([
+                    html.I(className='fas fa-star', id='attraction-rating-icon',
+                           style={'cursor': 'pointer', 'color': '#003580'}, n_clicks=0),
+                    html.Span(id='attraction-rating-selected-text',
+                             children='Rating',
+                             style={'cursor': 'pointer', 'marginLeft': '10px', 'color': '#888888'})
+                ], id='attraction-rating-trigger', style={'display': 'flex', 'alignItems': 'center'}, n_clicks=0),
+
+                # Hidden dropdown list
+                html.Div([
+                    html.Div(create_attraction_rating_options(),
+                            style={'maxHeight': '300px', 'overflowY': 'auto'})
+                ], id='attraction-rating-dropdown-menu', className='custom-dropdown-menu',
+                   style={'display': 'none'})
+            ], className='search-input-group', style={'flex': '1', 'minWidth': '200px', 'position': 'relative'})
         ], className='search-container')
     ], style={'width': '100%'})
 
@@ -1612,7 +1699,7 @@ def create_attraction_list_page():
                         html.I(className='fas fa-arrow-left'),
                         html.Span('Back', style={'marginLeft': '8px'})
                     ], id={'type': 'back-btn', 'index': 'attraction-list'}, className='btn-back', n_clicks=0),
-                    html.H1('Kyoto Attractions', style={
+                    html.H1('Attraction Directory', style={
                         'color': '#003580',
                         'marginLeft': '2rem',
                         'fontSize': '2rem',
@@ -1620,13 +1707,19 @@ def create_attraction_list_page():
                     })
                 ], style={'display': 'flex', 'alignItems': 'center'}),
 
-                # User Avatar (新增這塊以保持一致)
+                # User Avatar
                 html.Div([
                     html.Div([
                         html.Img(
                             id='user-avatar-img-attraction-list',
                             src=None,
-                            style={'width': '40px', 'height': '40px', 'borderRadius': '50%', 'objectFit': 'cover', 'display': 'none'}
+                            style={
+                                'width': '40px',
+                                'height': '40px',
+                                'borderRadius': '50%',
+                                'objectFit': 'cover',
+                                'display': 'none'
+                            }
                         ),
                         html.I(
                             id='user-avatar-icon-attraction-list',
@@ -1662,11 +1755,13 @@ def create_attraction_list_page():
             'top': '0',
             'zIndex': '1000'
         }),
-        
-        # ===== Search Section =====
+
+        # ===== Search and Filter Section =====
         html.Div([
             html.Div([
+                # Search bar
                 create_attraction_search_bar(),
+
                 # Search stats
                 html.Div(id='attraction-search-stats', style={
                     'color': '#555555',
@@ -1674,16 +1769,34 @@ def create_attraction_list_page():
                     'marginTop': '1rem',
                     'fontWeight': '500'
                 })
-            ], style={'maxWidth': '1000px', 'margin': '0 auto'})
-        ], style={'backgroundColor': '#F2F6FA', 'padding': '2rem', 'borderBottom': '1px solid #222'}),
-        
-        # ===== Grid Section =====
+            ], style={
+                'maxWidth': '1000px',
+                'margin': '0 auto'
+            })
+        ], style={
+            'backgroundColor': '#F2F6FA',
+            'padding': '2rem',
+            'borderBottom': '1px solid #222'
+        }),
+
+        # ===== Attraction Grid =====
         html.Div([
             html.Div(id='attraction-grid', className='restaurant-list-grid')
-        ], style={'backgroundColor': '#F2F6FA', 'padding': '2rem', 'minHeight': '60vh'}),
-        
-        # ===== Pagination (Placeholder for consistency) =====
-        html.Div(style={'padding': '2rem', 'backgroundColor': '#F2F6FA'})
+        ], style={
+            'backgroundColor': '#F2F6FA',
+            'padding': '2rem',
+            'minHeight': '60vh'
+        }),
+
+        # ===== Pagination Controls =====
+        html.Div(id='attraction-pagination-controls', style={
+            'display': 'flex',
+            'justifyContent': 'center',
+            'alignItems': 'center',
+            'gap': '0.5rem',
+            'padding': '2rem',
+            'backgroundColor': '#F2F6FA'
+        }),
 
     ], style={'backgroundColor': '#F2F6FA', 'minHeight': '100vh'})
 
@@ -2154,6 +2267,12 @@ app.layout = html.Div([
     dcc.Store(id='hotel-search-results-store', storage_type='memory'),  # 👈 存儲旅館搜尋結果
     dcc.Store(id='hotel-current-page-store', data=1, storage_type='memory'),  # 👈 存儲旅館列表分頁狀態
     dcc.Store(id='hotel-detail-data', storage_type='memory'),  # 旅館詳細資料（包含 reviews）
+    # 新增景點相關 Stores
+    dcc.Store(id='attraction-search-results-store', storage_type='memory'),  # 存儲景點搜尋結果
+    dcc.Store(id='attraction-current-page-store', data=1, storage_type='memory'),  # 存儲景點列表分頁狀態
+    dcc.Store(id='attraction-search-params-store', storage_type='memory'),  # 存儲景點搜尋參數
+    dcc.Store(id='selected-attraction-type', storage_type='memory'),  # 存儲選中的景點類型
+    dcc.Store(id='selected-attraction-rating', storage_type='memory'),  # 存儲選中的景點評分範圍
     dcc.Store(id='dropdown-open', data=False, storage_type='memory'),  # User dropdown state for homepage
     dcc.Store(id='dropdown-open-list', data=False, storage_type='memory'),  # User dropdown state for restaurant list page
     dcc.Store(id='dropdown-open-hotel-list', data=False, storage_type='memory'),  # User dropdown state for hotel list page
@@ -3941,29 +4060,50 @@ def update_restaurant_grid(search_results, current_page):
 
     return grid, pagination, stats_text
 
-# Handle pagination button clicks
+# Handle pagination button clicks - Universal for all page types
 @app.callback(
-    Output('current-page-store', 'data', allow_duplicate=True),
+    [Output('current-page-store', 'data', allow_duplicate=True),
+     Output('hotel-current-page-store', 'data', allow_duplicate=True),
+     Output('attraction-current-page-store', 'data', allow_duplicate=True)],
     [Input({'type': 'page-btn', 'index': ALL}, 'n_clicks')],
-    [State('current-page-store', 'data'),
-     State('search-results-store', 'data')],
+    [State('view-mode', 'data'),
+     State('current-page-store', 'data'),
+     State('hotel-current-page-store', 'data'),
+     State('attraction-current-page-store', 'data'),
+     State('search-results-store', 'data'),
+     State('hotel-search-results-store', 'data'),
+     State('attraction-search-results-store', 'data')],
     prevent_initial_call=True
 )
-def handle_pagination_click(n_clicks_list, current_page, search_results):
-    """處理分頁按鈕點擊"""
+def handle_pagination_click(n_clicks_list, view_mode, restaurant_page, hotel_page, attraction_page,
+                           restaurant_results, hotel_results, attraction_results):
+    """處理分頁按鈕點擊（通用於餐廳、旅館、景點列表頁）"""
     ctx = callback_context
     if not ctx.triggered or not any(n_clicks_list):
         raise PreventUpdate
 
     # Get which button was clicked
     button_id = ctx.triggered[0]['prop_id'].split('.')[0]
-    # safer: parse JSON id rather than eval
     import json as _json
     button_data = _json.loads(button_id)
     page_index = button_data['index']
 
-    # Calculate total pages
+    # Determine which page type we're on
     items_per_page = 15
+
+    if view_mode == 'restaurant-list':
+        current_page = restaurant_page
+        search_results = restaurant_results
+    elif view_mode == 'hotel-list':
+        current_page = hotel_page
+        search_results = hotel_results
+    elif view_mode == 'attraction-list':
+        current_page = attraction_page
+        search_results = attraction_results
+    else:
+        raise PreventUpdate
+
+    # Calculate total pages
     total_items = len(search_results) if search_results else 0
     total_pages = (total_items + items_per_page - 1) // items_per_page
 
@@ -3975,7 +4115,15 @@ def handle_pagination_click(n_clicks_list, current_page, search_results):
     else:
         new_page = page_index
 
-    return new_page
+    # Return appropriate values based on view mode
+    if view_mode == 'restaurant-list':
+        return new_page, hotel_page, attraction_page
+    elif view_mode == 'hotel-list':
+        return restaurant_page, new_page, attraction_page
+    elif view_mode == 'attraction-list':
+        return restaurant_page, hotel_page, new_page
+    else:
+        raise PreventUpdate
 
 # Toggle user dropdown in restaurant list page
 @app.callback(
@@ -5393,26 +5541,66 @@ def handle_attraction_card_click(n_clicks_list, card_ids):
 
     return f'/attraction/{attraction_id}'
 
-# Callback 2: Update attraction grid and stats
+# Callback 2: Store attraction search results
 @app.callback(
-    [Output('attraction-grid', 'children'),
-     Output('attraction-search-stats', 'children')],
-    [Input('search-attraction-btn', 'n_clicks'),
-     Input('view-mode', 'data')],
-    [State('search-attraction', 'value'),
-     State('attraction-type-filter', 'value')],
-    prevent_initial_call=False
+    [Output('attraction-search-results-store', 'data'),
+     Output('attraction-current-page-store', 'data', allow_duplicate=True)],
+    [Input('search-attraction', 'value'),
+     Input('selected-attraction-type', 'data'),
+     Input('selected-attraction-rating', 'data')],
+    [State('view-mode', 'data')],
+    prevent_initial_call=True
 )
-def update_attraction_grid(n_clicks, view_mode, keyword, attraction_type):
-    """更新景點網格和搜尋統計"""
-    # Only update when on attraction-list page
+def search_and_store_attractions(keyword, attr_type, rating_range, view_mode):
+    """執行景點搜尋並存儲結果"""
     if view_mode != 'attraction-list':
         raise PreventUpdate
 
-    # Search attractions
-    df = search_attractions(keyword=keyword, attr_type=attraction_type, sort_by='rating_desc')
+    # Parse rating range
+    min_rating = None
+    max_rating = None
+    if rating_range:
+        if rating_range == '4-5':
+            min_rating, max_rating = 4.0, 5.0
+        elif rating_range == '3-4':
+            min_rating, max_rating = 3.0, 4.0
+        elif rating_range == '2-3':
+            min_rating, max_rating = 2.0, 3.0
+        elif rating_range == '1-2':
+            min_rating, max_rating = 1.0, 2.0
 
-    if df.empty:
+    # Search attractions with filters
+    df = search_attractions(
+        keyword=keyword,
+        attr_type=attr_type,
+        min_rating=min_rating,
+        max_rating=max_rating,
+        sort_by='rating_desc'
+    )
+
+    # Convert to dict for storage
+    results = df.to_dict('records') if not df.empty else []
+
+    # Reset to page 1 when search changes
+    return results, 1
+
+# Callback 3: Update attraction grid and pagination
+@app.callback(
+    [Output('attraction-grid', 'children'),
+     Output('attraction-pagination-controls', 'children'),
+     Output('attraction-search-stats', 'children')],
+    [Input('attraction-search-results-store', 'data'),
+     Input('attraction-current-page-store', 'data')],
+    prevent_initial_call=False
+)
+def update_attraction_grid(search_results, current_page):
+    """更新景點網格和分頁控制"""
+    if search_results is None:
+        # Initial load, fetch default results
+        df = search_attractions(sort_by='rating_desc')
+        search_results = df.to_dict('records')
+
+    if not search_results:
         return (
             html.Div([
                 html.I(className='fas fa-landmark',
@@ -5420,19 +5608,126 @@ def update_attraction_grid(n_clicks, view_mode, keyword, attraction_type):
                 html.H3('No attractions found', style={'color': '#1A1A1A', 'marginBottom': '1rem'}),
                 html.P('Try adjusting your search criteria', style={'color': '#888888'})
             ], style={'textAlign': 'center', 'padding': '4rem'}),
+            html.Div(),
             ''
         )
 
+    # Pagination logic
+    items_per_page = 15
+    total_items = len(search_results)
+    total_pages = (total_items + items_per_page - 1) // items_per_page
+
+    # Get current page items
+    start_idx = (current_page - 1) * items_per_page
+    end_idx = min(start_idx + items_per_page, total_items)
+    current_items = search_results[start_idx:end_idx]
+
     # Create attraction cards
     cards = []
-    for _, attraction in df.iterrows():
+    for attraction in current_items:
         card = create_attraction_card(attraction)
         cards.append(card)
 
-    # Stats message
-    stats = f"Found {len(df)} attractions"
+    # Create grid layout
+    grid = html.Div(cards, style={
+        'display': 'grid',
+        'gridTemplateColumns': 'repeat(auto-fill, minmax(300px, 1fr))',
+        'gap': '1.5rem',
+        'maxWidth': '1400px',
+        'margin': '0 auto'
+    })
 
-    return cards, stats
+    # Create pagination controls
+    pagination = create_pagination_buttons(current_page, total_pages)
+
+    # Search stats
+    stats = f"Showing {start_idx + 1}-{end_idx} of {total_items} attractions"
+
+    return grid, pagination, stats
+
+# Callback 4: Toggle attraction type dropdown
+@app.callback(
+    Output('attraction-type-dropdown-menu', 'style'),
+    [Input('attraction-type-trigger', 'n_clicks'),
+     Input('attraction-type-icon', 'n_clicks')],
+    [State('attraction-type-dropdown-menu', 'style')],
+    prevent_initial_call=True
+)
+def toggle_attraction_type_dropdown(trigger_clicks, icon_clicks, current_style):
+    """切換景點類型下拉選單"""
+    is_open = current_style.get('display') == 'block'
+    return {'display': 'none'} if is_open else {'display': 'block'}
+
+# Callback 5: Handle attraction type selection
+@app.callback(
+    [Output('selected-attraction-type', 'data'),
+     Output('attraction-type-selected-text', 'children'),
+     Output('attraction-type-dropdown-menu', 'style', allow_duplicate=True)],
+    [Input({'type': 'attraction-type-option', 'index': ALL}, 'n_clicks')],
+    [State({'type': 'attraction-type-option', 'index': ALL}, 'id')],
+    prevent_initial_call=True
+)
+def handle_attraction_type_selection(n_clicks_list, option_ids):
+    """處理景點類型選擇"""
+    ctx = callback_context
+    if not ctx.triggered or not any(n_clicks_list):
+        raise PreventUpdate
+
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    import json as _json
+    selected_option = _json.loads(triggered_id)
+    selected_index = selected_option['index']
+
+    if selected_index == '__CLEAR__':
+        return None, 'Attraction Type', {'display': 'none'}
+    else:
+        return selected_index, selected_index, {'display': 'none'}
+
+# Callback 6: Toggle attraction rating dropdown
+@app.callback(
+    Output('attraction-rating-dropdown-menu', 'style'),
+    [Input('attraction-rating-trigger', 'n_clicks'),
+     Input('attraction-rating-icon', 'n_clicks')],
+    [State('attraction-rating-dropdown-menu', 'style')],
+    prevent_initial_call=True
+)
+def toggle_attraction_rating_dropdown(trigger_clicks, icon_clicks, current_style):
+    """切換景點評分下拉選單"""
+    is_open = current_style.get('display') == 'block'
+    return {'display': 'none'} if is_open else {'display': 'block'}
+
+# Callback 7: Handle attraction rating selection
+@app.callback(
+    [Output('selected-attraction-rating', 'data'),
+     Output('attraction-rating-selected-text', 'children'),
+     Output('attraction-rating-dropdown-menu', 'style', allow_duplicate=True)],
+    [Input({'type': 'attraction-rating-option', 'index': ALL}, 'n_clicks')],
+    [State({'type': 'attraction-rating-option', 'index': ALL}, 'id')],
+    prevent_initial_call=True
+)
+def handle_attraction_rating_selection(n_clicks_list, option_ids):
+    """處理景點評分選擇"""
+    ctx = callback_context
+    if not ctx.triggered or not any(n_clicks_list):
+        raise PreventUpdate
+
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    import json as _json
+    selected_option = _json.loads(triggered_id)
+    selected_index = selected_option['index']
+
+    if selected_index == '__CLEAR__':
+        return None, 'Rating', {'display': 'none'}
+    else:
+        # Map rating range to display text
+        rating_text_map = {
+            '4-5': '⭐⭐⭐⭐⭐ 4~5 Stars',
+            '3-4': '⭐⭐⭐⭐ 3~4 Stars',
+            '2-3': '⭐⭐⭐ 2~3 Stars',
+            '1-2': '⭐⭐ 1~2 Stars'
+        }
+        display_text = rating_text_map.get(selected_index, 'Rating')
+        return selected_index, display_text, {'display': 'none'}
 
 ##########################################################
 

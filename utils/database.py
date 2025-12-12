@@ -750,8 +750,8 @@ def get_unique_attraction_types() -> list:
         cursor.execute("SELECT DISTINCT Type FROM attractions WHERE Type IS NOT NULL ORDER BY Type")
         return [row[0] for row in cursor.fetchall()]
 
-def search_attractions(keyword=None, attr_type=None, min_rating=None, sort_by='rating_desc') -> pd.DataFrame:
-    """搜尋景點 (支援關鍵字、類型、評分)"""
+def search_attractions(keyword=None, attr_type=None, min_rating=None, max_rating=None, min_reviews=None, sort_by='rating_desc') -> pd.DataFrame:
+    """搜尋景點 (支援關鍵字、類型、評分範圍、最小評論數)"""
     with get_db_connection() as conn:
         query = "SELECT * FROM attractions WHERE 1=1"
         params = []
@@ -760,15 +760,23 @@ def search_attractions(keyword=None, attr_type=None, min_rating=None, sort_by='r
             query += " AND (Name LIKE ? OR Address LIKE ?)"
             wildcard = f"%{keyword}%"
             params.extend([wildcard, wildcard])
-        
+
         if attr_type:
             query += " AND Type = ?"
             params.append(attr_type)
-            
+
         if min_rating:
             query += " AND Rating >= ?"
             params.append(min_rating)
-            
+
+        if max_rating:
+            query += " AND Rating <= ?"
+            params.append(max_rating)
+
+        if min_reviews:
+            query += " AND UserRatingsTotal >= ?"
+            params.append(min_reviews)
+
         # 排序邏輯
         if sort_by == 'rating_desc':
             query += " ORDER BY Rating DESC, UserRatingsTotal DESC"
@@ -776,7 +784,7 @@ def search_attractions(keyword=None, attr_type=None, min_rating=None, sort_by='r
             query += " ORDER BY UserRatingsTotal DESC"
         elif sort_by == 'name_asc':
             query += " ORDER BY Name ASC"
-            
+
         return pd.read_sql_query(query, conn, params=params)
 
 def get_attraction_by_id(attraction_id: int):
