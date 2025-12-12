@@ -2269,8 +2269,8 @@ app.layout = html.Div([
     dcc.Store(id='hotel-detail-data', storage_type='memory'),  # 旅館詳細資料（包含 reviews）
     # 新增景點相關 Stores
     dcc.Store(id='attraction-search-results-store', storage_type='memory'),  # 存儲景點搜尋結果
-    dcc.Store(id='attraction-current-page-store', data=1, storage_type='memory'),  # 存儲景點列表分頁狀態
-    dcc.Store(id='attraction-search-params-store', storage_type='memory'),  # 存儲景點搜尋參數
+            dcc.Store(id='attraction-current-page-store', data=1, storage_type='memory'),  # 存儲景點列表分頁狀態
+            dcc.Store(id='attraction-search-params-store', storage_type='memory'),  # 存儲景點搜尋參數
     dcc.Store(id='selected-attraction-type', storage_type='memory'),  # 存儲選中的景點類型
     dcc.Store(id='selected-attraction-rating', storage_type='memory'),  # 存儲選中的景點評分範圍
     dcc.Store(id='dropdown-open', data=False, storage_type='memory'),  # User dropdown state for homepage
@@ -6311,3 +6311,4 @@ def handle_distance_calculation(click_data, store_data):
 
 if __name__ == '__main__':
     app.run(debug=True, port=8050)
+
