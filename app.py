@@ -3314,6 +3314,21 @@ def handle_hotel_search(n_clicks, hotel_type, keyword):
             html.P('Try adjusting your search criteria', style={'color': '#888888'})
         ], style={'textAlign': 'center', 'padding': '4rem', 'width': '100%'})]
     
+# Populate Attractions Cards on Homepage
+@app.callback(
+    Output('attractions-card-container', 'children'),
+    [Input('url', 'pathname')]
+)
+def populate_attractions_cards(pathname):
+    """填充景點卡片（橫向滾動）"""
+    top_attractions = get_random_top_attractions(4, min_rating=4.0)
+
+    if len(top_attractions) > 0:
+        cards = [create_attraction_card(row) for _, row in top_attractions.iterrows()]
+        return cards
+    else:
+        return [html.Div("No attractions found", style={'color': '#888', 'padding': '2rem'})]
+
 @app.callback(
     Output('view-mode', 'data', allow_duplicate=True),
     [Input('view-all-hotels', 'n_clicks')],
@@ -3323,6 +3338,18 @@ def handle_hotel_search(n_clicks, hotel_type, keyword):
 def view_all_hotels(n_clicks, current_view):
     if n_clicks and current_view != 'hotel-list':
         return 'hotel-list'
+    raise PreventUpdate
+
+# Navigate to attractions list page
+@app.callback(
+    Output('view-mode', 'data', allow_duplicate=True),
+    [Input('view-all-attractions', 'n_clicks')],
+    [State('view-mode', 'data')],
+    prevent_initial_call=True
+)
+def view_all_attractions(n_clicks, current_view):
+    if n_clicks and current_view != 'attraction-list':
+        return 'attraction-list'
     raise PreventUpdate
 
 @app.callback(
@@ -5340,6 +5367,73 @@ def handle_hotel_back_button(n_clicks, from_map):
         else:
             return '/', False
     raise PreventUpdate
+##########################################################
+
+# ====== Attraction Callbacks ======
+
+# Callback 1: Handle attraction card click
+@app.callback(
+    Output('url', 'pathname', allow_duplicate=True),
+    [Input({'type': 'attraction-card', 'index': ALL}, 'n_clicks')],
+    [State({'type': 'attraction-card', 'index': ALL}, 'id')],
+    prevent_initial_call=True
+)
+def handle_attraction_card_click(n_clicks_list, card_ids):
+    """處理景點卡片點擊，導航到詳細頁面"""
+    ctx = callback_context
+
+    if not ctx.triggered or not any(n_clicks_list):
+        raise PreventUpdate
+
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    triggered_dict = json.loads(triggered_id)
+    attraction_id = triggered_dict['index']
+
+    print(f"DEBUG: Attraction card clicked! attraction_id={attraction_id}")
+
+    return f'/attraction/{attraction_id}'
+
+# Callback 2: Update attraction grid and stats
+@app.callback(
+    [Output('attraction-grid', 'children'),
+     Output('attraction-search-stats', 'children')],
+    [Input('search-attraction-btn', 'n_clicks'),
+     Input('view-mode', 'data')],
+    [State('search-attraction', 'value'),
+     State('attraction-type-filter', 'value')],
+    prevent_initial_call=False
+)
+def update_attraction_grid(n_clicks, view_mode, keyword, attraction_type):
+    """更新景點網格和搜尋統計"""
+    # Only update when on attraction-list page
+    if view_mode != 'attraction-list':
+        raise PreventUpdate
+
+    # Search attractions
+    df = search_attractions(keyword=keyword, attr_type=attraction_type, sort_by='rating_desc')
+
+    if df.empty:
+        return (
+            html.Div([
+                html.I(className='fas fa-landmark',
+                      style={'fontSize': '4rem', 'color': '#003580', 'marginBottom': '2rem'}),
+                html.H3('No attractions found', style={'color': '#1A1A1A', 'marginBottom': '1rem'}),
+                html.P('Try adjusting your search criteria', style={'color': '#888888'})
+            ], style={'textAlign': 'center', 'padding': '4rem'}),
+            ''
+        )
+
+    # Create attraction cards
+    cards = []
+    for _, attraction in df.iterrows():
+        card = create_attraction_card(attraction)
+        cards.append(card)
+
+    # Stats message
+    stats = f"Found {len(df)} attractions"
+
+    return cards, stats
+
 ##########################################################
 
 # ====== Image Gallery Carousel Callbacks ======
