@@ -6550,12 +6550,7 @@ if __name__ == '__main__':
 @app.callback(
     [Output('point-selection-instruction', 'children'),
      Output('point-selection-instruction', 'style')],
-<<<<<<< Updated upstream
-    [Input('traffic-map-store', 'data'),
-     Input('distance-calculation-result', 'children')]  # Add this to detect when calculation is shown
-=======
     Input('traffic-map-store', 'data')
->>>>>>> Stashed changes
 )
 def update_point_instruction(store_data, calculation_result):
     if store_data is None:
@@ -6569,27 +6564,7 @@ def update_point_instruction(store_data, calculation_result):
         'marginBottom': '1.5rem'
     }
     
-<<<<<<< Updated upstream
-    # Check if calculation result is showing (distance was calculated)
-    # This happens when result contains the route calculation div
-    calculation_shown = False
-    if calculation_result and isinstance(calculation_result, dict):
-        # Check if it's the final result with Google Maps link
-        if 'props' in calculation_result:
-            children = calculation_result.get('props', {}).get('children', [])
-            # Look for the Google Maps link or "Route Calculated" text
-            for child in children if isinstance(children, list) else []:
-                if isinstance(child, dict):
-                    child_props = child.get('props', {})
-                    child_children = child_props.get('children', '')
-                    if isinstance(child_children, str) and 'Route Calculated' in child_children:
-                        calculation_shown = True
-                        break
-    
-    if len(points) == 0 and not calculation_shown:
-=======
     if len(points) == 0:
->>>>>>> Stashed changes
         # No points selected yet - show blue instruction
         content = html.Div([
             html.Div([
@@ -6623,14 +6598,8 @@ def update_point_instruction(store_data, calculation_result):
         }
         return content, style
         
-<<<<<<< Updated upstream
-    else:  # len(points) == 0 and calculation_shown == True
-        # Calculation was just completed - hide instruction box
-        # (The "Click two new points" message is already in the result div)
-=======
     else:  # len(points) >= 2
         # Both points selected - hide instruction completely
->>>>>>> Stashed changes
         return html.Div(), {'display': 'none'}
 
 # --- START: 新增的程式碼 (Create Trip 功能) ---
