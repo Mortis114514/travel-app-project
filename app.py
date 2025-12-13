@@ -228,16 +228,19 @@ def create_primary_button(text, button_id=None, icon=None):
     )
 
 def create_destination_card(restaurant):
-    """創建目的地卡片 (使用餐廳資料) - 可點擊並導航到詳細頁面"""
+    """創建目的地卡片 (修正版：ID 與 Callback 一致)"""
+    
+    # 建立內容區塊
     card_content = html.Div([
-        # Image section (top)
+        # Image section
         html.Div([
             html.Img(
-                src='/assets/food_dirtyrice.png',
+                src='/assets/food_dirtyrice.png', 
                 className='card-image'
             )
         ], className='card-image-section'),
-        # Content section (bottom)
+        
+        # Content section
         html.Div([
             html.Div(restaurant['Name'], className='card-title'),
             html.Div(restaurant.get('JapaneseName', ''), className='card-japanese-name'),
@@ -250,29 +253,17 @@ def create_destination_card(restaurant):
                 html.I(className='fas fa-star'),
                 html.Span(f"{restaurant['TotalRating']:.1f}")
             ], className='card-rating'),
-            
-            # --- START: 新增的程式碼 ---
-            dbc.Button(
-                "Add to Trip",
-                id={'type': 'add-to-trip-btn', 'index': restaurant['Restaurant_ID']},
-                color="primary",
-                outline=True,
-                size="sm",
-                className="mt-2 w-100" # margin-top, 100% width
-            )
-            # --- END: 新增的程式碼 ---
-
         ], className='card-content-section')
-    ], className='destination-card')
+    ])
 
-    # 包裝在可點擊的容器中，但按鈕點擊不會觸發這個 Div 的 n_clicks
-    return html.Div([
-        html.Div(
-            card_content,
-            id={'type': 'restaurant-card-wrapper', 'index': restaurant['Restaurant_ID']},
-            n_clicks=0
-        )
-    ], style={'cursor': 'pointer'})
+    # [關鍵修正]：這裡的 type 必須是 'restaurant-card'，不能是 'restaurant-card-wrapper'
+    # 這樣才能跟 handle_card_click Callback 對上
+    return html.Div(
+        card_content,
+        id={'type': 'restaurant-card', 'index': restaurant['Restaurant_ID']},
+        n_clicks=0,
+        style={'cursor': 'pointer'}
+    )
 
 def create_saved_trip_card(trip_data):
     """創建已存行程卡片"""
