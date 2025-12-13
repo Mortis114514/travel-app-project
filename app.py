@@ -6541,10 +6541,6 @@ def handle_distance_calculation(click_data, store_data):
         }
     )
     return {'points': points}, default_result
-
-if __name__ == '__main__':
-    app.run(debug=True, port=8050)
-
 # Add this callback after the existing traffic-related callbacks (around line 2924)
 # Replace the previous callback with this corrected version:
 @app.callback(
@@ -6552,7 +6548,7 @@ if __name__ == '__main__':
      Output('point-selection-instruction', 'style')],
     Input('traffic-map-store', 'data')
 )
-def update_point_instruction(store_data, calculation_result):
+def update_point_instruction(store_data):  # ← Removed the extra parameter
     if store_data is None:
         store_data = {'points': []}
     
@@ -6597,10 +6593,12 @@ def update_point_instruction(store_data, calculation_result):
             'border': '2px solid #32CD32'
         }
         return content, style
-        
-    else:  # len(points) >= 2
-        # Both points selected - hide instruction completely
         return html.Div(), {'display': 'none'}
+
+if __name__ == '__main__':
+    app.run(debug=True, port=8050)
+
+
 
 # --- START: 新增的程式碼 (Create Trip 功能) ---
 
