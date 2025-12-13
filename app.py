@@ -53,14 +53,9 @@ from utils.database import (
     get_hotels_by_type,
     get_random_top_attractions, 
     search_attractions, 
-    get_unique_attraction_types, 
-<<<<<<< Updated upstream
-    get_attraction_by_id
-=======
+    get_unique_attraction_types,
     get_attraction_by_id,
-    get_all_attractions,
     get_combined_analytics_data,
->>>>>>> Stashed changes
 )
 
 
@@ -6803,7 +6798,7 @@ def calculate_distances(df, center_lat, center_lon):
         return pd.Series([9999] * len(df)) # 發生錯誤時回傳大距離，避免崩潰
 
 # ==========================================
-#  Sync Map Click to Search Dropdown (NEW)
+#  Sync Map Click to Search Dropdown
 # ==========================================
 @app.callback(
     Output('analytics-attraction-search', 'value'),
@@ -6811,20 +6806,23 @@ def calculate_distances(df, center_lat, center_lon):
     State('analytics-attraction-search', 'value'),
     prevent_initial_call=True
 )
-def sync_map_click(click_data, current_val):
+def sync_map_click_to_dropdown(click_data, current_search_value):
+    """當點擊地圖景點時，更新下拉選單"""
     if not click_data: raise PreventUpdate
     try:
         point = click_data['points'][0]
+        # 檢查是否點到景點 (customdata[1] == 'Attraction')
         if 'customdata' in point and len(point['customdata']) > 1:
             p_id = point['customdata'][0]
             p_type = point['customdata'][1]
-            if p_type == 'Attraction' and p_id != current_val:
+            
+            if p_type == 'Attraction' and p_id != current_search_value:
                 return p_id
-    except: pass
+    except Exception: pass
     raise PreventUpdate
 
 # ==========================================
-#  Advanced Analytics Callback (Final Fix)
+#  Advanced Analytics Callback (Final Logic Fix)
 # ==========================================
 @app.callback(
     [Output('interactive-map', 'figure'),
@@ -6832,7 +6830,7 @@ def sync_map_click(click_data, current_val):
      Output('matrix-status-text', 'children'),
      Output('analytics-list-content', 'children'),
      Output('analytics-attraction-info', 'children')], 
-    [Input('analytics-attraction-search', 'value'), # 改回監聽 Dropdown (因為 Store 會同步給它)
+    [Input('analytics-attraction-search', 'value'), # 直接監聽 Dropdown
      Input('interactive-map', 'relayoutData'),           
      Input('interactive-map', 'selectedData'),           
      Input('analytics-type-filter', 'value'),
@@ -6853,7 +6851,8 @@ def update_analytics_dashboard(search_id, relayout_data, selected_data, type_fil
         ctx = callback_context
         trigger_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else 'init'
 
-        filtered_df = df.copy() # 這是關鍵：我們從完整資料開始
+        full_df = df.copy() # 保留完整資料用於計算距離
+        filtered_df = df.copy() # 這是最後要顯示在地圖上的資料
         
         map_center = {"lat": 35.0116, "lon": 135.7681} 
         map_zoom = 11
@@ -6862,7 +6861,7 @@ def update_analytics_dashboard(search_id, relayout_data, selected_data, type_fil
         is_focus_mode = False
         attraction_info_card = None 
 
-        # --- 1. 篩選邏輯 (如果是搜尋模式) ---
+        # --- 1. 篩選邏輯 ---
         if search_id:
             # 找到目標點
             target = df[(df['ID'] == search_id) & (df['Type'] == 'Attraction')]
@@ -6874,11 +6873,11 @@ def update_analytics_dashboard(search_id, relayout_data, selected_data, type_fil
         if is_focus_mode and target_point is not None:
             t_lat, t_lon = target_point['Lat'], target_point['Long']
             
-            # [關鍵修復]：是在 "完整 df" 上計算距離，而不是已經過濾過的
-            df['dist'] = calculate_distances(df, t_lat, t_lon)
+            # [關鍵修復 1]：在 "完整 df" 上計算距離，保留所有周邊資料
+            full_df['dist'] = calculate_distances(full_df, t_lat, t_lon)
             
-            # 保留 2km 內的所有資料 (包含餐廳、旅館、其他景點)
-            filtered_df = df[df['dist'] <= 2.0].copy()
+            # 篩選 2km 內的資料
+            filtered_df = full_df[full_df['dist'] <= 2.0].copy()
             
             map_center = {"lat": t_lat, "lon": t_lon}
             map_zoom = 13.5
@@ -6907,7 +6906,7 @@ def update_analytics_dashboard(search_id, relayout_data, selected_data, type_fil
                     status_msg = f"Selected {len(filtered_df)} items manually"
              except: pass
 
-        # 移動邏輯 (只有在非 Focus 模式下才生效，避免干擾)
+        # 移動邏輯 (只有在非 Focus 模式下才生效)
         elif trigger_id == 'interactive-map' and relayout_data and not is_focus_mode:
             if 'mapbox._derived' in relayout_data and 'coordinates' in relayout_data['mapbox._derived']:
                 coords = relayout_data['mapbox._derived']['coordinates']
@@ -6923,7 +6922,7 @@ def update_analytics_dashboard(search_id, relayout_data, selected_data, type_fil
             if 'mapbox.zoom' in relayout_data:
                 map_zoom = relayout_data['mapbox.zoom']
 
-        # --- 2. 產生地圖 (Map) ---
+        # --- 2. 產生地圖 ---
         color_map = {'Restaurant': '#32CD32', 'Hotel': '#FF4500', 'Attraction': '#9370DB', 'Unknown': '#888888'}
         
         fig_map = px.scatter_mapbox(
@@ -6931,7 +6930,6 @@ def update_analytics_dashboard(search_id, relayout_data, selected_data, type_fil
             hover_name="Name", hover_data={"ID":True, "Type":True, "Price":True}, 
             color_discrete_map=color_map, zoom=map_zoom, center=map_center, height=500
         )
-        # 畫出目標大紅點
         if target_point is not None:
             fig_map.add_trace(go.Scattermapbox(
                 lat=[target_point['Lat']], lon=[target_point['Long']], mode='markers+text',
@@ -6940,10 +6938,10 @@ def update_analytics_dashboard(search_id, relayout_data, selected_data, type_fil
             ))
         fig_map.update_layout(mapbox_style="carto-positron", margin={"r":0,"t":0,"l":0,"b":0}, clickmode='event+select', uirevision='constant')
 
-        # --- 3. 產生矩陣 (Matrix) ---
+        # --- 3. 產生矩陣 ---
         if type_filter is None: type_filter = []
         matrix_df = filtered_df[filtered_df['Type'].isin(type_filter)]
-        matrix_df = matrix_df[matrix_df['Price'] > 0] # 排除沒價格的景點
+        matrix_df = matrix_df[matrix_df['Price'] > 0]
 
         if matrix_df.empty:
             fig_matrix = px.scatter(title="No matching data")
@@ -6953,30 +6951,38 @@ def update_analytics_dashboard(search_id, relayout_data, selected_data, type_fil
                 matrix_df, x="Price", y="Rating", color="Type", hover_name="Name",
                 size="Rating", color_discrete_map=color_map, template="plotly_white", height=450
             )
-            # 輔助線
             try:
                 avg_price = matrix_df['Price'].median()
                 fig_matrix.add_vline(x=avg_price, line_dash="dash", line_color="gray", annotation_text="Median")
                 fig_matrix.add_hline(y=4.0, line_dash="dash", line_color="green", annotation_text="High Rating")
             except: pass
 
-        # --- 4. 產生詳細列表 (包含 ID Type 修正) ---
+        # --- 4. 產生詳細列表 ---
         list_content = []
         target_type = 'Restaurant' if active_tab == 'tab-analytics-restaurants' else 'Hotel'
         
-        # 分類篩選 CP 值 (解決旅館消失問題)
+        # [關鍵修復 2]：分開計算 CP 值，避免飯店被過濾光
         type_df = matrix_df[matrix_df['Type'] == target_type].copy()
         
+        list_df = pd.DataFrame()
         if not type_df.empty:
-            # 簡單規則：高分優先
-            list_df = type_df.sort_values('Rating', ascending=False)
-        else:
-            list_df = pd.DataFrame()
+            # 針對該類型計算平均價
+            type_avg_price = type_df['Price'].mean()
+            
+            # 篩選 High CP (評分高 且 價格 < 平均價 * 1.5) -> 放寬一點係數
+            recommendations = type_df[(type_df['Rating'] >= 4.0) & (type_df['Price'] <= type_avg_price * 1.5)]
+            
+            if recommendations.empty: 
+                recommendations = type_df[type_df['Rating'] >= 3.8] # 如果沒結果，放寬到 3.8 分
+            if recommendations.empty:
+                recommendations = type_df # 還是沒結果，顯示全部
+            
+            list_df = recommendations.sort_values('Rating', ascending=False)
         
         if list_df.empty:
             list_content = html.Div([
                 html.I(className="fas fa-search", style={'fontSize':'2rem', 'color':'#ccc', 'marginBottom':'10px'}),
-                html.P(f"No {target_type.lower()}s found in range.", style={'color':'#888'})
+                html.P(f"No {target_type.lower()}s found nearby.", style={'color':'#888'})
             ], style={'textAlign':'center', 'padding':'20px'})
         else:
             cards = []
@@ -6984,11 +6990,11 @@ def update_analytics_dashboard(search_id, relayout_data, selected_data, type_fil
                 try:
                     if target_type == 'Restaurant':
                         r_data = {'Restaurant_ID': row['ID'], 'Name': row['Name'], 'FirstCategory': row['SubCategory'], 'TotalRating': row['Rating']}
-                        # [關鍵修正] 傳入 analytics-restaurant-card
+                        # 🔥 [關鍵修復 3]：明確傳入 ID 類型，讓導航 Callback 能夠捕捉！
                         cards.append(create_destination_card(r_data, id_type='analytics-restaurant-card'))
                     else:
                         h_data = {'Hotel_ID': row['ID'], 'HotelName': row['Name'], 'Types': [row['SubCategory']], 'Rating': row['Rating'], 'Address': 'Kyoto'}
-                        # [關鍵修正] 傳入 analytics-hotel-card
+                        # 🔥 [關鍵修復 3]：明確傳入 ID 類型
                         cards.append(create_hotel_card(h_data, id_type='analytics-hotel-card'))
                 except: pass
 
@@ -7001,7 +7007,7 @@ def update_analytics_dashboard(search_id, relayout_data, selected_data, type_fil
         import traceback
         traceback.print_exc()
         return px.scatter(), px.scatter(), "Error", html.Div("System Error"), None
-
+    
 # =========================================================
 #  NEW: Analytics Navigation Logic (Fix Back Button)
 # =========================================================
