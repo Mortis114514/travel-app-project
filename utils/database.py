@@ -729,6 +729,24 @@ def get_market_analysis_data():
     
     return final_df
 
+def get_all_attractions():
+    """從 CSV 獲取所有景點資料"""
+    try:
+        attractions_df = pd.read_csv('data/Kyoto_attractions.csv')
+        
+        # 確保 Lat/Lng 為數值
+        attractions_df['Lat'] = pd.to_numeric(attractions_df['Lat'], errors='coerce')
+        attractions_df['Lng'] = pd.to_numeric(attractions_df['Lng'], errors='coerce')
+        
+        # 為了保持一致性，將 Lng 重命名為 Long (如果需要)
+        # 但 create_hotel_map_chart 用的是 Long, create_restaurant_map_chart 用的是 Long
+        attractions_df.rename(columns={'Lng': 'Long'}, inplace=True)
+        
+        return attractions_df
+    except Exception as e:
+        print(f"Error loading attractions: {e}")
+        return pd.DataFrame()
+
 # ==========================================
 #   Attractions Functions (景點專用)
 # ==========================================

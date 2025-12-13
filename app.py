@@ -53,7 +53,8 @@ from utils.database import (
     get_random_top_attractions, 
     search_attractions, 
     get_unique_attraction_types, 
-    get_attraction_by_id
+    get_attraction_by_id,
+    get_all_attractions
 )
 
 
@@ -2156,6 +2157,82 @@ def create_hotel_map_chart():
         }
     )
 
+def create_attraction_map_chart():
+    """Creates a mapbox scatter plot of all attractions."""
+    df = get_all_attractions()
+    # Filter out entries without coordinates
+    df = df.dropna(subset=['Lat', 'Long'])
+
+    # Create 'RatingCategory' based on 'Rating'
+    bins = [0, 2, 3, 4, 5]
+    labels = ['1-2 Stars', '2-3 Stars', '3-4 Stars', '4-5 Stars']
+    df['RatingCategory'] = pd.cut(df['Rating'], bins=bins, labels=labels, right=False, include_lowest=True)
+
+    # Ensure ID is integer
+    df['ID_int'] = df['ID'].astype(int)
+
+    fig = px.scatter_map(
+        df,
+        lat="Lat",
+        lon="Long",
+        hover_name="Name",
+        hover_data={"Rating": ':.1f', "Type": True, "RatingCategory": True},
+        color="RatingCategory",
+        color_discrete_map={
+            "1-2 Stars": "#FF6347",
+            "2-3 Stars": "#FFA500",
+            "3-4 Stars": "#FFD700",
+            "4-5 Stars": "#32CD32"
+        },
+        zoom=11,
+        center={"lat": 35.0116, "lon": 135.7681},
+        height=600,
+        map_style="carto-positron",
+        custom_data=['ID_int', 'Name']  # Add Attraction ID for click handling
+    )
+    fig.update_layout(
+        margin={"r":0,"t":0,"l":0,"b":0},
+        showlegend=True,
+        legend_title_text='Rating',
+        legend=dict(
+            yanchor="top",
+            y=0.99,
+            xanchor="left",
+            x=0.01,
+            bgcolor='rgba(0, 53, 128, 0.5)',
+            font=dict(
+                color='white'
+            )
+        ),
+        clickmode='event+select',  # Enable click events
+        hoverdistance=20  # Increase hover detection distance
+    )
+    # Update hover template to show it's clickable and enhance marker appearance
+    fig.update_traces(
+        hovertemplate='<b>%{hovertext}</b><br>' +
+                     'Attraction: %{customdata[1]}<br>' +
+                     '<i>Click to view details</i><extra></extra>',
+        marker=dict(
+            size=12,  # Slightly larger markers
+            opacity=0.9
+        ),
+        hoverlabel=dict(
+            bgcolor='#003580',
+            font_size=14,
+            font_family='Arial, sans-serif'
+        )
+    )
+    return dcc.Graph(
+        id='attraction-map-graph',
+        figure=fig,
+        config={
+            'displayModeBar': True,
+            'scrollZoom': True,
+            'doubleClick': 'reset',
+            'modeBarButtonsToRemove': ['lasso2d', 'select2d']
+        }
+    )
+
 # --- 新增這個輔助函式 ---
 def create_help_section(index_id, button_text, explanation_content):
     """
@@ -2710,6 +2787,7 @@ def create_main_layout():
                     options=[
                         {'label': 'Restaurants', 'value': 'restaurants'},
                         {'label': 'Hotels', 'value': 'hotels'},
+                        {'label': 'Attractions', 'value': 'attractions'},
                     ],
                     value='restaurants',
                     className='map-toggle-buttons',
@@ -6119,6 +6197,8 @@ def update_map(selected_map):
         return create_restaurant_map_chart()
     elif selected_map == 'hotels':
         return create_hotel_map_chart()
+    elif selected_map == 'attractions':
+        return create_attraction_map_chart()
     return html.Div()
 
 # ===== Callback: Restaurant Map Click Navigation =====
@@ -6164,6 +6244,29 @@ def navigate_from_hotel_map(click_data):
         return f'/hotel/{int(hotel_id)}', True
     except (KeyError, IndexError, TypeError) as e:
         print(f"Error handling hotel map click: {e}")
+        print(f"Click data: {click_data}")
+        raise PreventUpdate
+
+# ===== Callback: Attraction Map Click Navigation =====
+@app.callback(
+    [Output('url', 'pathname', allow_duplicate=True),
+     Output('from-map-navigation', 'data', allow_duplicate=True)],
+    Input('attraction-map-graph', 'clickData'),
+    prevent_initial_call=True
+)
+def navigate_from_attraction_map(click_data):
+    if click_data is None:
+        raise PreventUpdate
+
+    try:
+        # Extract Attraction ID from customdata
+        attraction_id = click_data['points'][0]['customdata'][0]
+        print(f"Attraction map clicked - ID: {attraction_id}")  # Debug log
+
+        # Navigate to attraction detail page and mark that we came from map
+        return f'/attraction/{int(attraction_id)}', True
+    except (KeyError, IndexError, TypeError) as e:
+        print(f"Error handling attraction map click: {e}")
         print(f"Click data: {click_data}")
         raise PreventUpdate
 
