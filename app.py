@@ -715,8 +715,28 @@ def create_detail_hero(data):
                         'fontSize': '1rem',
                         'fontWeight': '500',
                         'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)'
+                    }),
+
+                    html.Button([
+                        html.I(className='fas fa-heart', style={'marginRight': '6px'}),
+                        'Add to Favorites'
+                    ], id='favorite-button', n_clicks=0, style={
+                        'backgroundColor': '#FF4D4D',
+                        'border': 'none',
+                        'borderRadius': '20px',
+                        'color': '#FFFFFF',
+                        'padding': '8px 16px',
+                        'fontSize': '1rem',
+                        'fontWeight': '500',
+                        'cursor': 'pointer',
+                        'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)',
+                        'transition': 'all 0.3s ease'
                     })
-                ])
+                ], style={
+                    'display': 'flex', 
+                    'alignItems': 'center',
+                    'flexWrap': 'wrap'
+                })
             ])
         ], style={
             'position': 'absolute',
@@ -1571,8 +1591,27 @@ def create_hotel_detail_content(hotel_data):
                             'fontSize': '1rem',
                             'fontWeight': '500',
                             'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)'
+                        }),
+                        html.Button([
+                            html.I(className='fas fa-heart', style={'marginRight': '6px'}),
+                            'Add to Favorites'
+                        ], id='favorite-button', n_clicks=0, style={
+                            'backgroundColor': '#FF4D4D',
+                            'border': 'none',
+                            'borderRadius': '20px',
+                            'color': '#FFFFFF',
+                            'padding': '8px 16px',
+                            'fontSize': '1rem',
+                            'fontWeight': '500',
+                            'cursor': 'pointer',
+                            'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)',
+                            'transition': 'all 0.3s ease'
                         })
-                    ])
+                    ], style={
+                        'display': 'flex', 
+                        'alignItems': 'center',
+                        'flexWrap': 'wrap'
+                    })
                 ])
             ], style={
                 'position': 'absolute',
