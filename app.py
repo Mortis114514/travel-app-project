@@ -228,16 +228,19 @@ def create_primary_button(text, button_id=None, icon=None):
     )
 
 def create_destination_card(restaurant):
-    """創建目的地卡片 (使用餐廳資料) - 可點擊並導航到詳細頁面"""
+    """創建目的地卡片 (修正版：ID 與 Callback 一致)"""
+    
+    # 建立內容區塊
     card_content = html.Div([
-        # Image section (top)
+        # Image section
         html.Div([
             html.Img(
-                src='/assets/food_dirtyrice.png',
+                src='/assets/food_dirtyrice.png', 
                 className='card-image'
             )
         ], className='card-image-section'),
-        # Content section (bottom)
+        
+        # Content section
         html.Div([
             html.Div(restaurant['Name'], className='card-title'),
             html.Div(restaurant.get('JapaneseName', ''), className='card-japanese-name'),
@@ -250,29 +253,17 @@ def create_destination_card(restaurant):
                 html.I(className='fas fa-star'),
                 html.Span(f"{restaurant['TotalRating']:.1f}")
             ], className='card-rating'),
-            
-            # --- START: 新增的程式碼 ---
-            dbc.Button(
-                "Add to Trip",
-                id={'type': 'add-to-trip-btn', 'index': restaurant['Restaurant_ID']},
-                color="primary",
-                outline=True,
-                size="sm",
-                className="mt-2 w-100" # margin-top, 100% width
-            )
-            # --- END: 新增的程式碼 ---
-
         ], className='card-content-section')
-    ], className='destination-card')
+    ])
 
-    # 包裝在可點擊的容器中，但按鈕點擊不會觸發這個 Div 的 n_clicks
-    return html.Div([
-        html.Div(
-            card_content,
-            id={'type': 'restaurant-card-wrapper', 'index': restaurant['Restaurant_ID']},
-            n_clicks=0
-        )
-    ], style={'cursor': 'pointer'})
+    # [關鍵修正]：這裡的 type 必須是 'restaurant-card'，不能是 'restaurant-card-wrapper'
+    # 這樣才能跟 handle_card_click Callback 對上
+    return html.Div(
+        card_content,
+        id={'type': 'restaurant-card', 'index': restaurant['Restaurant_ID']},
+        n_clicks=0,
+        style={'cursor': 'pointer'}
+    )
 
 def create_saved_trip_card(trip_data):
     """創建已存行程卡片"""
@@ -5151,28 +5142,45 @@ def load_hotel_detail_data(pathname):
     except Exception as e:
         return {'error': str(e), 'id': hotel_id}
 
-# Callback 4: Card Click Handler - 處理餐廳卡片點擊事件
+# Callback 4: Card Click Handler - 處理餐廳卡片點擊事件 (修正版)
 @app.callback(
     [Output('url', 'pathname', allow_duplicate=True),
      Output('view-mode', 'data', allow_duplicate=True)],
-    [Input({'type': 'restaurant-card-wrapper', 'index': ALL}, 'n_clicks')],
-    [State({'type': 'restaurant-card-wrapper', 'index': ALL}, 'id')],
+    [Input({'type': 'restaurant-card', 'index': ALL}, 'n_clicks')], # 修正這裡：改成 restaurant-card
+    [State({'type': 'restaurant-card', 'index': ALL}, 'id')],
     prevent_initial_call=True
 )
 def handle_card_click(n_clicks_list, card_ids):
     """處理餐廳卡片點擊，導航到詳細頁面"""
     ctx = callback_context
 
-    if not ctx.triggered or not any(n_clicks_list):
+    # 檢查是否有任何有效的點擊 (排除 n_clicks=0 的情況)
+    if not ctx.triggered:
+        raise PreventUpdate
+    
+    # 檢查是否所有的點擊都是 0 (初始化狀態)，如果是則不動作
+    # any(n_clicks_list) 會在全是 0 或 None 時回傳 False
+    if not any(n for n in n_clicks_list if n is not None):
         raise PreventUpdate
 
     # 確定哪個卡片被點擊
-    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
-    triggered_dict = json.loads(triggered_id)
-    restaurant_id = triggered_dict['index']
+    try:
+        triggered_prop_id = ctx.triggered[0]['prop_id'].split('.')[0]
+        triggered_id = json.loads(triggered_prop_id)
+        
+        # 確保 type 正確
+        if triggered_id.get('type') != 'restaurant-card':
+            raise PreventUpdate
+            
+        restaurant_id = triggered_id['index']
+        print(f"DEBUG: Restaurant card clicked! ID={restaurant_id}")
 
-    # 導航到詳細頁面，清除 view-mode 讓 URL 路由優先
-    return f'/restaurant/{restaurant_id}', None
+        # 導航到詳細頁面，清除 view-mode 讓 URL 路由優先
+        return f'/restaurant/{restaurant_id}', None
+        
+    except Exception as e:
+        print(f"Error handling card click: {e}")
+        raise PreventUpdate
 
 # Callback 4b: Nearby Restaurant Card Click Handler - 處理附近餐廳卡片點擊事件
 @app.callback(
