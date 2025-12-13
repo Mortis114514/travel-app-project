@@ -3172,6 +3172,7 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
             elif view_mode == 'analytics':
                 return create_analytics_layout(analytics_df), 'main'
             
+            # Find this section in the traffic layout (around line 1587)
             elif view_mode == 'traffic':
                 traffic_layout = html.Div([
                     # Header
@@ -3185,6 +3186,23 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
                         html.H2("Distance Calculator", style={'color': '#003580', 'textAlign': 'center', 'marginBottom': '1rem'}),
                         html.P("Click on two points on the map to calculate distance and get directions", 
                             style={'textAlign': 'center', 'color': '#666', 'marginBottom': '2rem', 'fontSize': '1.1rem'}),
+                        
+                        # ADD THIS NEW INSTRUCTION MESSAGE HERE:
+                        html.Div([
+                            html.Div([
+                                html.I(className='fas fa-map-marker-alt', style={'marginRight': '10px', 'fontSize': '1.5rem', 'color': '#003580'}),
+                                html.Span("Step 1: Select your first point on the map", style={'fontSize': '1.2rem', 'fontWeight': '600', 'color': '#003580'})
+                            ], style={'display': 'flex', 'alignItems': 'center', 'justifyContent': 'center', 'marginBottom': '10px'}),
+                            html.P("Click on any restaurant or hotel marker to begin", style={'textAlign': 'center', 'color': '#666', 'fontSize': '1rem', 'marginBottom': '0'})
+                        ], id='point-selection-instruction', style={
+                            'backgroundColor': '#E6F3FF',
+                            'padding': '1.5rem',
+                            'borderRadius': '8px',
+                            'border': '2px solid #003580',
+                            'marginBottom': '1.5rem',
+                            'animation': 'pulse 2s ease-in-out infinite'
+                        }),
+                        
                         create_traffic_map_chart(),
                         html.Div(id='distance-calculation-result', style={
                             'padding': '2rem',
@@ -6356,6 +6374,7 @@ def create_traffic_map_chart(points=None):
         }
     )
 
+# Find this callback (around line 2870) and modify the RETURN statement at the end:
 @app.callback(
     [Output('traffic-map-store', 'data'),
      Output('distance-calculation-result', 'children')],
@@ -6381,7 +6400,7 @@ def handle_distance_calculation(click_data, store_data):
         
     except (KeyError, IndexError, TypeError):
         error_div = html.Div(
-            "âŒ Error: Could not extract point. Please click directly on a marker.", 
+            "⚠ Error: Could not extract point. Please click directly on a marker.", 
             style={
                 'color': '#FF0000', 
                 'fontWeight': 'bold', 
@@ -6499,7 +6518,8 @@ def handle_distance_calculation(click_data, store_data):
                 'border': '2px solid #003580'
             })
             
-            return {'points': []}, result_content
+            # CHANGE THIS LINE - keep points with value 2 to hide instruction
+            return {'points': []}, result_content# Changed from {'points': []} to keep the 2 points
             
         except (ValueError, TypeError) as e:
             error_result = html.Div(
@@ -6520,8 +6540,7 @@ def handle_distance_calculation(click_data, store_data):
     default_result = html.Div(
         f"Selected {len(points)} point. Click another point.", 
         style={
-            'color': '#1A1A1A', 
-            'textAlign': 'center', 
+            'color': '#1A1A1A', 'textAlign': 'center', 
             'fontSize': '1.1rem',
             'padding': '2rem',
             'backgroundColor': '#F0F0F0',
@@ -6530,9 +6549,63 @@ def handle_distance_calculation(click_data, store_data):
         }
     )
     return {'points': points}, default_result
+# Add this callback after the existing traffic-related callbacks (around line 2924)
+# Replace the previous callback with this corrected version:
+@app.callback(
+    [Output('point-selection-instruction', 'children'),
+     Output('point-selection-instruction', 'style')],
+    Input('traffic-map-store', 'data')
+)
+def update_point_instruction(store_data):  # ← Removed the extra parameter
+    if store_data is None:
+        store_data = {'points': []}
+    
+    points = store_data.get('points', [])
+    
+    base_style = {
+        'padding': '1.5rem',
+        'borderRadius': '8px',
+        'marginBottom': '1.5rem'
+    }
+    
+    if len(points) == 0:
+        # No points selected yet - show blue instruction
+        content = html.Div([
+            html.Div([
+                html.I(className='fas fa-map-marker-alt', style={'marginRight': '10px', 'fontSize': '1.5rem', 'color': '#003580'}),
+                html.Span("Step 1: Select your first point on the map", style={'fontSize': '1.2rem', 'fontWeight': '600', 'color': '#003580'})
+            ], style={'display': 'flex', 'alignItems': 'center', 'justifyContent': 'center', 'marginBottom': '10px'}),
+            html.P("Click on any restaurant or hotel marker to begin", style={'textAlign': 'center', 'color': '#666', 'fontSize': '1rem', 'marginBottom': '0'})
+        ])
+        style = {
+            **base_style,
+            'backgroundColor': '#E6F3FF',
+            'border': '2px solid #003580',
+            'animation': 'pulse 2s ease-in-out infinite'
+        }
+        return content, style
+        
+    elif len(points) == 1:
+        # First point selected - show green success message
+        content = html.Div([
+            html.Div([
+                html.I(className='fas fa-check-circle', style={'marginRight': '10px', 'fontSize': '1.5rem', 'color': '#32CD32'}),
+                html.Span("Step 2: Select your destination point", style={'fontSize': '1.2rem', 'fontWeight': '600', 'color': '#32CD32'})
+            ], style={'display': 'flex', 'alignItems': 'center', 'justifyContent': 'center', 'marginBottom': '10px'}),
+            html.P(f"First point: {points[0]['name']}", style={'textAlign': 'center', 'color': '#1A1A1A', 'fontSize': '1rem', 'fontWeight': '500', 'marginBottom': '5px'}),
+            html.P("Click on another marker to calculate distance", style={'textAlign': 'center', 'color': '#666', 'fontSize': '1rem', 'marginBottom': '0'})
+        ])
+        style = {
+            **base_style,
+            'backgroundColor': '#F0FFF4',
+            'border': '2px solid #32CD32'
+        }
+        return content, style
+        return html.Div(), {'display': 'none'}
 
 if __name__ == '__main__':
     app.run(debug=True, port=8050)
+
 
 
 # --- START: 新增的程式碼 (Create Trip 功能) ---
