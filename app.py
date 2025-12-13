@@ -6415,21 +6415,35 @@ def create_traffic_map_chart(points=None):
     df_hotels = df_hotels.dropna(subset=['Lat', 'Long'])
     df_hotels['type'] = 'Hotel'
 
-    # Combine dataframes
+    # Get attraction data
+    df_attractions = get_all_attractions()
+    df_attractions = df_attractions.dropna(subset=['Lat', 'Long'])
+    df_attractions['type'] = 'Attraction'
+
+    # Rename HotelName to Name for consistency and combine dataframes
     df_combined = pd.concat([
         df_restaurants[['Name', 'Lat', 'Long', 'type']],
-        df_hotels[['HotelName', 'Lat', 'Long', 'type']].rename(columns={'HotelName': 'Name'})
+        df_hotels[['HotelName', 'Lat', 'Long', 'type']].rename(columns={'HotelName': 'Name'}),
+        df_attractions[['Name', 'Lat', 'Long', 'type']]
     ])
+
+    # Add emojis to the 'type' column for legend and hover
+    df_combined['type_emoji'] = df_combined['type'].map({
+        'Restaurant': '🍔 Restaurant',
+        'Hotel': '🏨 Hotel',
+        'Attraction': '🗼 Attraction'
+    })
 
     fig = px.scatter_map(
         df_combined,
         lat="Lat",
         lon="Long",
         hover_name="Name",
-        color="type",
+        color="type_emoji", # Use the new column with emojis for coloring/legend
         color_discrete_map={
-            "Restaurant": "#32CD32",  # Green
-            "Hotel": "#FF6347"       # Red
+            "🍔 Restaurant": "#32CD32",  # Green
+            "🏨 Hotel": "#FF6347",       # Red
+            "🗼 Attraction": "#8A2BE2"   # Blue Violet for Attractions
         },
         zoom=11,
         center={"lat": 35.0116, "lon": 135.7681},
