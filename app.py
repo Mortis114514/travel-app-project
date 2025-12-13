@@ -3115,11 +3115,10 @@ TRAFFIC_GUIDE_ZH = """
      Input('session-store', 'data'),
      Input('page-mode', 'data'),
      Input('view-mode', 'data'),
-     Input('selected-restaurant-id', 'data'),
-     Input('create-trip-btn', 'n_clicks')],
+     Input('selected-restaurant-id', 'data')],
     prevent_initial_call=False
 )
-def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_data, create_trip_clicks):
+def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_data):
     """根據 session 狀態、view_mode 和 pathname 顯示對應頁面"""
     clean_expired_sessions()
     
@@ -3133,7 +3132,7 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
             # === [關鍵修正] 優先檢查 URL pathname (詳細頁面優先) ===
 
             # 0. 檢查是否為 Create Trip 頁面
-            if (triggered_id == 'create-trip-btn' and create_trip_clicks > 0) or pathname == '/create-trip':
+            if pathname == '/create-trip':
                 return create_trip_layout(), 'main'
 
             # 1. 檢查是否為旅館詳細頁面
@@ -3590,6 +3589,17 @@ def view_analytics(n_clicks, current_view):
 def view_traffic(n_clicks, current_view):
     if n_clicks and current_view != 'traffic':
         return 'traffic'
+    raise PreventUpdate
+
+@app.callback(
+    Output('url', 'pathname', allow_duplicate=True),
+    [Input('create-trip-btn', 'n_clicks')],
+    prevent_initial_call=True
+)
+def navigate_to_create_trip(n_clicks):
+    """Navigate to Create Trip page when button is clicked"""
+    if n_clicks:
+        return '/create-trip'
     raise PreventUpdate
 
 
