@@ -233,7 +233,7 @@ def create_destination_card(restaurant):
         # Image section (top)
         html.Div([
             html.Img(
-                src='/assets/food_dirtyrice.png',  # 使用相同圖片作為佔位符
+                src='/assets/food_dirtyrice.png',
                 className='card-image'
             )
         ], className='card-image-section'),
@@ -249,17 +249,30 @@ def create_destination_card(restaurant):
                 html.I(className='fas fa-star'),
                 html.I(className='fas fa-star'),
                 html.Span(f"{restaurant['TotalRating']:.1f}")
-            ], className='card-rating')
+            ], className='card-rating'),
+            
+            # --- START: 新增的程式碼 ---
+            dbc.Button(
+                "Add to Trip",
+                id={'type': 'add-to-trip-btn', 'index': restaurant['Restaurant_ID']},
+                color="primary",
+                outline=True,
+                size="sm",
+                className="mt-2 w-100" # margin-top, 100% width
+            )
+            # --- END: 新增的程式碼 ---
+
         ], className='card-content-section')
     ], className='destination-card')
 
-    # 包裝在可點擊的容器中，使用 pattern-matching ID
-    return html.Div(
-        card_content,
-        id={'type': 'restaurant-card', 'index': restaurant['Restaurant_ID']},
-        n_clicks=0,
-        style={'cursor': 'pointer'}
-    )
+    # 包裝在可點擊的容器中，但按鈕點擊不會觸發這個 Div 的 n_clicks
+    return html.Div([
+        html.Div(
+            card_content,
+            id={'type': 'restaurant-card-wrapper', 'index': restaurant['Restaurant_ID']},
+            n_clicks=0
+        )
+    ], style={'cursor': 'pointer'})
 
 def create_saved_trip_card(trip_data):
     """創建已存行程卡片"""
@@ -1215,6 +1228,60 @@ def create_restaurant_detail_content(data):
             'gap': '2rem'
         })
     ])
+
+
+def create_trip_layout():
+    """創建 "Create Trip" 頁面佈局"""
+    return html.Div([
+        html.Div([
+            html.Div([
+                # Back button and title
+                html.Div([
+                    html.Button([
+                        html.I(className='fas fa-arrow-left'),
+                        html.Span('Back', style={'marginLeft': '8px'})
+                    ], id={'type': 'back-btn', 'index': 'create-trip'}, className='btn-back', n_clicks=0),
+                    html.H1('Create Your Trip', style={
+                        'color': '#003580',
+                        'marginLeft': '2rem',
+                        'fontSize': '2rem',
+                        'fontWeight': 'bold'
+                    })
+                ], style={'display': 'flex', 'alignItems': 'center'}),
+            ], style={
+                'display': 'flex',
+                'justifyContent': 'space-between',
+                'alignItems': 'center',
+                'maxWidth': '1400px',
+                'margin': '0 auto',
+                'padding': '1.5rem 2rem'
+            })
+        ], style={
+            'backgroundColor': '#F2F6FA',
+            'borderBottom': '1px solid #E8ECEF',
+            'position': 'sticky',
+            'top': '0',
+            'zIndex': '1000'
+        }),
+
+        html.Div([
+            html.Div([
+                html.H2("Selected Restaurants"),
+                html.P("These are the restaurants you've added to your trip plan."),
+                html.Hr(),
+                # 這個 Div 將由 callback 填充
+                html.Div(id='selected-restaurants-container', children=[
+                    dbc.Spinner(color="primary")
+                ])
+            ], style={
+                'maxWidth': '1000px',
+                'margin': '0 auto'
+            })
+        ], style={
+            'backgroundColor': '#FFFFFF',
+            'padding': '2rem',
+        })
+    ], style={'backgroundColor': '#FFFFFF', 'minHeight': '100vh'})
 
 def create_hotel_card(hotel):
     """創建旅館卡片 (類似餐廳卡片)"""
@@ -2290,10 +2357,11 @@ app.layout = html.Div([
     dcc.Store(id='hotel-search-results-store', storage_type='memory'),  # 👈 存儲旅館搜尋結果
     dcc.Store(id='hotel-current-page-store', data=1, storage_type='memory'),  # 👈 存儲旅館列表分頁狀態
     dcc.Store(id='hotel-detail-data', storage_type='memory'),  # 旅館詳細資料（包含 reviews）
+    dcc.Store(id='selected-restaurants', storage_type='session', data=[]),
     # 新增景點相關 Stores
     dcc.Store(id='attraction-search-results-store', storage_type='memory'),  # 存儲景點搜尋結果
-    dcc.Store(id='attraction-current-page-store', data=1, storage_type='memory'),  # 存儲景點列表分頁狀態
-    dcc.Store(id='attraction-search-params-store', storage_type='memory'),  # 存儲景點搜尋參數
+            dcc.Store(id='attraction-current-page-store', data=1, storage_type='memory'),  # 存儲景點列表分頁狀態
+            dcc.Store(id='attraction-search-params-store', storage_type='memory'),  # 存儲景點搜尋參數
     dcc.Store(id='selected-attraction-type', storage_type='memory'),  # 存儲選中的景點類型
     dcc.Store(id='selected-attraction-rating', storage_type='memory'),  # 存儲選中的景點評分範圍
     dcc.Store(id='dropdown-open', data=False, storage_type='memory'),  # User dropdown state for homepage
@@ -3047,18 +3115,26 @@ TRAFFIC_GUIDE_ZH = """
      Input('session-store', 'data'),
      Input('page-mode', 'data'),
      Input('view-mode', 'data'),
-     Input('selected-restaurant-id', 'data')],
+     Input('selected-restaurant-id', 'data'),
+     Input('create-trip-btn', 'n_clicks')],
     prevent_initial_call=False
 )
-def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_data):
+def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_data, create_trip_clicks):
     """根據 session 狀態、view_mode 和 pathname 顯示對應頁面"""
     clean_expired_sessions()
+    
+    ctx = callback_context
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
 
     # 檢查 session
     if session_data and 'session_id' in session_data:
         user_id = get_session(session_data['session_id'])
         if user_id:
             # === [關鍵修正] 優先檢查 URL pathname (詳細頁面優先) ===
+
+            # 0. 檢查是否為 Create Trip 頁面
+            if (triggered_id == 'create-trip-btn' and create_trip_clicks > 0) or pathname == '/create-trip':
+                return create_trip_layout(), 'main'
 
             # 1. 檢查是否為旅館詳細頁面
             if pathname and pathname.startswith('/hotel/'):
@@ -5069,8 +5145,8 @@ def load_hotel_detail_data(pathname):
 @app.callback(
     [Output('url', 'pathname', allow_duplicate=True),
      Output('view-mode', 'data', allow_duplicate=True)],
-    [Input({'type': 'restaurant-card', 'index': ALL}, 'n_clicks')],
-    [State({'type': 'restaurant-card', 'index': ALL}, 'id')],
+    [Input({'type': 'restaurant-card-wrapper', 'index': ALL}, 'n_clicks')],
+    [State({'type': 'restaurant-card-wrapper', 'index': ALL}, 'id')],
     prevent_initial_call=True
 )
 def handle_card_click(n_clicks_list, card_ids):
@@ -6439,3 +6515,120 @@ def handle_distance_calculation(click_data, store_data):
 
 if __name__ == '__main__':
     app.run(debug=True, port=8050)
+
+
+# --- START: 新增的程式碼 (Create Trip 功能) ---
+
+# Callback 1: 將餐廳加入 'selected-restaurants' store
+@app.callback(
+    Output('selected-restaurants', 'data'),
+    Input({'type': 'add-to-trip-btn', 'index': ALL}, 'n_clicks'),
+    State('selected-restaurants', 'data'),
+    State('search-results-store', 'data'),
+    prevent_initial_call=True
+)
+def add_restaurant_to_trip(n_clicks, selected_data, search_data):
+    if not any(n_clicks):
+        raise PreventUpdate
+
+    ctx = callback_context
+    triggered_id = ctx.triggered_id
+    if not triggered_id:
+        raise PreventUpdate
+
+    restaurant_id = triggered_id['index']
+    
+    # 初始化
+    if selected_data is None:
+        selected_data = []
+
+    # 檢查是否已存在
+    existing_ids = {r['Restaurant_ID'] for r in selected_data}
+    if restaurant_id in existing_ids:
+        return no_update # or provide user feedback
+
+    # 從搜尋結果中找到餐廳的完整資料
+    restaurant_to_add = None
+    if search_data:
+        for r in search_data:
+            if r['Restaurant_ID'] == restaurant_id:
+                restaurant_to_add = r
+                break
+    
+    if restaurant_to_add:
+        selected_data.append(restaurant_to_add)
+
+    return selected_data
+
+# Callback 2: 在 Create Trip 頁面顯示選擇的餐廳列表
+@app.callback(
+    Output('selected-restaurants-container', 'children'),
+    Input('selected-restaurants', 'data')
+)
+def display_selected_restaurants(selected_data):
+    if not selected_data:
+        return html.Div("No restaurants selected yet. Go to 'View All' to add some!", style={'textAlign': 'center', 'padding': '2rem', 'color': '#888'})
+
+    list_items = []
+    for restaurant in selected_data:
+        item = dbc.ListGroupItem([
+            dbc.Row([
+                dbc.Col(
+                    html.Div([
+                        html.H5(restaurant['Name'], className="mb-1"),
+                        html.Small(restaurant.get('FirstCategory', ''), className="text-muted"),
+                    ]),
+                    width=10
+                ),
+                dbc.Col(
+                    dbc.Button(
+                        "Remove",
+                        id={'type': 'remove-from-trip-btn', 'index': restaurant['Restaurant_ID']},
+                        color="danger",
+                        outline=True,
+                        size="sm"
+                    ),
+                    width=2,
+                    className="d-flex align-items-center justify-content-end"
+                )
+            ], align="center")
+        ])
+        list_items.append(item)
+    
+    return dbc.ListGroup(list_items)
+
+# Callback 3: 從選擇列表中移除餐廳
+@app.callback(
+    Output('selected-restaurants', 'data', allow_duplicate=True),
+    Input({'type': 'remove-from-trip-btn', 'index': ALL}, 'n_clicks'),
+    State('selected-restaurants', 'data'),
+    prevent_initial_call=True
+)
+def remove_restaurant_from_trip(n_clicks, selected_data):
+    if not any(n_clicks) or not selected_data:
+        raise PreventUpdate
+
+    ctx = callback_context
+    triggered_id = ctx.triggered_id
+    if not triggered_id:
+        raise PreventUpdate
+        
+    restaurant_id_to_remove = triggered_id['index']
+
+    # 創建一個新的列表，排除要被刪除的餐廳
+    updated_list = [r for r in selected_data if r['Restaurant_ID'] != restaurant_id_to_remove]
+    
+    return updated_list
+
+# Callback 4: 處理 Create Trip 頁面上的返回按鈕
+@app.callback(
+    Output('url', 'pathname', allow_duplicate=True),
+    Input({'type': 'back-btn', 'index': 'create-trip'}, 'n_clicks'),
+    prevent_initial_call=True
+)
+def go_back_from_create_trip(n_clicks):
+    if n_clicks > 0:
+        return '/'
+    return no_update
+
+# --- END: 新增的程式碼 (Create Trip 功能) ---
