@@ -6511,7 +6511,7 @@ def handle_distance_calculation(click_data, store_data):
             })
             
             # CHANGE THIS LINE - keep points with value 2 to hide instruction
-            return {'points': [p1, p2]}, result_content  # Changed from {'points': []} to keep the 2 points
+            return {'points': []}, result_content# Changed from {'points': []} to keep the 2 points
             
         except (ValueError, TypeError) as e:
             error_result = html.Div(
@@ -6549,10 +6549,11 @@ if __name__ == '__main__':
 # Replace the previous callback with this corrected version:
 @app.callback(
     [Output('point-selection-instruction', 'children'),
-     Output('point-selection-instruction', 'style')],  # Use list format for multiple outputs
-    Input('traffic-map-store', 'data')
+     Output('point-selection-instruction', 'style')],
+    [Input('traffic-map-store', 'data'),
+     Input('distance-calculation-result', 'children')]  # Add this to detect when calculation is shown
 )
-def update_point_instruction(store_data):
+def update_point_instruction(store_data, calculation_result):
     if store_data is None:
         store_data = {'points': []}
     
@@ -6564,8 +6565,24 @@ def update_point_instruction(store_data):
         'marginBottom': '1.5rem'
     }
     
-    if len(points) == 0:
-        # No points selected yet
+    # Check if calculation result is showing (distance was calculated)
+    # This happens when result contains the route calculation div
+    calculation_shown = False
+    if calculation_result and isinstance(calculation_result, dict):
+        # Check if it's the final result with Google Maps link
+        if 'props' in calculation_result:
+            children = calculation_result.get('props', {}).get('children', [])
+            # Look for the Google Maps link or "Route Calculated" text
+            for child in children if isinstance(children, list) else []:
+                if isinstance(child, dict):
+                    child_props = child.get('props', {})
+                    child_children = child_props.get('children', '')
+                    if isinstance(child_children, str) and 'Route Calculated' in child_children:
+                        calculation_shown = True
+                        break
+    
+    if len(points) == 0 and not calculation_shown:
+        # No points selected yet - show blue instruction
         content = html.Div([
             html.Div([
                 html.I(className='fas fa-map-marker-alt', style={'marginRight': '10px', 'fontSize': '1.5rem', 'color': '#003580'}),
@@ -6579,8 +6596,10 @@ def update_point_instruction(store_data):
             'border': '2px solid #003580',
             'animation': 'pulse 2s ease-in-out infinite'
         }
+        return content, style
+        
     elif len(points) == 1:
-        # First point selected
+        # First point selected - show green success message
         content = html.Div([
             html.Div([
                 html.I(className='fas fa-check-circle', style={'marginRight': '10px', 'fontSize': '1.5rem', 'color': '#32CD32'}),
@@ -6594,12 +6613,12 @@ def update_point_instruction(store_data):
             'backgroundColor': '#F0FFF4',
             'border': '2px solid #32CD32'
         }
-    else:
-        # Both points selected - hide instruction
-        content = html.Div()
-        style = {'display': 'none'}
-    
-    return content, style
+        return content, style
+        
+    else:  # len(points) == 0 and calculation_shown == True
+        # Calculation was just completed - hide instruction box
+        # (The "Click two new points" message is already in the result div)
+        return html.Div(), {'display': 'none'}
 
 # --- START: 新增的程式碼 (Create Trip 功能) ---
 
