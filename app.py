@@ -23,6 +23,7 @@ import base64
 import io
 from datetime import datetime, timedelta
 import functools
+import plotly.graph_objects as go
 
 # 從./utils導入所有自定義函數
 from utils.auth import verify_user, create_user, get_session, create_session, delete_session, clean_expired_sessions, get_user_full_details, update_profile_photo
@@ -53,7 +54,13 @@ from utils.database import (
     get_random_top_attractions, 
     search_attractions, 
     get_unique_attraction_types, 
+<<<<<<< Updated upstream
     get_attraction_by_id
+=======
+    get_attraction_by_id,
+    get_all_attractions,
+    get_combined_analytics_data,
+>>>>>>> Stashed changes
 )
 
 
@@ -227,20 +234,14 @@ def create_primary_button(text, button_id=None, icon=None):
         n_clicks=0
     )
 
-def create_destination_card(restaurant):
-    """創建目的地卡片 (修正版：ID 與 Callback 一致)"""
+def create_destination_card(restaurant, id_type='restaurant-card'): # <--- [修正] 加入參數
+    """創建目的地卡片 (修正版：支援自定義 ID 類型)"""
     
-    # 建立內容區塊
     card_content = html.Div([
-        # Image section
         html.Div([
-            html.Img(
-                src='/assets/food_dirtyrice.png', 
-                className='card-image'
-            )
+            html.Img(src='/assets/food_dirtyrice.png', className='card-image')
         ], className='card-image-section'),
         
-        # Content section
         html.Div([
             html.Div(restaurant['Name'], className='card-title'),
             html.Div(restaurant.get('JapaneseName', ''), className='card-japanese-name'),
@@ -256,11 +257,10 @@ def create_destination_card(restaurant):
         ], className='card-content-section')
     ])
 
-    # [關鍵修正]：這裡的 type 必須是 'restaurant-card'，不能是 'restaurant-card-wrapper'
-    # 這樣才能跟 handle_card_click Callback 對上
+    # [修正] 使用傳入的 id_type，而不是寫死的字串
     return html.Div(
         card_content,
-        id={'type': 'restaurant-card', 'index': restaurant['Restaurant_ID']},
+        id={'type': id_type, 'index': restaurant['Restaurant_ID']},
         n_clicks=0,
         style={'cursor': 'pointer'}
     )
@@ -1274,24 +1274,16 @@ def create_trip_layout():
         })
     ], style={'backgroundColor': '#FFFFFF', 'minHeight': '100vh'})
 
-def create_hotel_card(hotel):
-    """創建旅館卡片 (類似餐廳卡片)"""
-    # 處理類型列表
+def create_hotel_card(hotel, id_type='hotel-card'): # <--- [修正] 加入參數
+    """創建旅館卡片 (支援自定義 ID 類型)"""
     types_text = ', '.join(hotel['Types'][:2]) if isinstance(hotel['Types'], list) and hotel['Types'] else 'Hotel'
-
-    # 安全處理 Rating (防止 None 值)
     rating = hotel.get('Rating', 0)
     rating_text = f"{rating:.1f}" if rating is not None else "N/A"
 
     card_content = html.Div([
-        # Image section (top)
         html.Div([
-            html.Img(
-                src='/assets/food_dirtyrice.png',  # 可以替換為旅館圖片
-                className='card-image'
-            )
+            html.Img(src='/assets/food_dirtyrice.png', className='card-image')
         ], className='card-image-section'),
-        # Content section (bottom)
         html.Div([
             html.Div(hotel['HotelName'], className='card-title'),
             html.Div(types_text, className='card-subtitle'),
@@ -1306,14 +1298,15 @@ def create_hotel_card(hotel):
             html.Div([
                 html.I(className='fas fa-map-marker-alt', style={'marginRight': '5px', 'fontSize': '0.8rem'}),
                 html.Span(hotel['Address'][:30] + '...' if len(hotel['Address']) > 30 else hotel['Address'],
-                         style={'fontSize': '0.75rem', 'color': '#888'})
+                          style={'fontSize': '0.75rem', 'color': '#888'})
             ], style={'marginTop': '5px'})
         ], className='card-content-section')
     ], className='destination-card')
 
+    # [修正] 使用傳入的 id_type
     return html.Div(
         card_content,
-        id={'type': 'hotel-card', 'index': hotel['Hotel_ID']},
+        id={'type': id_type, 'index': hotel['Hotel_ID']},
         n_clicks=0,
         style={'cursor': 'pointer'}
     )
@@ -2258,6 +2251,151 @@ def create_hotel_analytics_charts(hotel_id):
         ], style={'display': 'flex', 'flexWrap': 'wrap', 'gap': '2rem'})
     ])
 
+# ==========================================
+#  CP Analysis Functions (Visualizations)
+# ==========================================
+
+def create_interactive_map(df):
+    """建立互動式地圖 (上方)"""
+    fig = px.scatter_mapbox(
+        df,
+        lat="Lat", lon="Long",
+        hover_name="Name",
+        hover_data=["TotalRating", "AvgPrice"],
+        color="TotalRating",
+        color_continuous_scale="Bluered", # 紅色代表高分
+        size_max=15,
+        zoom=12,
+        height=450
+    )
+    fig.update_layout(
+        mapbox_style="carto-positron",
+        margin={"r":0,"t":0,"l":0,"b":0},
+        clickmode='event+select', # 允許點擊和框選
+        dragmode='pan' # 預設拖曳模式
+    )
+    return fig
+
+def create_cp_matrix(df):
+    """建立 CP 值矩陣圖 (下方)"""
+    # 畫散佈圖
+    fig = px.scatter(
+        df,
+        x="AvgPrice", 
+        y="TotalRating",
+        color="FirstCategory", # 用料理類型上色
+        size="ReviewNum",      # 評論越多點越大
+        hover_name="Name",
+        height=400,
+        labels={"AvgPrice": "Average Price (¥)", "TotalRating": "Rating (Stars)"},
+        template="plotly_white"
+    )
+    
+    # 加入 "高 CP 值" 區域標示 (左上角：低價高分)
+    fig.add_shape(type="rect",
+        x0=0, y0=4.0, x1=3000, y1=5.0,
+        line=dict(color="Green", width=2, dash="dot"),
+        fillcolor="rgba(0, 255, 0, 0.1)",
+    )
+    fig.add_annotation(x=1500, y=4.8, text="🔥 High CP Zone", showarrow=False, font=dict(color="green", size=14, weight="bold"))
+
+    return fig
+
+def create_advanced_analytics_layout():
+    """建立進階分析頁面 Layout (含狀態記憶與景點資訊卡)"""
+    
+    # 1. 準備資料
+    df_combined = get_combined_analytics_data()
+    if df_combined.empty:
+        import pandas as pd
+        df_combined = pd.DataFrame(columns=['ID', 'Name', 'Lat', 'Long', 'Rating', 'Price', 'Type', 'SubCategory'])
+
+    # 2. 建立景點下拉選單
+    attractions_options = []
+    if not df_combined.empty and 'Type' in df_combined.columns:
+        att_df = df_combined[df_combined['Type'] == 'Attraction'].copy()
+        att_df['Name'] = att_df['Name'].astype(str).str.strip()
+        att_df = att_df.sort_values('Name')
+        for _, row in att_df.iterrows():
+            if row['Name'] and row['Name'].lower() != 'nan':
+                attractions_options.append({'label': row['Name'], 'value': row['ID']})
+
+    # 3. 建立 Layout
+    return html.Div([
+
+        # Header
+        html.Div([
+            html.Button([html.I(className='fas fa-arrow-left'), ' Back'], id={'type': 'back-btn', 'index': 'analytics'}, className='btn-secondary'),
+            html.H1("Smart Travel Decision Board", style={'color': '#003580', 'marginLeft': '2rem'})
+        ], style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '1.5rem', 'borderBottom': '1px solid #E8ECEF', 'paddingBottom':'1rem'}),
+
+        # --- 控制面板區 ---
+        html.Div([
+            dbc.Row([
+                dbc.Col([
+                    html.Label([html.I(className="fas fa-search-location me-2"), "Focus on Attraction:"], style={'fontWeight':'bold', 'color': '#1A1A1A'}),
+                    dcc.Dropdown(
+                        id='analytics-attraction-search',
+                        options=attractions_options,
+                        placeholder="Search & Click an attraction to analyze nearby...",
+                        style={'fontSize': '0.9rem', 'color': '#000'},
+                        searchable=True, 
+                        clearable=True,
+                        # [NEW] 關鍵修改：啟用狀態記憶 (解決問題 2)
+                        persistence=True,
+                        persistence_type='session' # 即使重新整理或跳轉頁面，只要瀏覽器沒關，值都會在
+                    )
+                ], width=6),
+                dbc.Col([
+                    html.Label([html.I(className="fas fa-layer-group me-2"), "Show on Matrix:"], style={'fontWeight':'bold', 'color': '#1A1A1A'}),
+                    dbc.Checklist(
+                        options=[{"label": "Restaurants", "value": "Restaurant"}, {"label": "Hotels", "value": "Hotel"}],
+                        value=["Restaurant", "Hotel"],
+                        id="analytics-type-filter", inline=True, switch=True,
+                        # [NEW] 這個也可以記憶
+                        persistence=True, persistence_type='session'
+                    )
+                ], width=6, style={'display': 'flex', 'alignItems': 'center', 'justifyContent': 'center'})
+            ], className="mb-3 p-3 bg-white rounded shadow-sm border")
+        ]),
+
+        # --- [NEW] 景點詳細資訊區 (解決問題 3) ---
+        # 這個 Div 會由 Callback 自動填入內容
+        html.Div(id='analytics-attraction-info', style={'marginBottom': '20px'}),
+
+        # --- 上半部：互動式地圖 ---
+        html.Div([
+            dcc.Graph(
+                id='interactive-map', 
+                style={'height': '500px'},
+                config={'displayModeBar': True, 'scrollZoom': True}
+            )
+        ], style={'marginBottom': '20px', 'boxShadow': '0 4px 12px rgba(0,0,0,0.1)', 'borderRadius': '8px', 'overflow': 'hidden'}),
+
+        # --- 中半部：CP 矩陣 ---
+        html.Div([
+            html.Div([
+                html.H4("Cost-Performance Matrix", style={'color': '#003580', 'display':'inline-block'}),
+                html.Span(id='matrix-status-text', style={'marginLeft':'15px', 'color':'#666', 'fontSize':'0.9rem'})
+            ], style={'padding': '20px 20px 0 20px'}),
+            dcc.Graph(id='cp-matrix-graph', style={'height': '400px'})
+        ], style={'backgroundColor': 'white', 'borderRadius': '8px', 'boxShadow': '0 4px 12px rgba(0,0,0,0.1)', 'marginBottom': '30px'}),
+        
+        # --- 下半部：詳細資料列表 ---
+        html.Div([
+            html.H3("Selected Candidates", style={'color': '#003580', 'marginBottom': '15px'}),
+            dbc.Tabs([
+                dbc.Tab(label="High CP Restaurants", tab_id="tab-analytics-restaurants", label_style={"color": "#32CD32", "fontWeight": "bold"}),
+                dbc.Tab(label="High CP Hotels", tab_id="tab-analytics-hotels", label_style={"color": "#FF4500", "fontWeight": "bold"}),
+            ], id="analytics-tabs", active_tab="tab-analytics-restaurants"),
+            
+            html.Div(id="analytics-list-content", style={'padding': '20px', 'backgroundColor': 'white', 'minHeight': '200px', 'borderRadius': '0 0 8px 8px'})
+        ], style={'marginBottom': '50px', 'marginTop': '50px'}),
+
+        # Stores
+        dcc.Store(id='analytics-combined-data', data=df_combined.to_dict('records')),
+
+    ], style={'padding': '2rem', 'maxWidth': '1400px', 'margin': '0 auto', 'minHeight': '100vh'})
 
 ##########################
 ####   初始化應用程式   ####
@@ -2355,6 +2493,9 @@ app.layout = html.Div([
             dcc.Store(id='attraction-search-params-store', storage_type='memory'),  # 存儲景點搜尋參數
     dcc.Store(id='selected-attraction-type', storage_type='memory'),  # 存儲選中的景點類型
     dcc.Store(id='selected-attraction-rating', storage_type='memory'),  # 存儲選中的景點評分範圍
+    dcc.Store(id='analytics-selected-attraction', storage_type='session'), # 記住 Analytics 選的景點
+    dcc.Store(id='analytics-combined-data', storage_type='memory'),        # 讓 callback 讀得到數據
+    dcc.Store(id='is-analytics-active', data=False, storage_type='memory'), # 輔助判斷
     dcc.Store(id='dropdown-open', data=False, storage_type='memory'),  # User dropdown state for homepage
     dcc.Store(id='dropdown-open-list', data=False, storage_type='memory'),  # User dropdown state for restaurant list page
     dcc.Store(id='dropdown-open-hotel-list', data=False, storage_type='memory'),  # User dropdown state for hotel list page
@@ -3170,7 +3311,7 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
 
             # 檢查分析頁面
             elif view_mode == 'analytics':
-                return create_analytics_layout(analytics_df), 'main'
+                return create_advanced_analytics_layout(), 'main'
             
             # Find this section in the traffic layout (around line 1587)
             elif view_mode == 'traffic':
@@ -5163,41 +5304,41 @@ def load_hotel_detail_data(pathname):
 # Callback 4: Card Click Handler - 處理餐廳卡片點擊事件 (修正版)
 @app.callback(
     [Output('url', 'pathname', allow_duplicate=True),
-     Output('view-mode', 'data', allow_duplicate=True)],
-    [Input({'type': 'restaurant-card', 'index': ALL}, 'n_clicks')], # 修正這裡：改成 restaurant-card
-    [State({'type': 'restaurant-card', 'index': ALL}, 'id')],
+     Output('view-mode', 'data', allow_duplicate=True),
+     Output('previous-page-location', 'data', allow_duplicate=True)], # 確保有這個 Output
+    [Input({'type': 'restaurant-card', 'index': ALL}, 'n_clicks')],
+    [State({'type': 'restaurant-card', 'index': ALL}, 'id'),
+     State('view-mode', 'data')], # 讀取當前頁面模式
     prevent_initial_call=True
 )
-def handle_card_click(n_clicks_list, card_ids):
-    """處理餐廳卡片點擊，導航到詳細頁面"""
+def handle_card_click(n_clicks_list, card_ids, current_view_mode):
     ctx = callback_context
-
-    # 檢查是否有任何有效的點擊 (排除 n_clicks=0 的情況)
-    if not ctx.triggered:
-        raise PreventUpdate
-    
-    # 檢查是否所有的點擊都是 0 (初始化狀態)，如果是則不動作
-    # any(n_clicks_list) 會在全是 0 或 None 時回傳 False
-    if not any(n for n in n_clicks_list if n is not None):
+    # 檢查是否有有效點擊
+    if not ctx.triggered or not any(n for n in n_clicks_list if n is not None and n > 0):
         raise PreventUpdate
 
-    # 確定哪個卡片被點擊
     try:
         triggered_prop_id = ctx.triggered[0]['prop_id'].split('.')[0]
         triggered_id = json.loads(triggered_prop_id)
         
-        # 確保 type 正確
+        # 確保是點擊餐廳卡片
         if triggered_id.get('type') != 'restaurant-card':
             raise PreventUpdate
             
         restaurant_id = triggered_id['index']
-        print(f"DEBUG: Restaurant card clicked! ID={restaurant_id}")
 
-        # 導航到詳細頁面，清除 view-mode 讓 URL 路由優先
-        return f'/restaurant/{restaurant_id}', None
+        # [關鍵修正] 判斷來源
+        # 預設來自列表
+        prev_loc = {'from': 'restaurant-list'} 
+        
+        # 如果當前 view-mode 是 analytics，就標記來源為 analytics
+        if current_view_mode == 'analytics':
+            prev_loc = {'from': 'analytics'}
+
+        return f'/restaurant/{restaurant_id}', None, prev_loc
         
     except Exception as e:
-        print(f"Error handling card click: {e}")
+        print(f"Error in handle_card_click: {e}")
         raise PreventUpdate
 
 # Callback 4b: Nearby Restaurant Card Click Handler - 處理附近餐廳卡片點擊事件
@@ -5223,7 +5364,7 @@ def handle_nearby_card_click(n_clicks_list, card_ids):
     # 導航到詳細頁面，清除 view-mode 讓 URL 路由優先
     return f'/restaurant/{restaurant_id}', None
 
-# Callback 5: Back Button Handler - 處理返回按鈕
+# 5. Back Button Handler - 處理餐廳詳細頁返回按鈕 (修正版)
 @app.callback(
     [Output('url', 'pathname', allow_duplicate=True),
      Output('view-mode', 'data', allow_duplicate=True),
@@ -5234,19 +5375,20 @@ def handle_nearby_card_click(n_clicks_list, card_ids):
     prevent_initial_call=True
 )
 def handle_back_button(n_clicks, previous_page, from_map):
-    """處理返回按鈕點擊，導航回上一頁"""
     if not n_clicks:
         raise PreventUpdate
 
-    # If came from map, go directly to home with map section hash
+    # [關鍵修正] 優先檢查是否來自 Analytics
+    if previous_page and previous_page.get('from') == 'analytics':
+        # URL 改回首頁 (停止顯示詳細頁)，並將模式切回 analytics
+        return '/', 'analytics', False
+
+    # 處理來自地圖導航的情況
     if from_map:
         return '/#distribution-map-section', 'home', False
 
-    # Otherwise use normal navigation logic
-    if previous_page and previous_page.get('from') == 'restaurant-list':
-        return '/restaurant-list', 'restaurant-list', False
-    else:
-        return '/', 'home', False
+    # 預設回到餐廳列表
+    return '/restaurant-list', 'restaurant-list', False
 
 # Callback 6: Error Back Button Handler - 處理錯誤頁面的返回按鈕
 @app.callback(
@@ -5534,25 +5676,33 @@ def update_bar_chart_selection(selected_rating, restaurant_data, hotel_data):
 
 # Callback 1: Handle hotel card click
 @app.callback(
-    Output('url', 'pathname', allow_duplicate=True),
+    [Output('url', 'pathname', allow_duplicate=True),
+     Output('view-mode', 'data', allow_duplicate=True),
+     Output('previous-page-location', 'data', allow_duplicate=True)], # 新增 output (請確認 store id 正確)
     [Input({'type': 'hotel-card', 'index': ALL}, 'n_clicks')],
-    [State({'type': 'hotel-card', 'index': ALL}, 'id')],
+    [State({'type': 'hotel-card', 'index': ALL}, 'id'),
+     State('view-mode', 'data')],
     prevent_initial_call=True
 )
-def handle_hotel_card_click(n_clicks_list, card_ids):
-    """處理旅館卡片點擊，導航到詳細頁面"""
+def handle_hotel_card_click(n_clicks_list, card_ids, current_view):
     ctx = callback_context
-    
-    if not ctx.triggered or not any(n_clicks_list):
+    if not ctx.triggered or not any(n for n in n_clicks_list if n is not None):
         raise PreventUpdate
-    
-    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
-    triggered_dict = json.loads(triggered_id)
-    hotel_id = triggered_dict['index']
-    
-    print(f"DEBUG: Hotel card clicked! hotel_id={hotel_id}")  # Debug 訊息
-    
-    return f'/hotel/{hotel_id}'
+
+    try:
+        triggered_prop_id = ctx.triggered[0]['prop_id'].split('.')[0]
+        triggered_id = json.loads(triggered_prop_id)
+        hotel_id = triggered_id['index']
+
+        # [關鍵] 判斷來源
+        prev_loc = {'from': 'hotel-list'} # 預設 (旅館原本可能沒有這個store邏輯，現在統一加上)
+        if current_view == 'analytics':
+            prev_loc = {'from': 'analytics'}
+        # 注意：你需要確保有 previous-page-location 這個 Store
+        # 如果 hotel 原本用 from-map-navigation，這裡最好統一用 previous-page-location
+
+        return f'/hotel/{hotel_id}', None, prev_loc
+    except: raise PreventUpdate
 
 # Callback 3: Render hotel detail content when hotel-detail-data store is populated
 @app.callback(
@@ -5672,22 +5822,33 @@ def handle_nearby_hotel_click(n_clicks_list, card_ids):
     return f'/hotel/{hotel_id}'
 
 # Callback 6: Handle back button
+# Callback 6: Handle back button (Hotel) - 修正轉圈圈問題
 @app.callback(
     [Output('url', 'pathname', allow_duplicate=True),
-     Output('from-map-navigation', 'data', allow_duplicate=True)],
+     Output('from-map-navigation', 'data', allow_duplicate=True),
+     Output('view-mode', 'data', allow_duplicate=True)], # 新增 view-mode 輸出
     [Input('hotel-detail-back-btn', 'n_clicks')],
-    [State('from-map-navigation', 'data')],
+    [State('from-map-navigation', 'data'),
+     State('previous-page-location', 'data')], # 加入這個 State
     prevent_initial_call=True
 )
-def handle_hotel_back_button(n_clicks, from_map):
+def handle_hotel_back_button(n_clicks, from_map, previous_page):
     """處理旅館詳情頁返回按鈕"""
-    if n_clicks:
-        # If came from map, go directly to home with map section hash
-        if from_map:
-            return '/#distribution-map-section', False
-        else:
-            return '/', False
-    raise PreventUpdate
+    if not n_clicks:
+        raise PreventUpdate
+
+    # [關鍵修正] 如果是從 analytics 來的
+    if previous_page and previous_page.get('from') == 'analytics':
+        # URL 必須變回根目錄 '/'，否則 display_page 會一直以為還在 hotel 頁面
+        return '/', False, 'analytics'
+
+    # If came from map
+    if from_map:
+        return '/#distribution-map-section', False, 'home'
+    
+    # Default back to list
+    return '/', False, 'hotel-list'
+
 ##########################################################
 
 # ====== Attraction Callbacks ======
@@ -6602,7 +6763,287 @@ def update_point_instruction(store_data):  # ← Removed the extra parameter
         }
         return content, style
         return html.Div(), {'display': 'none'}
+    
+# ==========================================
+#  Advanced Analytics Interactive Callbacks
+# ==========================================
 
+# Helper: 計算兩點距離 (Haversine)
+# Helper: 計算兩點距離 (Haversine) - 修復版
+# ==========================================
+#  Helper Function: 計算兩點距離 (Haversine)
+# ==========================================
+def calculate_distances(df, center_lat, center_lon):
+    """計算 DataFrame 中所有點與中心點的距離 (km)"""
+    import numpy as np # 確保 numpy 有被引入
+    R = 6371  # 地球半徑 (km)
+    
+    # 確保資料是數值型態，並處理 NaN
+    try:
+        lat2 = pd.to_numeric(df['Lat'], errors='coerce').fillna(0)
+        lon2 = pd.to_numeric(df['Long'], errors='coerce').fillna(0)
+        
+        # 將角度轉為弧度
+        lat1_rad = np.radians(float(center_lat))
+        lon1_rad = np.radians(float(center_lon))
+        lat2_rad = np.radians(lat2)
+        lon2_rad = np.radians(lon2)
+        
+        dlat = lat2_rad - lat1_rad
+        dlon = lon2_rad - lon1_rad
+        
+        a = np.sin(dlat/2)**2 + np.cos(lat1_rad) * np.cos(lat2_rad) * np.sin(dlon/2)**2
+        # 防止浮點數誤差導致 sqrt 內出現負數
+        a = np.clip(a, 0, 1)
+        
+        c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1-a))
+        return R * c
+    except Exception as e:
+        print(f"Error in calculate_distances: {e}")
+        return pd.Series([9999] * len(df)) # 發生錯誤時回傳大距離，避免崩潰
+
+# ==========================================
+#  Sync Map Click to Search Dropdown (NEW)
+# ==========================================
+@app.callback(
+    Output('analytics-attraction-search', 'value'),
+    Input('interactive-map', 'clickData'),
+    State('analytics-attraction-search', 'value'),
+    prevent_initial_call=True
+)
+def sync_map_click(click_data, current_val):
+    if not click_data: raise PreventUpdate
+    try:
+        point = click_data['points'][0]
+        if 'customdata' in point and len(point['customdata']) > 1:
+            p_id = point['customdata'][0]
+            p_type = point['customdata'][1]
+            if p_type == 'Attraction' and p_id != current_val:
+                return p_id
+    except: pass
+    raise PreventUpdate
+
+# ==========================================
+#  Advanced Analytics Callback (Final Fix)
+# ==========================================
+@app.callback(
+    [Output('interactive-map', 'figure'),
+     Output('cp-matrix-graph', 'figure'),
+     Output('matrix-status-text', 'children'),
+     Output('analytics-list-content', 'children'),
+     Output('analytics-attraction-info', 'children')], 
+    [Input('analytics-attraction-search', 'value'), # 改回監聽 Dropdown (因為 Store 會同步給它)
+     Input('interactive-map', 'relayoutData'),           
+     Input('interactive-map', 'selectedData'),           
+     Input('analytics-type-filter', 'value'),
+     Input('analytics-tabs', 'active_tab')],
+    [State('analytics-combined-data', 'data'),
+     State('interactive-map', 'figure')]                 
+)
+def update_analytics_dashboard(search_id, relayout_data, selected_data, type_filter, active_tab, data, current_fig):
+    try:
+        if not data: return no_update, no_update, "Loading...", html.Div("Loading..."), None
+        df = pd.DataFrame(data)
+        if df.empty: return no_update, no_update, "No data.", html.Div("No data."), None
+
+        # 預處理
+        df['Rating'] = pd.to_numeric(df['Rating'], errors='coerce').fillna(0.1)
+        df['Price'] = pd.to_numeric(df['Price'], errors='coerce').fillna(0)
+
+        ctx = callback_context
+        trigger_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else 'init'
+
+        filtered_df = df.copy() # 這是關鍵：我們從完整資料開始
+        
+        map_center = {"lat": 35.0116, "lon": 135.7681} 
+        map_zoom = 11
+        status_msg = "Explore mode: Drag map or search to filter."
+        target_point = None 
+        is_focus_mode = False
+        attraction_info_card = None 
+
+        # --- 1. 篩選邏輯 (如果是搜尋模式) ---
+        if search_id:
+            # 找到目標點
+            target = df[(df['ID'] == search_id) & (df['Type'] == 'Attraction')]
+            if not target.empty:
+                target_point = target.iloc[0]
+                is_focus_mode = True
+        
+        # 如果進入聚焦模式 (Focus Mode)
+        if is_focus_mode and target_point is not None:
+            t_lat, t_lon = target_point['Lat'], target_point['Long']
+            
+            # [關鍵修復]：是在 "完整 df" 上計算距離，而不是已經過濾過的
+            df['dist'] = calculate_distances(df, t_lat, t_lon)
+            
+            # 保留 2km 內的所有資料 (包含餐廳、旅館、其他景點)
+            filtered_df = df[df['dist'] <= 2.0].copy()
+            
+            map_center = {"lat": t_lat, "lon": t_lon}
+            map_zoom = 13.5
+            status_msg = f"🎯 Focused on {target_point['Name']} (2km radius)"
+
+            # 產生景點資訊卡
+            sub_cat = target_point.get('SubCategory') or 'Tourist Attraction'
+            attraction_info_card = dbc.Card([
+                dbc.CardBody([
+                    html.H4([html.I(className="fas fa-map-marker-alt me-2", style={'color':'#d9534f'}), target_point['Name']], className="card-title"),
+                    html.Hr(),
+                    dbc.Row([
+                        dbc.Col([html.Strong("Type: "), html.Span(sub_cat), html.Br(), html.Strong("Rating: "), html.Span(f"⭐ {target_point['Rating']}")], width=6),
+                        dbc.Col([html.Strong("Location: "), html.Span(f"{t_lat:.4f}, {t_lon:.4f}")], width=6),
+                    ]),
+                ])
+            ], className="shadow-sm", style={'borderLeft': '5px solid #d9534f', 'backgroundColor': '#fff5f5'})
+
+        # 手動框選邏輯
+        elif trigger_id == 'interactive-map' and selected_data and 'points' in selected_data:
+             try:
+                df['temp_key'] = df['ID'].astype(str) + '_' + df['Type']
+                selected_keys = [f"{p['customdata'][0]}_{p['customdata'][1]}" for p in selected_data['points'] if 'customdata' in p]
+                if selected_keys:
+                    filtered_df = df[df['temp_key'].isin(selected_keys)]
+                    status_msg = f"Selected {len(filtered_df)} items manually"
+             except: pass
+
+        # 移動邏輯 (只有在非 Focus 模式下才生效，避免干擾)
+        elif trigger_id == 'interactive-map' and relayout_data and not is_focus_mode:
+            if 'mapbox._derived' in relayout_data and 'coordinates' in relayout_data['mapbox._derived']:
+                coords = relayout_data['mapbox._derived']['coordinates']
+                lons = [c[0] for c in coords]
+                lats = [c[1] for c in coords]
+                filtered_df = df[
+                    (df['Lat'] >= min(lats)) & (df['Lat'] <= max(lats)) &
+                    (df['Long'] >= min(lons)) & (df['Long'] <= max(lons))
+                ]
+                status_msg = "Filtering by current map view"
+            if 'mapbox.center' in relayout_data:
+                map_center = relayout_data['mapbox.center']
+            if 'mapbox.zoom' in relayout_data:
+                map_zoom = relayout_data['mapbox.zoom']
+
+        # --- 2. 產生地圖 (Map) ---
+        color_map = {'Restaurant': '#32CD32', 'Hotel': '#FF4500', 'Attraction': '#9370DB', 'Unknown': '#888888'}
+        
+        fig_map = px.scatter_mapbox(
+            filtered_df, lat="Lat", lon="Long", color="Type", size="Rating", size_max=12,
+            hover_name="Name", hover_data={"ID":True, "Type":True, "Price":True}, 
+            color_discrete_map=color_map, zoom=map_zoom, center=map_center, height=500
+        )
+        # 畫出目標大紅點
+        if target_point is not None:
+            fig_map.add_trace(go.Scattermapbox(
+                lat=[target_point['Lat']], lon=[target_point['Long']], mode='markers+text',
+                marker=go.scattermapbox.Marker(size=25, color='red', opacity=0.9),
+                text=[target_point['Name']], textposition="top center", name='Target'
+            ))
+        fig_map.update_layout(mapbox_style="carto-positron", margin={"r":0,"t":0,"l":0,"b":0}, clickmode='event+select', uirevision='constant')
+
+        # --- 3. 產生矩陣 (Matrix) ---
+        if type_filter is None: type_filter = []
+        matrix_df = filtered_df[filtered_df['Type'].isin(type_filter)]
+        matrix_df = matrix_df[matrix_df['Price'] > 0] # 排除沒價格的景點
+
+        if matrix_df.empty:
+            fig_matrix = px.scatter(title="No matching data")
+            fig_matrix.update_layout(xaxis={'visible': False}, yaxis={'visible': False})
+        else:
+            fig_matrix = px.scatter(
+                matrix_df, x="Price", y="Rating", color="Type", hover_name="Name",
+                size="Rating", color_discrete_map=color_map, template="plotly_white", height=450
+            )
+            # 輔助線
+            try:
+                avg_price = matrix_df['Price'].median()
+                fig_matrix.add_vline(x=avg_price, line_dash="dash", line_color="gray", annotation_text="Median")
+                fig_matrix.add_hline(y=4.0, line_dash="dash", line_color="green", annotation_text="High Rating")
+            except: pass
+
+        # --- 4. 產生詳細列表 (包含 ID Type 修正) ---
+        list_content = []
+        target_type = 'Restaurant' if active_tab == 'tab-analytics-restaurants' else 'Hotel'
+        
+        # 分類篩選 CP 值 (解決旅館消失問題)
+        type_df = matrix_df[matrix_df['Type'] == target_type].copy()
+        
+        if not type_df.empty:
+            # 簡單規則：高分優先
+            list_df = type_df.sort_values('Rating', ascending=False)
+        else:
+            list_df = pd.DataFrame()
+        
+        if list_df.empty:
+            list_content = html.Div([
+                html.I(className="fas fa-search", style={'fontSize':'2rem', 'color':'#ccc', 'marginBottom':'10px'}),
+                html.P(f"No {target_type.lower()}s found in range.", style={'color':'#888'})
+            ], style={'textAlign':'center', 'padding':'20px'})
+        else:
+            cards = []
+            for _, row in list_df.head(8).iterrows():
+                try:
+                    if target_type == 'Restaurant':
+                        r_data = {'Restaurant_ID': row['ID'], 'Name': row['Name'], 'FirstCategory': row['SubCategory'], 'TotalRating': row['Rating']}
+                        # [關鍵修正] 傳入 analytics-restaurant-card
+                        cards.append(create_destination_card(r_data, id_type='analytics-restaurant-card'))
+                    else:
+                        h_data = {'Hotel_ID': row['ID'], 'HotelName': row['Name'], 'Types': [row['SubCategory']], 'Rating': row['Rating'], 'Address': 'Kyoto'}
+                        # [關鍵修正] 傳入 analytics-hotel-card
+                        cards.append(create_hotel_card(h_data, id_type='analytics-hotel-card'))
+                except: pass
+
+            list_content = html.Div(cards, style={'display': 'grid', 'gridTemplateColumns': 'repeat(auto-fill, minmax(300px, 1fr))', 'gap': '1.5rem'})
+
+        return fig_map, fig_matrix, status_msg, list_content, attraction_info_card
+
+    except Exception as e:
+        print(f"❌ ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        return px.scatter(), px.scatter(), "Error", html.Div("System Error"), None
+
+# =========================================================
+#  NEW: Analytics Navigation Logic (Fix Back Button)
+# =========================================================
+
+@app.callback(
+    [Output('url', 'pathname', allow_duplicate=True),
+     Output('view-mode', 'data', allow_duplicate=True),
+     Output('previous-page-location', 'data', allow_duplicate=True)], 
+    [Input({'type': 'analytics-restaurant-card', 'index': ALL}, 'n_clicks')],
+    prevent_initial_call=True
+)
+def handle_analytics_restaurant_click(n_clicks_list):
+    ctx = callback_context
+    if not ctx.triggered or not any(n for n in n_clicks_list if n is not None and n > 0):
+        raise PreventUpdate
+
+    try:
+        triggered_id = json.loads(ctx.triggered[0]['prop_id'].split('.')[0])
+        restaurant_id = triggered_id['index']
+        # 強制設定來源
+        return f'/restaurant/{restaurant_id}', None, {'from': 'analytics'}
+    except: raise PreventUpdate
+
+@app.callback(
+    [Output('url', 'pathname', allow_duplicate=True),
+     Output('view-mode', 'data', allow_duplicate=True),
+     Output('previous-page-location', 'data', allow_duplicate=True)], 
+    [Input({'type': 'analytics-hotel-card', 'index': ALL}, 'n_clicks')],
+    prevent_initial_call=True
+)
+def handle_analytics_hotel_click(n_clicks_list):
+    ctx = callback_context
+    if not ctx.triggered or not any(n for n in n_clicks_list if n is not None and n > 0):
+        raise PreventUpdate
+
+    try:
+        triggered_id = json.loads(ctx.triggered[0]['prop_id'].split('.')[0])
+        hotel_id = triggered_id['index']
+        # 強制設定來源
+        return f'/hotel/{hotel_id}', None, {'from': 'analytics'}
+    except: raise PreventUpdate
+    
 if __name__ == '__main__':
     app.run(debug=True, port=8050)
 
