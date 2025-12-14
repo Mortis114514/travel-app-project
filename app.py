@@ -2069,7 +2069,56 @@ def create_restaurant_map_chart():
             'modeBarButtonsToRemove': ['lasso2d', 'select2d']
         }
     )
-
+def load_all_place_names():
+    """Load all place names from restaurants, hotels, and attractions CSV files"""
+    places = []
+    
+    try:
+        # Load restaurants
+        restaurants_df = pd.read_csv('data/restaurant.csv', encoding='utf-8-sig')
+        for _, row in restaurants_df.iterrows():
+            places.append({
+                'id': row.get('Restaurant_ID'),
+                'name': row.get('Name', ''),
+                'type': 'Restaurant',
+                'lat': row.get('Lat'),
+                'lon': row.get('Long')
+            })
+    except Exception as e:
+        print(f"Error loading restaurants: {e}")
+    
+    try:
+        # Load hotels
+        hotels_df = pd.read_csv('data/hotels.csv', encoding='utf-8-sig')
+        for _, row in hotels_df.iterrows():
+            places.append({
+                'id': row.get('Hotel_ID'),
+                'name': row.get('HotelName', ''),
+                'type': 'Hotel',
+                'lat': row.get('Lat'),
+                'lon': row.get('Long')
+            })
+    except Exception as e:
+        print(f"Error loading hotels: {e}")
+    
+    try:
+        # Load attractions
+        attractions_df = pd.read_csv('data/Kyoto_attractions.csv', encoding='utf-8-sig')
+        for _, row in attractions_df.iterrows():
+            places.append({
+                'id': row.get('ID'),
+                'name': row.get('Name', ''),
+                'type': 'Attraction',
+                'lat': row.get('Lat'),
+                'lon': row.get('Lng', row.get('Long'))  # Try both column names
+            })
+    except Exception as e:
+        print(f"Error loading attractions: {e}")
+    
+    # Filter out entries with missing coordinates or names
+    places = [p for p in places if p['name'] and pd.notna(p['lat']) and pd.notna(p['lon'])]
+    
+    return places
 
 def create_hotel_map_chart():
     """Creates a mapbox scatter plot of all hotels."""
@@ -2536,48 +2585,46 @@ app.index_string = '''
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
     dcc.Store(id='session-store', storage_type='session'),
-    dcc.Store(id='current-user-data', storage_type='session'),  # 當前使用者資料（改為 session 以保存照片）
-    dcc.Store(id='page-mode', data='login', storage_type='memory'),  # 'login' 或 'register'
-    dcc.Store(id='current-page', data='overview', storage_type='memory'),  # 記錄當前頁面
-    dcc.Store(id='menu-open', data=False, storage_type='memory'),  # 記錄選單開關狀態
-    dcc.Store(id='view-mode', data='home', storage_type='memory'),  # 'home' 或 'restaurant-list'
-    dcc.Store(id='navigation-trigger', storage_type='memory'),  # 導航觸發器
-    dcc.Store(id='search-cuisine', storage_type='memory'),  # 選中的料理類型
-    dcc.Store(id='search-rating', storage_type='memory'),  # 選中的評分範圍
-    dcc.Store(id='active-dropdown', storage_type='memory', data=None),  # 當前打開的下拉菜單 ('cuisine', 'rating', or None)
-    dcc.Store(id='close-dropdowns-trigger', storage_type='memory'),  # 觸發關閉所有下拉菜單
-    # 餐廳詳細頁面狀態管理
-    dcc.Store(id='selected-restaurant-id', storage_type='memory'),  # 選中的餐廳 ID
-    dcc.Store(id='previous-page-location', storage_type='memory'),  # 上一頁位置 (用於返回導航)
-    dcc.Store(id='from-map-navigation', storage_type='memory'),  # 標記是否從地圖點擊進入
-    dcc.Store(id='restaurant-detail-data', storage_type='memory'),  # 餐廳詳細資料
-    # Stores for restaurant list page
+    dcc.Store(id='current-user-data', storage_type='session'),
+    dcc.Store(id='page-mode', data='login', storage_type='memory'),
+    dcc.Store(id='current-page', data='overview', storage_type='memory'),
+    dcc.Store(id='menu-open', data=False, storage_type='memory'),
+    dcc.Store(id='view-mode', data='home', storage_type='memory'),
+    dcc.Store(id='navigation-trigger', storage_type='memory'),
+    dcc.Store(id='search-cuisine', storage_type='memory'),
+    dcc.Store(id='search-rating', storage_type='memory'),
+    dcc.Store(id='active-dropdown', storage_type='memory', data=None),
+    dcc.Store(id='close-dropdowns-trigger', storage_type='memory'),
+    dcc.Store(id='selected-restaurant-id', storage_type='memory'),
+    dcc.Store(id='previous-page-location', storage_type='memory'),
+    dcc.Store(id='from-map-navigation', storage_type='memory'),
+    dcc.Store(id='restaurant-detail-data', storage_type='memory'),
     dcc.Store(id='search-results-store', storage_type='memory'),
     dcc.Store(id='current-page-store', data=1, storage_type='memory'),
     dcc.Store(id='search-params-store', storage_type='memory'),
-    #新增旅館相關 Stores (3個)
-    dcc.Store(id='search-hotel-type', storage_type='memory'),  # 👈 存儲選中的旅館類型
-    dcc.Store(id='hotel-search-results-store', storage_type='memory'),  # 👈 存儲旅館搜尋結果
-    dcc.Store(id='hotel-current-page-store', data=1, storage_type='memory'),  # 👈 存儲旅館列表分頁狀態
-    dcc.Store(id='hotel-detail-data', storage_type='memory'),  # 旅館詳細資料（包含 reviews）
+    dcc.Store(id='search-hotel-type', storage_type='memory'),
+    dcc.Store(id='hotel-search-results-store', storage_type='memory'),
+    dcc.Store(id='hotel-current-page-store', data=1, storage_type='memory'),
+    dcc.Store(id='hotel-detail-data', storage_type='memory'),
     dcc.Store(id='selected-restaurants', storage_type='session', data=[]),
-    # 新增景點相關 Stores
-    dcc.Store(id='attraction-search-results-store', storage_type='memory'),  # 存儲景點搜尋結果
-            dcc.Store(id='attraction-current-page-store', data=1, storage_type='memory'),  # 存儲景點列表分頁狀態
-            dcc.Store(id='attraction-search-params-store', storage_type='memory'),  # 存儲景點搜尋參數
-    dcc.Store(id='selected-attraction-type', storage_type='memory'),  # 存儲選中的景點類型
-    dcc.Store(id='selected-attraction-rating', storage_type='memory'),  # 存儲選中的景點評分範圍
-    dcc.Store(id='analytics-selected-attraction', storage_type='session'), # 記住 Analytics 選的景點
-    dcc.Store(id='analytics-combined-data', storage_type='memory'),        # 讓 callback 讀得到數據
-    dcc.Store(id='is-analytics-active', data=False, storage_type='memory'), # 輔助判斷
-    dcc.Store(id='dropdown-open', data=False, storage_type='memory'),  # User dropdown state for homepage
-    dcc.Store(id='dropdown-open-list', data=False, storage_type='memory'),  # User dropdown state for restaurant list page
-    dcc.Store(id='dropdown-open-hotel-list', data=False, storage_type='memory'),  # User dropdown state for hotel list page
-    dcc.Store(id='dropdown-open-detail', data=False, storage_type='memory'),  # User dropdown state for detail pages
-    dcc.Store(id='previous-view-mode', storage_type='memory'),  # Track previous view mode before navigating to profile
-    dcc.Store(id='previous-pathname', storage_type='memory'),  # Track previous pathname before navigating to profile
+    dcc.Store(id='attraction-search-results-store', storage_type='memory'),
+    dcc.Store(id='attraction-current-page-store', data=1, storage_type='memory'),
+    dcc.Store(id='attraction-search-params-store', storage_type='memory'),
+    dcc.Store(id='selected-attraction-type', storage_type='memory'),
+    dcc.Store(id='selected-attraction-rating', storage_type='memory'),
+    dcc.Store(id='analytics-selected-attraction', storage_type='session'),
+    dcc.Store(id='analytics-combined-data', storage_type='memory'),
+    dcc.Store(id='is-analytics-active', data=False, storage_type='memory'),
+    dcc.Store(id='dropdown-open', data=False, storage_type='memory'),
+    dcc.Store(id='dropdown-open-list', data=False, storage_type='memory'),
+    dcc.Store(id='dropdown-open-hotel-list', data=False, storage_type='memory'),
+    dcc.Store(id='dropdown-open-detail', data=False, storage_type='memory'),
+    dcc.Store(id='previous-view-mode', storage_type='memory'),
+    dcc.Store(id='previous-pathname', storage_type='memory'),
     dcc.Store(id='traffic-map-store', storage_type='memory', data={'points': []}),
-    html.Div(id='scroll-trigger', style={'display': 'none'}),  # 隱藏的滾動觸發器
+    # ADD THIS LINE - Load all place names for traffic calculator
+    dcc.Store(id='all-places-store', data=load_all_place_names(), storage_type='memory'),
+    html.Div(id='scroll-trigger', style={'display': 'none'}),
     html.Div(id='page-content', style={'minHeight': '100vh'})
 ], style={'backgroundColor': '#F2F6FA', 'minHeight': '100vh'})
 
@@ -3441,12 +3488,21 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
                                         style={'marginRight': '8px', 'color': '#32CD32'}),
                                     'Starting Point'
                                 ], style={'fontWeight': 'bold', 'color': '#1A1A1A', 'marginBottom': '0.5rem'}),
+                                # Find these lines in create traffic_layout (around line 1665-1680):
                                 dcc.Dropdown(
                                     id='traffic-start-location',
                                     placeholder='Type to search (restaurants, hotels, attractions)...',
                                     searchable=True,
                                     clearable=True,
-                                    style={'marginBottom': '1.5rem'}
+                                    style={
+                                        'marginBottom': '1.5rem',
+                                        'color': '#1A1A1A'  # Black text
+                                    },
+                                    # Add these new properties:
+                                    optionHeight=50,
+                                    maxHeight=300,
+                                    # Add inline CSS for dropdown menu
+                                    className='custom-location-dropdown'
                                 )
                             ]),
                             
@@ -3462,7 +3518,11 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
                                     placeholder='Type to search (restaurants, hotels, attractions)...',
                                     searchable=True,
                                     clearable=True,
-                                    style={'marginBottom': '1.5rem'}
+                                    className='custom-location-dropdown',
+                                    style={
+                                        'marginBottom': '1.5rem',
+                                        'color': '#1A1A1A'
+                                        }
                                 )
                             ]),
                             
@@ -6754,56 +6814,7 @@ def create_traffic_map_chart(points=None):
     )
 # Add this helper function after the create_traffic_map_chart function (around line 2750)
 
-def load_all_place_names():
-    """Load all place names from restaurants, hotels, and attractions CSV files"""
-    places = []
-    
-    try:
-        # Load restaurants
-        restaurants_df = pd.read_csv('data/restaurant.csv', encoding='utf-8-sig')
-        for _, row in restaurants_df.iterrows():
-            places.append({
-                'id': row.get('Restaurant_ID'),
-                'name': row.get('Name', ''),
-                'type': 'Restaurant',
-                'lat': row.get('Lat'),
-                'lon': row.get('Long')
-            })
-    except Exception as e:
-        print(f"Error loading restaurants: {e}")
-    
-    try:
-        # Load hotels
-        hotels_df = pd.read_csv('data/hotels.csv', encoding='utf-8-sig')
-        for _, row in hotels_df.iterrows():
-            places.append({
-                'id': row.get('Hotel_ID'),
-                'name': row.get('HotelName', ''),
-                'type': 'Hotel',
-                'lat': row.get('Lat'),
-                'lon': row.get('Long')
-            })
-    except Exception as e:
-        print(f"Error loading hotels: {e}")
-    
-    try:
-        # Load attractions
-        attractions_df = pd.read_csv('data/Kyoto_attractions.csv', encoding='utf-8-sig')
-        for _, row in attractions_df.iterrows():
-            places.append({
-                'id': row.get('ID'),
-                'name': row.get('Name', ''),
-                'type': 'Attraction',
-                'lat': row.get('Lat'),
-                'lon': row.get('Lng', row.get('Long'))  # Try both column names
-            })
-    except Exception as e:
-        print(f"Error loading attractions: {e}")
-    
-    # Filter out entries with missing coordinates or names
-    places = [p for p in places if p['name'] and pd.notna(p['lat']) and pd.notna(p['lon'])]
-    
-    return places
+
 
 # Callback: Toggle between text and map calculators
 @app.callback(
@@ -7379,6 +7390,8 @@ def handle_analytics_hotel_click(n_clicks_list):
 # ===== Text-Based Distance Calculator Callbacks =====
 
 # Callback 1: Populate dropdown options with place names
+# Find the populate_location_dropdowns callback (around line 3175) and replace it with this improved version:
+
 @app.callback(
     [Output('traffic-start-location', 'options'),
      Output('traffic-end-location', 'options')],
@@ -7393,12 +7406,19 @@ def populate_location_dropdowns(places_data):
     for place in places_data:
         # Create label with name and type emoji
         type_emoji = {
-            'Restaurant': 'ðŸ"',
-            'Hotel': 'ðŸ¨',
-            'Attraction': 'ðŸ—¼'
-        }.get(place['type'], 'ðŸ"')
+            'Restaurant': '🍔',
+            'Hotel': '🏨',
+            'Attraction': '🗼'
+        }.get(place['type'], '📍')
         
-        label = f"{type_emoji} {place['name']} ({place['type']})"
+        name = place['name']
+        
+        # Truncate long names to prevent squeezing
+        # If name is longer than 40 characters, truncate and add ellipsis
+        display_name = name if len(name) <= 40 else name[:37] + '...'
+        
+        # Create readable label with proper spacing
+        label = f"{type_emoji} {display_name}"
         value = f"{place['type']}_{place['id']}"  # Unique identifier
         
         options.append({'label': label, 'value': value})
@@ -7407,6 +7427,64 @@ def populate_location_dropdowns(places_data):
     options = sorted(options, key=lambda x: x['label'])
     
     return options, options
+
+# Add this callback after the populate_location_dropdowns callback (around line 3185)
+
+@app.callback(
+    [Output('traffic-start-location', 'options', allow_duplicate=True),
+     Output('traffic-end-location', 'options', allow_duplicate=True)],
+    [Input('traffic-start-location', 'search_value'),
+     Input('traffic-end-location', 'search_value')],
+    [State('all-places-store', 'data')],
+    prevent_initial_call=True
+)
+def filter_location_options(start_search, end_search, places_data):
+    """Filter dropdown options based on user's search input"""
+    if not places_data:
+        return [], []
+    
+    # Determine which input triggered the callback
+    ctx = callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
+    
+    trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    
+    # Create base options list
+    def create_options(filter_text=None):
+        options = []
+        for place in places_data:
+            # Apply filter if provided
+            if filter_text and len(filter_text) >= 2:
+                filter_lower = filter_text.lower()
+                if filter_lower not in place['name'].lower() and filter_lower not in place['type'].lower():
+                    continue
+            
+            type_emoji = {
+                'Restaurant': '🍔',
+                'Hotel': '🏨',
+                'Attraction': '🗼'
+            }.get(place['type'], '📍')
+            
+            name = place['name']
+            display_name = name if len(name) <= 40 else name[:37] + '...'
+            label = f"{type_emoji} {display_name}"
+            value = f"{place['type']}_{place['id']}"
+            options.append({'label': label, 'value': value})
+        
+        return sorted(options, key=lambda x: x['label'])
+    
+    # Only update the dropdown that triggered the search
+    if trigger_id == 'traffic-start-location':
+        # Filter start location options based on start_search
+        start_options = create_options(start_search if start_search and len(start_search) >= 2 else None)
+        # Keep end location unchanged
+        return start_options, no_update
+    else:
+        # Filter end location options based on end_search
+        end_options = create_options(end_search if end_search and len(end_search) >= 2 else None)
+        # Keep start location unchanged
+        return no_update, end_options
 
 # Callback 2: Calculate distance between text-selected locations
 @app.callback(
@@ -7474,13 +7552,14 @@ def calculate_text_distance(n_clicks, start_value, end_value, places_data):
         google_maps_url = f"https://www.google.com/maps/dir/?api=1&origin={lat1},{lon1}&destination={lat2},{lon2}&travelmode=transit"
         
         # Build result display
-        type_emoji_map = {'Restaurant': 'ðŸ"', 'Hotel': 'ðŸ¨', 'Attraction': 'ðŸ—¼'}
+        type_emoji_map = {'Restaurant': '🍔', 'Hotel': '🏨', 'Attraction': '🗼'}
         
         return html.Div([
-            html.Div("âœ…", style={'fontSize': '3rem', 'textAlign': 'center', 'marginBottom': '1rem'}),
+            html.Div("🎯", style={'fontSize': '3rem', 'textAlign': 'center', 'marginBottom': '1rem'}),
             
             # From/To display
             html.Div([
+                html.Div("Route Calculated!",  style={'fontSize': '2.5rem','color': '#003580', 'textAlign': 'center', 'marginBottom': '2rem'}),
                 html.Div([
                     html.Span(type_emoji_map.get(start_place['type'], 'ðŸ"'), 
                              style={'fontSize': '1.5rem', 'marginRight': '8px'}),
@@ -7488,8 +7567,6 @@ def calculate_text_distance(n_clicks, start_value, end_value, places_data):
                     html.Span(start_place['name'], style={'color': '#666'})
                 ], style={'marginBottom': '0.5rem', 'textAlign': 'center'}),
                 
-                html.Div("â¬‡ï¸", style={'fontSize': '1.5rem', 'textAlign': 'center', 
-                                        'margin': '0.5rem 0'}),
                 
                 html.Div([
                     html.Span(type_emoji_map.get(end_place['type'], 'ðŸ"'), 
