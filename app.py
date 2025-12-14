@@ -7449,13 +7449,17 @@ def filter_location_options(start_search, end_search, places_data):
         raise PreventUpdate
     
     trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
-    search_value = start_search if trigger_id == 'traffic-start-location' else end_search
     
-    # If no search value, show all options
-    if not search_value or len(search_value) < 2:
-        # Return all options (same as populate_location_dropdowns)
+    # Create base options list
+    def create_options(filter_text=None):
         options = []
         for place in places_data:
+            # Apply filter if provided
+            if filter_text and len(filter_text) >= 2:
+                filter_lower = filter_text.lower()
+                if filter_lower not in place['name'].lower() and filter_lower not in place['type'].lower():
+                    continue
+            
             type_emoji = {
                 'Restaurant': '🍔',
                 'Hotel': '🏨',
@@ -7463,44 +7467,24 @@ def filter_location_options(start_search, end_search, places_data):
             }.get(place['type'], '📍')
             
             name = place['name']
-            
-            # Truncate long names
             display_name = name if len(name) <= 40 else name[:37] + '...'
-            
             label = f"{type_emoji} {display_name}"
             value = f"{place['type']}_{place['id']}"
             options.append({'label': label, 'value': value})
         
-        options = sorted(options, key=lambda x: x['label'])
-        return options, options
+        return sorted(options, key=lambda x: x['label'])
     
-    # Filter options based on search value
-    search_lower = search_value.lower()
-    filtered_options = []
-    
-    for place in places_data:
-        # Check if search matches name or type
-        if search_lower in place['name'].lower() or search_lower in place['type'].lower():
-            type_emoji = {
-                'Restaurant': '🍔',
-                'Hotel': '🏨',
-                'Attraction': '🗼'
-            }.get(place['type'], '📍')
-            
-            name = place['name']
-            
-            # Truncate long names
-            display_name = name if len(name) <= 40 else name[:37] + '...'
-            
-            label = f"{type_emoji} {display_name}"
-            value = f"{place['type']}_{place['id']}"
-            filtered_options.append({'label': label, 'value': value})
-    
-    # Sort filtered results
-    filtered_options = sorted(filtered_options, key=lambda x: x['label'])
-    
-    # Return filtered options for both dropdowns
-    return filtered_options, filtered_options
+    # Only update the dropdown that triggered the search
+    if trigger_id == 'traffic-start-location':
+        # Filter start location options based on start_search
+        start_options = create_options(start_search if start_search and len(start_search) >= 2 else None)
+        # Keep end location unchanged
+        return start_options, no_update
+    else:
+        # Filter end location options based on end_search
+        end_options = create_options(end_search if end_search and len(end_search) >= 2 else None)
+        # Keep start location unchanged
+        return no_update, end_options
 
 # Callback 2: Calculate distance between text-selected locations
 @app.callback(
