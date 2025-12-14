@@ -3389,6 +3389,7 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
                 return create_advanced_analytics_layout(), 'main'
             
             # Find this section in the traffic layout (around line 1587)
+            # Find this section in the traffic layout (around line 1587)
             elif view_mode == 'traffic':
                 traffic_layout = html.Div([
                     # Header
@@ -3401,14 +3402,37 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
                     ], style={'display': 'flex', 'alignItems': 'center', 'padding': '2rem', 
                             'borderBottom': '1px solid #E8ECEF'}),
                     
-                    # TWO COLUMN LAYOUT
+                    # Toggle buttons
                     html.Div([
-                        # LEFT COLUMN: Text-based calculator
+                        html.Div([
+                            dbc.Button([
+                                html.I(className='fas fa-search-location', style={'marginRight': '8px'}),
+                                'Text Search Calculator'
+                            ], id='toggle-text-calculator', color='primary', size='lg',
+                            style={'marginRight': '1rem', 'minWidth': '250px'}),
+                            
+                            dbc.Button([
+                                html.I(className='fas fa-map-marked-alt', style={'marginRight': '8px'}),
+                                'Map Click Calculator'
+                            ], id='toggle-map-calculator', color='secondary', size='lg',
+                            style={'minWidth': '250px'})
+                        ], style={
+                            'display': 'flex',
+                            'justifyContent': 'center',
+                            'padding': '2rem 0'
+                        })
+                    ]),
+                    
+                    # Store to track which calculator is active
+                    dcc.Store(id='active-calculator', data='text'),
+                    
+                    # Text-based calculator (visible by default)
+                    html.Div([
                         html.Div([
                             html.H2("Distance Calculator", 
-                                style={'color': '#003580', 'marginBottom': '1rem'}),
+                                style={'color': '#003580', 'marginBottom': '1rem', 'textAlign': 'center'}),
                             html.P("Calculate distance between any two places in Kyoto", 
-                                style={'color': '#666', 'marginBottom': '2rem'}),
+                                style={'color': '#666', 'marginBottom': '2rem', 'textAlign': 'center'}),
                             
                             # First location input
                             html.Div([
@@ -3460,15 +3484,17 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
                                 'minHeight': '150px'
                             })
                         ], style={
-                            'flex': '1',
+                            'maxWidth': '800px',
+                            'margin': '0 auto',
                             'padding': '2rem',
                             'backgroundColor': '#FFFFFF',
                             'borderRadius': '12px',
-                            'boxShadow': '0 2px 8px rgba(0,0,0,0.1)',
-                            'marginRight': '1rem'
-                        }),
-                        
-                        # RIGHT COLUMN: Map-based calculator
+                            'boxShadow': '0 2px 8px rgba(0,0,0,0.1)'
+                        })
+                    ], id='text-calculator-section', style={'padding': '2rem'}),
+                    
+                    # Map-based calculator (hidden by default)
+                    html.Div([
                         html.Div([
                             html.H2("Map-Based Calculator", 
                                 style={'color': '#003580', 'textAlign': 'center', 'marginBottom': '1rem'}),
@@ -3503,19 +3529,15 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
                                 'boxShadow': '0 2px 8px rgba(0,0,0,0.1)'
                             })
                         ], style={
-                            'flex': '1',
+                            'maxWidth': '1200px',
+                            'margin': '0 auto',
                             'padding': '2rem',
                             'backgroundColor': '#FFFFFF',
                             'borderRadius': '12px',
                             'boxShadow': '0 2px 8px rgba(0,0,0,0.1)'
                         })
-                    ], style={
-                        'display': 'flex',
-                        'gap': '2rem',
-                        'padding': '2rem',
-                        'maxWidth': '1800px',
-                        'margin': '0 auto'
-                    })
+                    ], id='map-calculator-section', style={'display': 'none', 'padding': '2rem'})
+                    
                 ], style={
                     'backgroundColor': '#F2F6FA',
                     'minHeight': '100vh'
@@ -6785,7 +6807,7 @@ def load_all_place_names():
 
 # Add Store for place names at the top of app.layout (around line 1560)
 # Add this line inside the app.layout = html.Div([ ... ]) section:
-    dcc.Store(id='all-places-store', data=load_all_place_names(), storage_type='memory'),
+dcc.Store(id='all-places-store', data=load_all_place_names(), storage_type='memory'),
 # Find this callback (around line 2870) and modify the RETURN statement at the end:
 @app.callback(
     [Output('traffic-map-store', 'data'),
