@@ -7390,6 +7390,8 @@ def handle_analytics_hotel_click(n_clicks_list):
 # ===== Text-Based Distance Calculator Callbacks =====
 
 # Callback 1: Populate dropdown options with place names
+# Find the populate_location_dropdowns callback (around line 3175) and replace it with this improved version:
+
 @app.callback(
     [Output('traffic-start-location', 'options'),
      Output('traffic-end-location', 'options')],
@@ -7404,12 +7406,19 @@ def populate_location_dropdowns(places_data):
     for place in places_data:
         # Create label with name and type emoji
         type_emoji = {
-            'Restaurant': 'ðŸ"',
-            'Hotel': 'ðŸ¨',
-            'Attraction': 'ðŸ—¼'
-        }.get(place['type'], 'ðŸ"')
+            'Restaurant': '🍔',
+            'Hotel': '🏨',
+            'Attraction': '🗼'
+        }.get(place['type'], '📍')
         
-        label = f"{type_emoji} {place['name']} ({place['type']})"
+        name = place['name']
+        
+        # Truncate long names to prevent squeezing
+        # If name is longer than 40 characters, truncate and add ellipsis
+        display_name = name if len(name) <= 40 else name[:37] + '...'
+        
+        # Create readable label with proper spacing
+        label = f"{type_emoji} {display_name}"
         value = f"{place['type']}_{place['id']}"  # Unique identifier
         
         options.append({'label': label, 'value': value})
@@ -7453,7 +7462,12 @@ def filter_location_options(start_search, end_search, places_data):
                 'Attraction': '🗼'
             }.get(place['type'], '📍')
             
-            label = f"{type_emoji} {place['name']} ({place['type']})"
+            name = place['name']
+            
+            # Truncate long names
+            display_name = name if len(name) <= 40 else name[:37] + '...'
+            
+            label = f"{type_emoji} {display_name}"
             value = f"{place['type']}_{place['id']}"
             options.append({'label': label, 'value': value})
         
@@ -7473,7 +7487,12 @@ def filter_location_options(start_search, end_search, places_data):
                 'Attraction': '🗼'
             }.get(place['type'], '📍')
             
-            label = f"{type_emoji} {place['name']} ({place['type']})"
+            name = place['name']
+            
+            # Truncate long names
+            display_name = name if len(name) <= 40 else name[:37] + '...'
+            
+            label = f"{type_emoji} {display_name}"
             value = f"{place['type']}_{place['id']}"
             filtered_options.append({'label': label, 'value': value})
     

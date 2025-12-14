@@ -2379,3 +2379,26 @@ div[style*="justifyContent: center"] {
 .custom-location-dropdown .css-1fdsijx-ValueContainer {
     color: #1A1A1A !important;
 }
+/* Better dropdown styling for long names */
+.custom-location-dropdown .Select-menu-outer {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.custom-location-dropdown .Select-option {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    padding: 10px 15px !important;
+    line-height: 1.4 !important;
+}
+
+.custom-location-dropdown .Select-value-label {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    max-width: 100% !important;
+}
+
+.custom-location-dropdown .Select-control {
+    min-height: 40px !important;
+    height: auto !important;
+}
