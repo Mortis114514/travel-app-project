@@ -6805,6 +6805,46 @@ def load_all_place_names():
     
     return places
 
+# Callback: Toggle between text and map calculators
+@app.callback(
+    [Output('text-calculator-section', 'style'),
+     Output('map-calculator-section', 'style'),
+     Output('toggle-text-calculator', 'color'),
+     Output('toggle-map-calculator', 'color'),
+     Output('active-calculator', 'data')],
+    [Input('toggle-text-calculator', 'n_clicks'),
+     Input('toggle-map-calculator', 'n_clicks')],
+    [State('active-calculator', 'data')],
+    prevent_initial_call=True
+)
+def toggle_calculator_mode(text_clicks, map_clicks, current_mode):
+    """Toggle between text-based and map-based distance calculators"""
+    ctx = callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
+    
+    button_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    
+    if button_id == 'toggle-text-calculator':
+        # Show text calculator, hide map calculator
+        return (
+            {'padding': '2rem'},  # Show text section
+            {'display': 'none'},  # Hide map section
+            'primary',  # Text button active
+            'secondary',  # Map button inactive
+            'text'  # Update active mode
+        )
+    else:  # toggle-map-calculator
+        # Show map calculator, hide text calculator
+        return (
+            {'display': 'none'},  # Hide text section
+            {'padding': '2rem'},  # Show map section
+            'secondary',  # Text button inactive
+            'primary',  # Map button active
+            'map'  # Update active mode
+        )
+
+
 # Add Store for place names at the top of app.layout (around line 1560)
 # Add this line inside the app.layout = html.Div([ ... ]) section:
 dcc.Store(id='all-places-store', data=load_all_place_names(), storage_type='memory'),
@@ -6999,7 +7039,7 @@ def handle_distance_calculation(click_data, store_data):
      Output('point-selection-instruction', 'style')],
     Input('traffic-map-store', 'data')
 )
-def update_point_instruction(store_data):  # ← Removed the extra parameter
+def update_point_instruction(store_data):  # â† Removed the extra parameter
     if store_data is None:
         store_data = {'points': []}
     
@@ -7504,6 +7544,8 @@ def calculate_text_distance(n_clicks, start_value, end_value, places_data):
             html.P(f'Error calculating distance: {str(e)}', 
                   style={'color': '#FF0000', 'textAlign': 'center'})
         ], style={'textAlign': 'center', 'padding': '2rem'})
+    
+
     
 if __name__ == '__main__':
     app.run(debug=True, port=8050)
