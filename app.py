@@ -3518,7 +3518,11 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
                                     placeholder='Type to search (restaurants, hotels, attractions)...',
                                     searchable=True,
                                     clearable=True,
-                                    style={'marginBottom': '1.5rem'}
+                                    className='custom-location-dropdown',
+                                    style={
+                                        'marginBottom': '1.5rem',
+                                        'color': '#1A1A1A'
+                                        }
                                 )
                             ]),
                             

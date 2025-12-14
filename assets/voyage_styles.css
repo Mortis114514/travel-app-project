@@ -2291,50 +2291,91 @@ div[style*="justifyContent: center"] {
     }
 }
 /* Fix dropdown text color for traffic calculators */
-.custom-location-dropdown .Select-menu-outer {
-    background-color: white;
-    color: #1A1A1A;
-}
-
-.custom-location-dropdown .Select-option {
-    background-color: white;
-    color: #1A1A1A;
-    padding: 12px;
-    font-size: 0.95rem;
-}
-
-.custom-location-dropdown .Select-option:hover {
-    background-color: #E6F3FF;
-    color: #003580;
-}
-
-.custom-location-dropdown .Select-value-label {
-    color: #1A1A1A !important;
-}
-
+/* Traffic Calculator Dropdown Styling - Black Text */
+.custom-location-dropdown .Select-control,
+.custom-location-dropdown .Select-value,
+.custom-location-dropdown .Select-value-label,
+.custom-location-dropdown .Select-placeholder,
 .custom-location-dropdown input {
     color: #1A1A1A !important;
 }
 
+.custom-location-dropdown .Select-menu-outer {
+    background-color: white;
+    border: 1px solid #E8ECEF;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.custom-location-dropdown .Select-option {
+    background-color: white;
+    color: #1A1A1A !important;
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.custom-location-dropdown .Select-option:hover {
+    background-color: #E6F3FF !important;
+    color: #003580 !important;
+}
+
+.custom-location-dropdown .Select-option.is-focused {
+    background-color: #E6F3FF !important;
+    color: #003580 !important;
+}
+
+.custom-location-dropdown .Select-option.is-selected {
+    background-color: #003580 !important;
+    color: white !important;
+}
+
 /* For newer Dash versions using React-Select */
 .custom-location-dropdown .css-1uccc91-singleValue,
-.custom-location-dropdown .css-qc6sy-singleValue {
+.custom-location-dropdown .css-qc6sy-singleValue,
+.custom-location-dropdown .css-1wa3eu0-placeholder {
     color: #1A1A1A !important;
 }
 
-.custom-location-dropdown .css-26l3qy-menu {
+.custom-location-dropdown .css-26l3qy-menu,
+.custom-location-dropdown .css-1nmdiq5-menu {
     background-color: white;
-    color: #1A1A1A;
+    border: 1px solid #E8ECEF;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .custom-location-dropdown .css-1n7v3ny-option,
-.custom-location-dropdown .css-yt9ioa-option {
-    background-color: white;
-    color: #1A1A1A;
+.custom-location-dropdown .css-yt9ioa-option,
+.custom-location-dropdown .css-9gakcf-option {
+    background-color: white !important;
+    color: #1A1A1A !important;
+    padding: 12px 16px;
+    cursor: pointer;
 }
 
 .custom-location-dropdown .css-1n7v3ny-option:hover,
-.custom-location-dropdown .css-yt9ioa-option:hover {
-    background-color: #E6F3FF;
-    color: #003580;
+.custom-location-dropdown .css-yt9ioa-option:hover,
+.custom-location-dropdown .css-9gakcf-option:hover {
+    background-color: #E6F3FF !important;
+    color: #003580 !important;
+}
+
+.custom-location-dropdown .css-1gl4k7y,
+.custom-location-dropdown .css-1okebmr-indicatorSeparator {
+    background-color: #E8ECEF;
+}
+
+.custom-location-dropdown .css-tlfecz-indicatorContainer,
+.custom-location-dropdown .css-1gtu0rj-indicatorContainer {
+    color: #1A1A1A !important;
+}
+
+/* Input text color */
+.custom-location-dropdown input[type="text"] {
+    color: #1A1A1A !important;
+}
+
+/* Selected value container */
+.custom-location-dropdown .css-1hwfws3,
+.custom-location-dropdown .css-1fdsijx-ValueContainer {
+    color: #1A1A1A !important;
 }
