@@ -6752,11 +6752,20 @@ def handle_distance_calculation(click_data, store_data):
                 
                 # Distance
                 html.Div([
-                    html.Div("Distance:", style={'fontSize': '2rem', 'marginBottom': '0.5rem'}),
+                    html.Div("Straight-Line Distance:", style={'fontSize': '1.5rem', 'marginBottom': '0.5rem'}),
                     html.Div(f"{distance:.2f} km", style={
                         'fontSize': '2.5rem',
                         'fontWeight': 'bold',
                         'color': '#003580',
+                        'marginBottom': '0.5rem'
+                    }),
+                    html.Div([
+                        html.I(className='fas fa-info-circle', style={'marginRight': '8px'}),
+                        "Click 'View Directions' below for actual travel distance & time"
+                    ], style={
+                        'fontSize': '0.9rem',
+                        'color': '#666',
+                        'fontStyle': 'italic',
                         'marginBottom': '2rem'
                     })
                 ], style={'textAlign': 'center'}),
@@ -6876,7 +6885,6 @@ def update_point_instruction(store_data):  # ← Removed the extra parameter
             'border': '2px solid #32CD32'
         }
         return content, style
-        return html.Div(), {'display': 'none'}
     
 # ==========================================
 #  Advanced Analytics Interactive Callbacks
