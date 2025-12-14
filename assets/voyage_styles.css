@@ -2290,3 +2290,51 @@ div[style*="justifyContent: center"] {
         box-shadow: 0 0 0 10px rgba(0, 53, 128, 0);
     }
 }
+/* Fix dropdown text color for traffic calculators */
+.custom-location-dropdown .Select-menu-outer {
+    background-color: white;
+    color: #1A1A1A;
+}
+
+.custom-location-dropdown .Select-option {
+    background-color: white;
+    color: #1A1A1A;
+    padding: 12px;
+    font-size: 0.95rem;
+}
+
+.custom-location-dropdown .Select-option:hover {
+    background-color: #E6F3FF;
+    color: #003580;
+}
+
+.custom-location-dropdown .Select-value-label {
+    color: #1A1A1A !important;
+}
+
+.custom-location-dropdown input {
+    color: #1A1A1A !important;
+}
+
+/* For newer Dash versions using React-Select */
+.custom-location-dropdown .css-1uccc91-singleValue,
+.custom-location-dropdown .css-qc6sy-singleValue {
+    color: #1A1A1A !important;
+}
+
+.custom-location-dropdown .css-26l3qy-menu {
+    background-color: white;
+    color: #1A1A1A;
+}
+
+.custom-location-dropdown .css-1n7v3ny-option,
+.custom-location-dropdown .css-yt9ioa-option {
+    background-color: white;
+    color: #1A1A1A;
+}
+
+.custom-location-dropdown .css-1n7v3ny-option:hover,
+.custom-location-dropdown .css-yt9ioa-option:hover {
+    background-color: #E6F3FF;
+    color: #003580;
+}
