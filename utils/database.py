@@ -14,6 +14,62 @@ import random
 # 数据库路径
 DB_PATH = './data/travel.db'
 
+def initialize_db():
+    """
+    Initializes the database by creating necessary tables if they don't exist.
+    """
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+
+        # Create restaurants table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS restaurants (
+                Restaurant_ID INTEGER PRIMARY KEY,
+                Name TEXT,
+                JapaneseName TEXT,
+                Station TEXT,
+                FirstCategory TEXT,
+                SecondCategory TEXT,
+                TotalRating REAL,
+                Lat REAL,
+                Long REAL,
+                DinnerPrice TEXT,
+                LunchPrice TEXT,
+                Price_Category TEXT,
+                DinnerRating REAL,
+                LunchRating REAL,
+                ReviewNum INTEGER,
+                Rating_Category TEXT
+            )
+        """)
+
+        # Create trips table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS trips (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                trip_name TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        """)
+
+        # Create activities table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS activities (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                trip_id INTEGER NOT NULL,
+                day INTEGER NOT NULL,
+                start_time TEXT NOT NULL, -- Stored as 'HH:MM'
+                end_time TEXT NOT NULL,   -- Stored as 'HH:MM'
+                location_name TEXT NOT NULL,
+                notes TEXT,
+                FOREIGN KEY (trip_id) REFERENCES trips (id)
+            )
+        """)
+        conn.commit()
+    print("Database tables (restaurants, trips, activities) initialized successfully or already exist.")
+
 @contextmanager
 def get_db_connection():
     """
@@ -38,13 +94,17 @@ def get_all_restaurants(sort_by='TotalRating', ascending=False) -> pd.DataFrame:
     Returns:
         DataFrame: 餐厅数据
     """
-    with get_db_connection() as conn:
-        query = f"""
-            SELECT * FROM restaurants
-            ORDER BY {sort_by} {'ASC' if ascending else 'DESC'}
-        """
-        df = pd.read_sql_query(query, conn)
-    return df
+    try:
+        with get_db_connection() as conn:
+            query = f"""
+                SELECT * FROM restaurants
+                ORDER BY {sort_by} {'ASC' if ascending else 'DESC'}
+            """
+            df = pd.read_sql_query(query, conn)
+        return df
+    except sqlite3.OperationalError as e:
+        print(f"Warning: Could not read 'restaurants' table. It might not exist or be empty. Error: {e}")
+        return pd.DataFrame() # Return empty DataFrame on error
 
 def get_random_top_restaurants(n=5, min_rating=4.0) -> pd.DataFrame:
     """
