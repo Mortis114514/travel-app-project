@@ -1220,7 +1220,7 @@ def create_restaurant_detail_content(data):
 
 
 def create_trip_layout():
-    """創建 "Create Trip" 頁面佈局"""
+    """創建 "Create Trip" 頁面佈局 - 功能開發中"""
     return html.Div([
         html.Div([
             html.Div([
@@ -1254,23 +1254,15 @@ def create_trip_layout():
         }),
 
         html.Div([
-            html.Div([
-                html.H2("Selected Restaurants"),
-                html.P("These are the restaurants you've added to your trip plan."),
-                html.Hr(),
-                # 這個 Div 將由 callback 填充
-                html.Div(id='selected-restaurants-container', children=[
-                    dbc.Spinner(color="primary")
-                ])
-            ], style={
-                'maxWidth': '1000px',
-                'margin': '0 auto'
+            # Main content area
+            html.Div("功能開發中...", style={
+                'textAlign': 'center',
+                'marginTop': '5rem',
+                'fontSize': '1.5rem',
+                'color': '#6c757d'
             })
-        ], style={
-            'backgroundColor': '#FFFFFF',
-            'padding': '2rem',
-        })
-    ], style={'backgroundColor': '#FFFFFF', 'minHeight': '100vh'})
+        ], className='page-content', style={'padding': '2rem'})
+    ])
 
 def create_hotel_card(hotel, id_type='hotel-card'): # <--- [修正] 加入參數
     """創建旅館卡片 (支援自定義 ID 類型)"""
