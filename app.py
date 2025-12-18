@@ -27,7 +27,6 @@ import plotly.graph_objects as go
 
 # 從./utils導入所有自定義函數
 from utils.auth import verify_user, create_user, get_session, create_session, delete_session, clean_expired_sessions, get_user_full_details, update_profile_photo
-from utils.itinerary import ItineraryManager
 from pages.login_page import create_login_layout, create_register_layout
 from pages.analytics_page import create_analytics_layout, load_and_prepare_data, register_analytics_callbacks
 from utils.database import get_revenue_trend, get_occupancy_status
@@ -37,7 +36,6 @@ from utils.database import get_revenue_trend, get_occupancy_status
 ########################
 # 導入數據庫工具
 from utils.database import (
-    initialize_db, # Add this import
     get_all_restaurants,
     get_random_top_restaurants as db_get_random_top_restaurants,
     search_restaurants as db_search_restaurants,
@@ -62,9 +60,6 @@ from utils.database import (
     get_attraction_by_id,
     get_all_attractions
 )
-
-# Initialize the database tables
-initialize_db()
 
 
 restaurants_df = get_all_restaurants()  # 從數據庫加載（用於選項列表）
@@ -1260,48 +1255,12 @@ def create_trip_layout():
 
         html.Div([
             # Main content area
-            html.Div([
-                dbc.Row([
-                    dbc.Col(
-                        html.Div([
-                            html.H4("Trip Details", className="card-title", style={'color': '#003580', 'marginBottom': '1.5rem'}),
-                            dbc.Form([
-                                dbc.Label("Trip Name", html_for="trip-name", style={'fontWeight': 'bold', 'color': '#555'}),
-                                dcc.Input(
-                                    id='trip-name',
-                                    placeholder='Enter trip name...',
-                                    type='text',
-                                    className="form-control mb-3",
-                                    style={'borderRadius': '8px', 'border': '1px solid #D0D5DD', 'padding': '0.75rem 1rem'}
-                                ),
-                                dbc.Label("Trip Dates", html_for="trip-date-range", style={'fontWeight': 'bold', 'color': '#555'}),
-                                dcc.DatePickerRange(
-                                    id='trip-date-range',
-                                    start_date_placeholder_text='Start Date',
-                                    end_date_placeholder_text='End Date',
-                                    className="mb-3",
-                                    style={
-                                        'width': '100%',
-                                        'border': '1px solid #D0D5DD',
-                                        'borderRadius': '8px',
-                                        'fontFamily': 'inherit',
-                                        'fontSize': '1rem',
-                                        'color': '#333'
-                                    }
-                                ),
-                                html.Button(
-                                    'Create Trip',
-                                    id='save-trip-btn',
-                                    n_clicks=0,
-                                    className='btn-primary mt-3',
-                                    style={'width': '100%', 'padding': '0.75rem 1rem', 'borderRadius': '8px', 'fontSize': '1rem'}
-                                )
-                            ]),
-                            html.Div(id='trip-creation-output', style={'marginTop': '1.5rem', 'fontWeight': 'bold', 'color': '#333'})
-                        ], className="p-4 bg-white rounded shadow-sm border")
-                    )
-                ], justify="center", className="mt-5") # Centers the form and adds margin top
-            ])
+            html.Div("功能開發中...", style={
+                'textAlign': 'center',
+                'marginTop': '5rem',
+                'fontSize': '1.5rem',
+                'color': '#6c757d'
+            })
         ], className='page-content', style={'padding': '2rem'})
     ])
 
@@ -2935,48 +2894,6 @@ def create_main_layout():
             ], className='header-content')
         ], className='global-header'),
 
-        # ===== Create Trip Section (Collapsible) =====
-        dbc.Collapse(
-            html.Div([
-                html.Div([
-                    html.H3("Plan a New Adventure", style={'color': '#003580', 'textAlign': 'center'}),
-                    html.P("Give your trip a name and select the dates to get started.", style={'textAlign': 'center', 'color': '#555'}),
-                    dbc.InputGroup(
-                        [
-                            dbc.InputGroupText(html.I(className="fas fa-suitcase-rolling")),
-                            dbc.Input(id="new-trip-name", placeholder="Trip Name (e.g., 'Kyoto Cherry Blossom Tour')", type="text"),
-                        ],
-                        className="mb-3",
-                    ),
-                    dcc.DatePickerRange(
-                        id='new-trip-dates',
-                        min_date_allowed=datetime.now().date(),
-                        start_date_placeholder_text="Start Date",
-                        end_date_placeholder_text="End Date",
-                        className="mb-3",
-                        style={'width': '100%'}
-                    ),
-                    dbc.Button(
-                        "Confirm & Create Trip", 
-                        id="confirm-new-trip", 
-                        color="primary", 
-                        className="w-100",
-                        n_clicks=0
-                    ),
-                    html.Div(id='create-trip-output', className='mt-3', style={'textAlign': 'center'})
-                ], style={
-                    'maxWidth': '600px',
-                    'margin': '0 auto',
-                    'padding': '2rem',
-                    'backgroundColor': '#FFFFFF',
-                    'borderRadius': '12px',
-                    'boxShadow': '0 4px 12px rgba(0, 53, 128, 0.12)',
-                })
-            ], style={'padding': '2rem 0', 'backgroundColor': '#F2F6FA'}),
-            id="create-trip-collapse",
-            is_open=False,
-        ),
-
         # ===== Hero Section =====
         html.Div([
             html.Img(src='/assets/food_dirtyrice.png', className='hero-background'),
@@ -3697,37 +3614,8 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
     # 未登入
     if current_mode == 'register':
         return create_register_layout(), 'register'
-    else: # Default to login page if no session and not registering
-        return create_login_layout(), 'login'
 
-
-# Callback to save a new trip
-@app.callback(
-    Output('trip-name', 'value'),
-    Output('trip-date-range', 'start_date'),
-    Output('trip-date-range', 'end_date'),
-    Output('trip-creation-output', 'children'),
-    Input('save-trip-btn', 'n_clicks'),
-    State('trip-name', 'value'),
-    State('trip-date-range', 'start_date'),
-    State('trip-date-range', 'end_date'),
-    prevent_initial_call=True
-)
-def save_new_trip(n_clicks, trip_name, start_date, end_date):
-    if n_clicks is None or n_clicks == 0:
-        raise PreventUpdate
-
-    if not trip_name or not start_date or not end_date:
-        return no_update, no_update, no_update, html.Div("Please fill in all fields.", style={'color': 'red'})
-
-    manager = ItineraryManager()
-    try:
-        manager.create_new_trip(trip_name, start_date, end_date)
-        success_message = html.Div(f"Successfully created trip: {trip_name}!", style={'color': 'green'})
-        return '', None, None, success_message # Clear inputs and show success
-    except Exception as e:
-        error_message = html.Div(f"Error creating trip: {e}", style={'color': 'red'})
-        return no_update, no_update, no_update, error_message
+    return create_login_layout(), 'login'
 
 # Load user data (including profile photo) on page load/refresh
 @app.callback(
@@ -4031,9 +3919,6 @@ def handle_hotel_search(keyword, hotel_type):
 )
 def populate_attractions_cards(pathname):
     """填充景點卡片（橫向滾動）"""
-    if pathname != '/':
-        raise PreventUpdate
-
     top_attractions = get_random_top_attractions(4, min_rating=4.0)
 
     if len(top_attractions) > 0:
@@ -7849,49 +7734,5 @@ def go_back_from_create_trip(n_clicks):
     if n_clicks > 0:
         return '/'
     return no_update
-
-# --- START: Callbacks for Create Trip Collapse ---
-
-# Callback to toggle the visibility of the create trip collapse
-@app.callback(
-    Output("create-trip-collapse", "is_open"),
-    [Input("create-trip-btn", "n_clicks")],
-    [State("create-trip-collapse", "is_open")],
-    prevent_initial_call=True,
-)
-def toggle_create_trip_collapse(n, is_open):
-    if n:
-        return not is_open
-    return is_open
-
-# Callback to handle the creation of a new trip
-@app.callback(
-    Output("create-trip-output", "children"),
-    [Input("confirm-new-trip", "n_clicks")],
-    [
-        State("new-trip-name", "value"),
-        State("new-trip-dates", "start_date"),
-        State("new-trip-dates", "end_date"),
-    ],
-    prevent_initial_call=True,
-)
-def handle_create_new_trip(n_clicks, name, start_date, end_date):
-    if n_clicks > 0:
-        if not all([name, start_date, end_date]):
-            return dbc.Alert("Please provide a name and select a start and end date.", color="warning")
-
-        try:
-            manager = ItineraryManager()
-            trip_id = manager.create_new_trip(name, start_date, end_date)
-            success_message = f"旅程：'{name}' 已成功建立！"
-            return dbc.Alert(success_message, color="success")
-        except Exception as e:
-            print(f"Error creating trip: {e}")
-            return dbc.Alert(f"An error occurred while creating the trip: {e}", color="danger")
-            
-    return ""
-
-# --- END: Callbacks for Create Trip Collapse ---
-
 
 # --- END: 新增的程式碼 (Create Trip 功能) ---
