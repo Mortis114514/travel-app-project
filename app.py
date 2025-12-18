@@ -1289,25 +1289,6 @@ def create_trip_layout():
                                         'color': '#333'
                                     }
                                 ),
-                                # --- New Inner Search Section ---
-                                html.Div([
-                                    dbc.Label("Add to Itinerary", style={'fontWeight': 'bold', 'color': '#555', 'marginTop': '1rem'}),
-                                    html.Div([
-                                        dcc.Input(
-                                            id='inner-search-input',
-                                            placeholder='搜尋餐廳或飯店...',
-                                            className='form-control',
-                                            style={'flex': '1', 'marginRight': '10px'}
-                                        ),
-                                        html.Button('搜尋', id='inner-search-btn', n_clicks=0, className='btn btn-outline-primary')
-                                    ], style={'display': 'flex', 'marginBottom': '10px'}),
-                                    dcc.Dropdown(
-                                        id='inner-search-results',
-                                        placeholder='從搜尋結果中選擇...',
-                                        className="mb-3"
-                                    )
-                                ], className="p-3 bg-light border rounded mt-3"),
-                                # --- End of New Section ---
                                 html.Button(
                                     'Create Trip',
                                     id='save-trip-btn',
@@ -7750,33 +7731,8 @@ def calculate_text_distance(n_clicks, start_value, end_value, places_data):
     
 
     
-
-@app.callback(
-    Output('inner-search-results', 'options'),
-    Input('inner-search-btn', 'n_clicks'),
-    State('inner-search-input', 'value'),
-    prevent_initial_call=True
-)
-def update_inner_search_results(n_clicks, keyword):
-    if not n_clicks or not keyword:
-        raise PreventUpdate
-
-    # Call the existing search function
-    results_df = db_search_restaurants(keyword=keyword)
-
-    if results_df.empty:
-        return [{'label': 'No results found', 'value': '', 'disabled': True}]
-
-    # Format results for the dropdown
-    options = [
-        {'label': f"{row['Name']} ({row['Station']})", 'value': row['Restaurant_ID']}
-        for index, row in results_df.iterrows()
-    ]
-    return options
-    
 if __name__ == '__main__':
     app.run(debug=True, port=8050)
-
 
 
 
