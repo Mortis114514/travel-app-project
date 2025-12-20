@@ -687,7 +687,7 @@ body {
 /* Destination Card */
 .destination-card {
     flex: 0 0 280px;
-    height: 380px;
+    height: 460px;
     border-radius: 20px;
     overflow: hidden;
     cursor: pointer;

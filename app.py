@@ -232,12 +232,25 @@ def create_primary_button(text, button_id=None, icon=None):
         n_clicks=0
     )
 
+def get_random_image_from_folder(folder):
+    """從指定文件夾隨機選擇一張圖片"""
+    import glob
+    folder_path = os.path.join('assets', folder)
+    image_files = glob.glob(os.path.join(folder_path, '*.*'))
+    image_list = [f'/assets/{folder}/{os.path.basename(img)}' for img in image_files
+                  if img.lower().endswith(('.jpg', '.jpeg', '.png', '.gif'))]
+
+    if image_list:
+        return random.choice(image_list)
+    else:
+        return '/assets/Hazuki.jpg'  # 默認圖片
+
 def create_destination_card(restaurant, id_type='restaurant-card'): # <--- [修正] 加入參數
     """創建目的地卡片 (修正版：支援自定義 ID 類型)"""
 
     card_content = html.Div([
         html.Div([
-            html.Img(src='/assets/food_dirtyrice.png', className='card-image')
+            html.Img(src=get_random_image_from_folder('Food'), className='card-image')
         ], className='card-image-section'),
 
         html.Div([
@@ -1290,7 +1303,7 @@ def create_hotel_card(hotel, id_type='hotel-card'): # <--- [修正] 加入參數
 
     card_content = html.Div([
         html.Div([
-            html.Img(src='/assets/food_dirtyrice.png', className='card-image')
+            html.Img(src=get_random_image_from_folder('Hotel'), className='card-image')
         ], className='card-image-section'),
         html.Div([
             html.Div(hotel['HotelName'], className='card-title'),
@@ -1678,7 +1691,7 @@ def create_attraction_card(attr):
         # 上半部：圖片區
         html.Div([
             html.Img(
-                src='/assets/food_dirtyrice.png', 
+                src=get_random_image_from_folder('Attraction'),
                 className='card-image'
             )
         ], className='card-image-section'),
@@ -4633,7 +4646,7 @@ def update_restaurant_grid(search_results, current_page):
         # 卡片內容
         card_content = html.Div([
             html.Img(
-                src='/assets/food_dirtyrice.png',
+                src=get_random_image_from_folder('Food'),
                 className='card-image',
                 style={'width': '100%', 'height': '200px', 'objectFit': 'cover', 'borderRadius': '8px 8px 0 0'}
             ),
@@ -5461,7 +5474,7 @@ def update_hotel_grid(search_results, current_page):
 
         card_content = html.Div([
             html.Img(
-                src='/assets/food_dirtyrice.png',
+                src=get_random_image_from_folder('Hotel'),
                 style={'width': '100%', 'height': '200px', 'objectFit': 'cover', 'borderRadius': '8px 8px 0 0'}
             ),
             html.Div([
