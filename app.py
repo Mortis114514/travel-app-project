@@ -701,11 +701,33 @@ def create_detail_hero(data):
                         'color': '#FFFFFF',
                         'padding': '8px 16px',
                         'borderRadius': '20px',
+                        'marginRight': '10px',
                         'fontSize': '1rem',
                         'fontWeight': '500',
                         'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)'
+                    }),
+
+                    html.Button([
+                        html.I(className='fas fa-heart', style={'marginRight': '6px'}),
+                        'Add to Favorites'
+                    ], id='favorite-button', n_clicks=0, style={
+                        'backgroundColor': 'rgba(255, 255, 255, 0.25)',
+                        'backdropFilter': 'blur(10px)',
+                        'border': '1.5px solid rgba(255, 255, 255, 0.5)',
+                        'color': '#FFFFFF',
+                        'padding': '8px 16px',
+                        'borderRadius': '20px',
+                        'fontSize': '1rem',
+                        'fontWeight': '500',
+                        'cursor': 'pointer',
+                        'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)',
+                        'transition': 'all 0.3s ease'
                     })
-                ])
+                ], style={
+                    'display': 'flex', 
+                    'alignItems': 'center',
+                    'flexWrap': 'wrap'
+                })
             ])
         ], style={
             'position': 'absolute',
@@ -1542,11 +1564,32 @@ def create_hotel_detail_content(hotel_data):
                             'color': '#FFFFFF',
                             'padding': '8px 16px',
                             'borderRadius': '20px',
+                            'marginRight': '10px',
                             'fontSize': '1rem',
                             'fontWeight': '500',
                             'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)'
+                        }),
+                        html.Button([
+                            html.I(className='fas fa-heart', style={'marginRight': '6px'}),
+                            'Add to Favorites'
+                        ], id='favorite-button', n_clicks=0, style={
+                            'backgroundColor': 'rgba(255, 255, 255, 0.25)',
+                            'backdropFilter': 'blur(10px)',
+                            'border': '1.5px solid rgba(255, 255, 255, 0.5)',
+                            'color': '#FFFFFF',
+                            'padding': '8px 16px',
+                            'borderRadius': '20px',
+                            'fontSize': '1rem',
+                            'fontWeight': '500',
+                            'cursor': 'pointer',
+                            'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)',
+                            'transition': 'all 0.3s ease'
                         })
-                    ])
+                    ], style={
+                        'display': 'flex', 
+                        'alignItems': 'center',
+                        'flexWrap': 'wrap'
+                    })
                 ])
             ], style={
                 'position': 'absolute',
