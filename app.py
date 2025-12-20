@@ -232,12 +232,25 @@ def create_primary_button(text, button_id=None, icon=None):
         n_clicks=0
     )
 
+def get_random_image_from_folder(folder):
+    """從指定文件夾隨機選擇一張圖片"""
+    import glob
+    folder_path = os.path.join('assets', folder)
+    image_files = glob.glob(os.path.join(folder_path, '*.*'))
+    image_list = [f'/assets/{folder}/{os.path.basename(img)}' for img in image_files
+                  if img.lower().endswith(('.jpg', '.jpeg', '.png', '.gif'))]
+
+    if image_list:
+        return random.choice(image_list)
+    else:
+        return '/assets/Hazuki.jpg'  # 默認圖片
+
 def create_destination_card(restaurant, id_type='restaurant-card'): # <--- [修正] 加入參數
     """創建目的地卡片 (修正版：支援自定義 ID 類型)"""
 
     card_content = html.Div([
         html.Div([
-            html.Img(src='/assets/food_dirtyrice.png', className='card-image')
+            html.Img(src=get_random_image_from_folder('Food'), className='card-image')
         ], className='card-image-section'),
 
         html.Div([
@@ -509,26 +522,22 @@ def create_detail_header():
         'zIndex': '1000'
     })
 
-def create_image_gallery():
+def create_image_gallery(folder='Food'):
     """創建圖片畫廊輪播組件（交叉淡入淡出效果）"""
-    # Mujica文件夾中的圖片列表（使用前15張作為示例）
-    gallery_images = [
-        '/assets/Mujica/FB_IMG_1741782349578.jpg',
-        '/assets/Mujica/FB_IMG_1741782457313.jpg',
-        '/assets/Mujica/FB_IMG_1741782466354.jpg',
-        '/assets/Mujica/FB_IMG_1741782481779.jpg',
-        '/assets/Mujica/FB_IMG_1741782484895.jpg',
-        '/assets/Mujica/FB_IMG_1741782486450.jpg',
-        '/assets/Mujica/FB_IMG_1741782499553.jpg',
-        '/assets/Mujica/FB_IMG_1741782505028.jpg',
-        '/assets/Mujica/FB_IMG_1741782513961.jpg',
-        '/assets/Mujica/FB_IMG_1741782525678.jpg',
-        '/assets/Mujica/FB_IMG_1741782527528.jpg',
-        '/assets/Mujica/FB_IMG_1741782530270.jpg',
-        '/assets/Mujica/FB_IMG_1741782538112.jpg',
-        '/assets/Mujica/FB_IMG_1741885757345.jpg',
-        '/assets/Mujica/FB_IMG_1741885778449.jpg'
-    ]
+    # 根據文件夾動態生成圖片列表
+    import os
+    import glob
+
+    # 構建圖片文件夾路徑
+    folder_path = os.path.join('assets', folder)
+    # 獲取文件夾中的所有圖片
+    image_files = glob.glob(os.path.join(folder_path, '*.*'))
+    # 轉換為Web路徑格式
+    gallery_images = [f'/assets/{folder}/{os.path.basename(img)}' for img in image_files if img.lower().endswith(('.jpg', '.jpeg', '.png', '.gif'))]
+
+    # 如果沒有找到圖片，使用默認圖片
+    if not gallery_images:
+        gallery_images = ['/assets/Hazuki.jpg']
 
     return html.Div([
         # 圖片容器 - 雙層結構實現交叉淡入淡出
@@ -621,7 +630,7 @@ def create_detail_hero(data):
 
     return html.Div([
         # 圖片畫廊（替換原本的單一圖片）
-        create_image_gallery(),
+        create_image_gallery('Food'),
 
         # 漸層遮罩 (subtle shadow for text readability)
         html.Div(style={
@@ -1294,7 +1303,7 @@ def create_hotel_card(hotel, id_type='hotel-card'): # <--- [修正] 加入參數
 
     card_content = html.Div([
         html.Div([
-            html.Img(src='/assets/food_dirtyrice.png', className='card-image')
+            html.Img(src=get_random_image_from_folder('Hotel'), className='card-image')
         ], className='card-image-section'),
         html.Div([
             html.Div(hotel['HotelName'], className='card-title'),
@@ -1508,7 +1517,7 @@ def create_hotel_detail_content(hotel_data):
         # Hero 區域 (大圖)
         html.Div([
             # 圖片畫廊（替換原本的單一圖片）
-            create_image_gallery(),
+            create_image_gallery('Hotel'),
 
             # 漸層遮罩 (subtle shadow for text readability)
             html.Div(style={
@@ -1682,7 +1691,7 @@ def create_attraction_card(attr):
         # 上半部：圖片區
         html.Div([
             html.Img(
-                src='/assets/food_dirtyrice.png', 
+                src=get_random_image_from_folder('Attraction'),
                 className='card-image'
             )
         ], className='card-image-section'),
@@ -1985,19 +1994,134 @@ def create_attraction_detail_content(data):
         print(f"Error parsing attraction data: {e}")
         return create_error_state(f"Data Error: {e}")
 
+    # Generate star rating
+    full_stars = int(rating)
+    stars = []
+    for i in range(5):
+        if i < full_stars:
+            stars.append(html.I(className='fas fa-star', style={'color': '#deb522', 'marginRight': '4px', 'textShadow': '1px 1px 3px rgba(0,0,0,0.5)'}))
+        else:
+            stars.append(html.I(className='far fa-star', style={'color': 'rgba(255, 255, 255, 0.5)', 'marginRight': '4px', 'textShadow': '1px 1px 3px rgba(0,0,0,0.5)'}))
+
     return html.Div([
-        # Hero Image Area
+        # Hero Image Area (matching restaurant style)
         html.Div([
-            html.Img(src='/assets/food_dirtyrice.png', style={'width':'100%', 'height':'100%', 'objectFit':'cover', 'position': 'absolute', 'top': '0', 'left': '0'}),
-            html.Div(style={'position': 'absolute', 'bottom': '0', 'left': '0', 'right': '0', 'height': '70%', 'background': 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)'}),
+            # Image gallery
+            create_image_gallery('Attraction'),
+
+            # Gradient overlay for text readability
+            html.Div(style={
+                'position': 'absolute',
+                'bottom': '0',
+                'left': '0',
+                'right': '0',
+                'height': '70%',
+                'background': 'linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.2) 70%, transparent 100%)',
+                'pointerEvents': 'none'
+            }),
+
+            # Hero content
             html.Div([
-                html.H1(name, style={'color': '#fff', 'fontSize': '3rem', 'fontWeight': 'bold', 'textShadow': '2px 2px 4px rgba(0,0,0,0.8)', 'marginBottom': '0.5rem'}),
+                html.H1(name, style={
+                    'color': '#FFFFFF',
+                    'fontSize': '3rem',
+                    'fontWeight': 'bold',
+                    'marginBottom': '0.5rem',
+                    'textShadow': '2px 2px 8px rgba(0,0,0,0.7)'
+                }),
                 html.Div([
-                    html.Span(attr_type, style={'backgroundColor': 'rgba(255,255,255,0.2)', 'backdropFilter': 'blur(5px)', 'color': '#fff', 'padding': '5px 15px', 'borderRadius': '20px', 'marginRight': '10px', 'border': '1px solid rgba(255,255,255,0.5)'}),
-                    html.Span(f"{rating} ★ ({review_count} reviews)", style={'color': '#FBC02D', 'fontSize': '1.2rem', 'fontWeight': 'bold', 'textShadow': '1px 1px 2px rgba(0,0,0,0.8)'})
+                    html.Div(stars + [
+                        html.Span(f"{rating:.1f}", style={
+                            'color': '#deb522',
+                            'fontSize': '1.8rem',
+                            'fontWeight': 'bold',
+                            'marginLeft': '12px',
+                            'textShadow': '1px 1px 3px rgba(0,0,0,0.5)'
+                        })
+                    ], style={'marginBottom': '1rem'}),
+                    html.Div([
+                        html.Span([
+                            html.I(className='fas fa-map-pin', style={'marginRight': '6px'}),
+                            attr_type
+                        ], style={
+                            'backgroundColor': 'rgba(255, 255, 255, 0.25)',
+                            'backdropFilter': 'blur(10px)',
+                            'border': '1.5px solid rgba(255, 255, 255, 0.5)',
+                            'color': '#FFFFFF',
+                            'padding': '8px 16px',
+                            'borderRadius': '20px',
+                            'marginRight': '10px',
+                            'fontSize': '1rem',
+                            'fontWeight': '500',
+                            'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)'
+                        }),
+                        html.Span([
+                            html.I(className='fas fa-yen-sign', style={'marginRight': '6px'}),
+                            price_text
+                        ], style={
+                            'backgroundColor': 'rgba(255, 255, 255, 0.25)',
+                            'backdropFilter': 'blur(10px)',
+                            'border': '1.5px solid rgba(255, 255, 255, 0.5)',
+                            'color': '#FFFFFF',
+                            'padding': '8px 16px',
+                            'borderRadius': '20px',
+                            'marginRight': '10px',
+                            'fontSize': '1rem',
+                            'fontWeight': '500',
+                            'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)'
+                        }),
+                        html.Span([
+                            html.I(className='fas fa-comment', style={'marginRight': '6px'}),
+                            f"{review_count} reviews"
+                        ], style={
+                            'backgroundColor': 'rgba(255, 255, 255, 0.25)',
+                            'backdropFilter': 'blur(10px)',
+                            'border': '1.5px solid rgba(255, 255, 255, 0.5)',
+                            'color': '#FFFFFF',
+                            'padding': '8px 16px',
+                            'borderRadius': '20px',
+                            'marginRight': '10px',
+                            'fontSize': '1rem',
+                            'fontWeight': '500',
+                            'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)'
+                        }),
+                        html.Button([
+                            html.I(className='fas fa-heart', style={'marginRight': '6px'}),
+                            'Add to Favorites'
+                        ], id='favorite-button-attraction', n_clicks=0, style={
+                            'backgroundColor': 'rgba(255, 255, 255, 0.25)',
+                            'backdropFilter': 'blur(10px)',
+                            'border': '1.5px solid rgba(255, 255, 255, 0.5)',
+                            'color': '#FFFFFF',
+                            'padding': '8px 16px',
+                            'borderRadius': '20px',
+                            'fontSize': '1rem',
+                            'fontWeight': '500',
+                            'cursor': 'pointer',
+                            'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)',
+                            'transition': 'all 0.3s ease'
+                        })
+                    ], style={
+                        'display': 'flex',
+                        'alignItems': 'center',
+                        'flexWrap': 'wrap'
+                    })
                 ])
-            ], style={'position': 'absolute', 'bottom': '3rem', 'left': '2rem', 'maxWidth': '1200px'})
-        ], style={'position': 'relative', 'height': '50vh', 'minHeight': '400px', 'overflow': 'hidden'}),
+            ], style={
+                'position': 'absolute',
+                'bottom': '3rem',
+                'left': '2rem',
+                'right': '2rem',
+                'maxWidth': '1400px',
+                'margin': '0 auto',
+                'pointerEvents': 'none'
+            })
+        ], style={
+            'position': 'relative',
+            'height': '50vh',
+            'minHeight': '400px',
+            'overflow': 'hidden'
+        }),
 
         # Info Grid
         html.Div([
@@ -4522,7 +4646,7 @@ def update_restaurant_grid(search_results, current_page):
         # 卡片內容
         card_content = html.Div([
             html.Img(
-                src='/assets/food_dirtyrice.png',
+                src=get_random_image_from_folder('Food'),
                 className='card-image',
                 style={'width': '100%', 'height': '200px', 'objectFit': 'cover', 'borderRadius': '8px 8px 0 0'}
             ),
@@ -5350,7 +5474,7 @@ def update_hotel_grid(search_results, current_page):
 
         card_content = html.Div([
             html.Img(
-                src='/assets/food_dirtyrice.png',
+                src=get_random_image_from_folder('Hotel'),
                 style={'width': '100%', 'height': '200px', 'objectFit': 'cover', 'borderRadius': '8px 8px 0 0'}
             ),
             html.Div([
