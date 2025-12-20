@@ -916,3 +916,74 @@ def get_combined_analytics_data():
         print(f"CRITICAL ERROR in get_combined_analytics_data: {e}")
         # 回傳空 DataFrame 防止整個 App 崩潰
         return pd.DataFrame(columns=['ID', 'Name', 'Lat', 'Long', 'Rating', 'Price', 'Type', 'SubCategory'])
+    
+# --- 在 utils/database.py 新增以下函數 ---
+
+def init_new_tables():
+    """初始化收藏與行程相關的資料表"""
+    conn = sqlite3.connect('travel.db') # 確認你的 DB 名稱
+    c = conn.cursor()
+    
+    # 1. 收藏表
+    c.execute('''CREATE TABLE IF NOT EXISTS Favorites (
+                    user_id TEXT,
+                    item_id TEXT,
+                    item_type TEXT, -- 'Restaurant', 'Hotel', 'Attraction'
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (user_id, item_id, item_type)
+                )''')
+
+    # 2. 行程表 (簡化版：儲存 JSON 格式的行程內容)
+    c.execute('''CREATE TABLE IF NOT EXISTS Trips (
+                    trip_id TEXT PRIMARY KEY,
+                    user_id TEXT,
+                    trip_name TEXT,
+                    start_date TEXT,
+                    end_date TEXT,
+                    trip_data TEXT, -- JSON string storing days and items
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )''')
+    conn.commit()
+    conn.close()
+
+# 呼叫初始化 (你可以在 database.py 底部呼叫一次，或手動執行)
+# init_new_tables() 
+
+# --- 收藏功能 ---
+def toggle_favorite_db(user_id, item_id, item_type):
+    """切換收藏狀態：如果已收藏則刪除，否則新增"""
+    conn = sqlite3.connect('travel.db')
+    c = conn.cursor()
+    
+    # 檢查是否存在
+    c.execute("SELECT 1 FROM Favorites WHERE user_id=? AND item_id=? AND item_type=?", (user_id, str(item_id), item_type))
+    exists = c.fetchone()
+    
+    is_fav = False
+    if exists:
+        c.execute("DELETE FROM Favorites WHERE user_id=? AND item_id=? AND item_type=?", (user_id, str(item_id), item_type))
+        is_fav = False
+    else:
+        c.execute("INSERT INTO Favorites (user_id, item_id, item_type) VALUES (?, ?, ?)", (user_id, str(item_id), item_type))
+        is_fav = True
+        
+    conn.commit()
+    conn.close()
+    return is_fav
+
+def get_user_favorites(user_id):
+    """取得使用者的所有收藏"""
+    conn = sqlite3.connect('travel.db')
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute("SELECT * FROM Favorites WHERE user_id=?", (user_id,))
+    rows = c.fetchall()
+    conn.close()
+    
+    # 將收藏分類回傳
+    favs = {'Restaurant': [], 'Hotel': [], 'Attraction': []}
+    for row in rows:
+        # 這裡需要根據 ID 再去查詢詳細資料 (為簡化，我們先只存 ID，實際顯示時再撈詳細)
+        # 實作上建議這裡做 JOIN 查詢，或者在前端根據 ID 列表去撈
+        favs[row['item_type']].append(row['item_id'])
+    return favs

@@ -58,13 +58,15 @@ from utils.database import (
     get_combined_analytics_data,
     get_unique_attraction_types, 
     get_attraction_by_id,
-    get_all_attractions
+    get_all_attractions,
+    init_new_tables
 )
 
 
 restaurants_df = get_all_restaurants()  # 從數據庫加載（用於選項列表）
 hotels_df = get_all_hotels()
 analytics_df = load_and_prepare_data()
+init_new_tables()
 
 
 # 隨機選擇4-5星餐廳（使用數據庫查詢）
@@ -232,14 +234,35 @@ def create_primary_button(text, button_id=None, icon=None):
         n_clicks=0
     )
 
-def create_destination_card(restaurant, id_type='restaurant-card'): # <--- [修正] 加入參數
-    """創建目的地卡片 (修正版：支援自定義 ID 類型)"""
+def create_destination_card(restaurant, id_type='restaurant-card', is_favorite=False): # [新增] is_favorite 參數
+    """創建目的地卡片 (支援自定義 ID 類型與收藏狀態)"""
+    
+    # 決定愛心圖示樣式 (實心/空心) 與顏色
+    heart_icon = "fas fa-heart" if is_favorite else "far fa-heart"
+    heart_color = "#ff4757" if is_favorite else "white"
 
     card_content = html.Div([
+        # Image section (需加上 relative 定位以放置愛心)
         html.Div([
-            html.Img(src='/assets/food_dirtyrice.png', className='card-image')
-        ], className='card-image-section'),
-
+            html.Img(src='/assets/food_dirtyrice.png', className='card-image'),
+            
+            # [新增] 愛心按鈕
+            html.Div(
+                html.I(className=heart_icon, style={'color': heart_color, 'fontSize': '1.2rem'}),
+                # ID 必須符合 Pattern Matching 格式：{'type': 'fav-btn', ...}
+                id={'type': 'fav-btn', 'item_type': 'Restaurant', 'index': restaurant['Restaurant_ID']},
+                n_clicks=0,
+                # 樣式：絕對定位在右上角，半透明黑底
+                style={
+                    'position': 'absolute', 'top': '10px', 'right': '10px', 
+                    'background': 'rgba(0,0,0,0.5)', 'borderRadius': '50%', 
+                    'width': '35px', 'height': '35px', 'display': 'flex', 
+                    'alignItems': 'center', 'justifyContent': 'center', 
+                    'cursor': 'pointer', 'zIndex': '10'
+                }
+            )
+        ], className='card-image-section', style={'position': 'relative'}), # 關鍵：父層要是 relative
+        
         html.Div([
             html.Div(restaurant['Name'], className='card-title'),
             html.Div(restaurant.get('JapaneseName', ''), className='card-japanese-name'),
@@ -253,9 +276,8 @@ def create_destination_card(restaurant, id_type='restaurant-card'): # <--- [修�
                 html.Span(f"{restaurant['TotalRating']:.1f}")
             ], className='card-rating'),
         ], className='card-content-section')
-    ], className='destination-card')
+    ])
 
-    # [修正] 使用傳入的 id_type，而不是寫死的字串
     return html.Div(
         card_content,
         id={'type': id_type, 'index': restaurant['Restaurant_ID']},
@@ -1242,60 +1264,86 @@ def create_restaurant_detail_content(data):
 
 
 def create_trip_layout():
-    """創建 "Create Trip" 頁面佈局 - 功能開發中"""
+    """創建行程規劃頁面 (左右欄位設計)"""
     return html.Div([
+        # Header
         html.Div([
-            html.Div([
-                # Back button and title
-                html.Div([
-                    html.Button([
-                        html.I(className='fas fa-arrow-left'),
-                        html.Span('Back', style={'marginLeft': '8px'})
-                    ], id={'type': 'back-btn', 'index': 'create-trip'}, className='btn-back', n_clicks=0),
-                    html.H1('Create Your Trip', style={
-                        'color': '#003580',
-                        'marginLeft': '2rem',
-                        'fontSize': '2rem',
-                        'fontWeight': 'bold'
-                    })
-                ], style={'display': 'flex', 'alignItems': 'center'}),
-            ], style={
-                'display': 'flex',
-                'justifyContent': 'space-between',
-                'alignItems': 'center',
-                'maxWidth': '1400px',
-                'margin': '0 auto',
-                'padding': '1.5rem 2rem'
-            })
-        ], style={
-            'backgroundColor': '#F2F6FA',
-            'borderBottom': '1px solid #E8ECEF',
-            'position': 'sticky',
-            'top': '0',
-            'zIndex': '1000'
-        }),
+            html.Button([html.I(className='fas fa-arrow-left'), ' Back'], id={'type': 'back-btn', 'index': 'planner'}, className='btn-secondary'),
+            html.H1("Trip Planner", style={'color': '#003580', 'marginLeft': '2rem'})
+        ], style={'display': 'flex', 'alignItems': 'center', 'padding': '1rem 2rem', 'backgroundColor': '#fff', 'borderBottom': '1px solid #eee'}),
 
-        html.Div([
-            # Main content area
-            html.Div("功能開發中...", style={
-                'textAlign': 'center',
-                'marginTop': '5rem',
-                'fontSize': '1.5rem',
-                'color': '#6c757d'
-            })
-        ], className='page-content', style={'padding': '2rem'})
-    ])
+        # Main Workspace
+        dbc.Row([
+            # --- LEFT COLUMN: Source Items ---
+            dbc.Col([
+                dbc.Card([
+                    dbc.CardHeader([
+                        dbc.Tabs([
+                            dbc.Tab(label="My Favorites", tab_id="tab-plan-fav", label_style={"fontWeight": "bold"}),
+                            dbc.Tab(label="Recommendations", tab_id="tab-plan-rec", label_style={"fontWeight": "bold"}),
+                        ], id="planner-tabs", active_tab="tab-plan-fav")
+                    ]),
+                    dbc.CardBody([
+                        # 這裡顯示可加入的項目
+                        html.Div(id="planner-source-list", style={'height': '70vh', 'overflowY': 'auto', 'paddingRight': '10px'})
+                    ])
+                ], style={'height': '80vh', 'border': 'none', 'boxShadow': '0 4px 12px rgba(0,0,0,0.05)'})
+            ], width=4, style={'paddingRight': '0'}),
 
-def create_hotel_card(hotel, id_type='hotel-card'): # <--- [修正] 加入參數
-    """創建旅館卡片 (支援自定義 ID 類型)"""
+            # --- RIGHT COLUMN: Itinerary ---
+            dbc.Col([
+                dbc.Card([
+                    dbc.CardHeader([
+                        html.H4("My Itinerary", className="m-0", style={'color': '#003580'}),
+                        html.Small("Click 'Add' on items from the left to populate your trip", className="text-muted")
+                    ], style={'backgroundColor': '#f8f9fa'}),
+                    dbc.CardBody([
+                        # 這裡顯示已加入的行程
+                        html.Div(id="planner-itinerary-view", style={'minHeight': '60vh'}),
+                        
+                        html.Hr(),
+                        dbc.Button("+ Add Day", id="add-day-btn", color="secondary", outline=True, size="sm", className="me-2"),
+                        dbc.Button("Save Trip Plan", id="save-trip-plan-btn", color="primary", className="float-end")
+                    ], style={'height': '75vh', 'overflowY': 'auto'})
+                ], style={'height': '80vh', 'border': 'none', 'boxShadow': '0 4px 12px rgba(0,0,0,0.05)'})
+            ], width=8)
+        ], style={'padding': '2rem', 'maxWidth': '1600px', 'margin': '0 auto'}),
+        
+        # 暫存行程資料
+        dcc.Store(id='trip-plan-data', data={'days': [{'day': 1, 'items': []}]}) 
+
+    ], style={'backgroundColor': '#F2F6FA', 'minHeight': '100vh'})
+
+def create_hotel_card(hotel, id_type='hotel-card', is_favorite=False): # [新增] is_favorite 參數
+    """創建旅館卡片 (支援自定義 ID 類型與收藏狀態)"""
     types_text = ', '.join(hotel['Types'][:2]) if isinstance(hotel['Types'], list) and hotel['Types'] else 'Hotel'
     rating = hotel.get('Rating', 0)
     rating_text = f"{rating:.1f}" if rating is not None else "N/A"
 
+    # 決定愛心樣式
+    heart_icon = "fas fa-heart" if is_favorite else "far fa-heart"
+    heart_color = "#ff4757" if is_favorite else "white"
+
     card_content = html.Div([
+        # Image section
         html.Div([
-            html.Img(src='/assets/food_dirtyrice.png', className='card-image')
-        ], className='card-image-section'),
+            html.Img(src='/assets/food_dirtyrice.png', className='card-image'),
+            
+            # [新增] 愛心按鈕
+            html.Div(
+                html.I(className=heart_icon, style={'color': heart_color, 'fontSize': '1.2rem'}),
+                id={'type': 'fav-btn', 'item_type': 'Hotel', 'index': hotel['Hotel_ID']},
+                n_clicks=0,
+                style={
+                    'position': 'absolute', 'top': '10px', 'right': '10px', 
+                    'background': 'rgba(0,0,0,0.5)', 'borderRadius': '50%', 
+                    'width': '35px', 'height': '35px', 'display': 'flex', 
+                    'alignItems': 'center', 'justifyContent': 'center', 
+                    'cursor': 'pointer', 'zIndex': '10'
+                }
+            )
+        ], className='card-image-section', style={'position': 'relative'}),
+
         html.Div([
             html.Div(hotel['HotelName'], className='card-title'),
             html.Div(types_text, className='card-subtitle'),
@@ -1315,7 +1363,6 @@ def create_hotel_card(hotel, id_type='hotel-card'): # <--- [修正] 加入參數
         ], className='card-content-section')
     ], className='destination-card')
 
-    # [修正] 使用傳入的 id_type
     return html.Div(
         card_content,
         id={'type': id_type, 'index': hotel['Hotel_ID']},
@@ -1665,7 +1712,7 @@ def create_hotel_detail_content(hotel_data):
 
 # --- Attractions UI Components ---
 
-def create_attraction_card(attr):
+def create_attraction_card(attr, id_type='attraction-card', is_favorite=False): # [新增] 參數
     """建立景點小卡 (樣式與 Hotel/Restaurant 完全一致)"""
     # 處理 Price Level
     price_level = attr.get('PriceLevel')
@@ -1674,18 +1721,31 @@ def create_attraction_card(attr):
         try:
             p_val = float(price_level)
             price_display = '💰' * int(p_val)
-        except:
-            pass
-            
-    # 使用與 Hotel Card 相同的 CSS class 結構
+        except: pass
+    
+    # 決定愛心樣式
+    heart_icon = "fas fa-heart" if is_favorite else "far fa-heart"
+    heart_color = "#ff4757" if is_favorite else "white"
+
     card_content = html.Div([
         # 上半部：圖片區
         html.Div([
-            html.Img(
-                src='/assets/food_dirtyrice.png', 
-                className='card-image'
+            html.Img(src='/assets/food_dirtyrice.png', className='card-image'),
+            
+            # [新增] 愛心按鈕
+            html.Div(
+                html.I(className=heart_icon, style={'color': heart_color, 'fontSize': '1.2rem'}),
+                id={'type': 'fav-btn', 'item_type': 'Attraction', 'index': attr['ID']},
+                n_clicks=0,
+                style={
+                    'position': 'absolute', 'top': '10px', 'right': '10px', 
+                    'background': 'rgba(0,0,0,0.5)', 'borderRadius': '50%', 
+                    'width': '35px', 'height': '35px', 'display': 'flex', 
+                    'alignItems': 'center', 'justifyContent': 'center', 
+                    'cursor': 'pointer', 'zIndex': '10'
+                }
             )
-        ], className='card-image-section'),
+        ], className='card-image-section', style={'position': 'relative'}),
         
         # 下半部：內容區
         html.Div([
@@ -1714,9 +1774,9 @@ def create_attraction_card(attr):
 
     return html.Div(
         card_content,
-        id={'type': 'attraction-card', 'index': attr['ID']},
+        id={'type': id_type, 'index': attr['ID']},
         style={'cursor': 'pointer'},
-        n_clicks=0  # <--- 🚨 關鍵修正：必須加上這一行，點擊才會生效！
+        n_clicks=0
     )
 
 def create_attraction_search_bar():
@@ -2981,19 +3041,19 @@ def create_main_layout():
             ], className='card-scroll-container')
         ], className='content-section'),
         
-        # ===== Personalized Content Section - Your Saved Trips & Favorites =====
+        # ===== Personalized Content Section (Favorites) =====
         html.Div([
-            html.H2('Your Saved Trips & Favorites', className='section-title'),
+            html.H2('My Favorites Collection', className='section-title'),
 
-            # Tab Navigation
+            # Tab Navigation for Favorites
             html.Div([
-                html.Div('Saved Trips', id='tab-saved-trips', className='tab-item active', n_clicks=0),
-                html.Div('Wishlisted Hotels', id='tab-wishlisted', className='tab-item', n_clicks=0),
-                html.Div('Favorite Restaurants', id='tab-favorites', className='tab-item', n_clicks=0)
+                html.Div('Restaurants', id='fav-tab-rest', className='tab-item active', n_clicks=0),
+                html.Div('Hotels', id='fav-tab-hotel', className='tab-item', n_clicks=0),
+                html.Div('Attractions', id='fav-tab-attr', className='tab-item', n_clicks=0)
             ], className='tab-navigation'),
 
-            # Tab Content
-            html.Div(id='tab-content-container')
+            # Favorites Content Container (由 Callback 填充)
+            html.Div(id='favorites-content-container', style={'minHeight': '200px', 'padding': '1rem 0'})
         ], className='content-section'),
 
         # ===== NEW: Map Section =====
@@ -4011,17 +4071,6 @@ def view_analytics(n_clicks, current_view):
 def view_traffic(n_clicks, current_view):
     if n_clicks and current_view != 'traffic':
         return 'traffic'
-    raise PreventUpdate
-
-@app.callback(
-    Output('url', 'pathname', allow_duplicate=True),
-    [Input('create-trip-btn', 'n_clicks')],
-    prevent_initial_call=True
-)
-def navigate_to_create_trip(n_clicks):
-    """Navigate to Create Trip page when button is clicked"""
-    if n_clicks:
-        return '/create-trip'
     raise PreventUpdate
 
 
@@ -6644,6 +6693,25 @@ app.clientside_callback(
     Input('current-page-store', 'data')
 )
 
+# [FIX 1 - Final] 強制停止愛心按鈕的點擊事件傳遞 (更強效的 JS 版)
+app.clientside_callback(
+    """
+    function(n_clicks) {
+        if (n_clicks > 0) {
+            var e = window.event;
+            if (e) {
+                e.stopPropagation();
+                e.cancelBubble = true; 
+            }
+        }
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output({'type': 'fav-btn', 'item_type': MATCH, 'index': MATCH}, 'className'), # 改 Output className 避免干擾 style
+    Input({'type': 'fav-btn', 'item_type': MATCH, 'index': MATCH}, 'n_clicks'),
+    prevent_initial_call=True
+)
+
 # ===== Clientside Callback: Scroll to Map Section on Hash Navigation =====
 app.clientside_callback(
     """
@@ -7655,125 +7723,320 @@ def calculate_text_distance(n_clicks, start_value, end_value, places_data):
                   style={'color': '#FF0000', 'textAlign': 'center'})
         ], style={'textAlign': 'center', 'padding': '2rem'})
     
+# 1. 處理愛心點擊 (Toggle Favorite)
+@app.callback(
+    Output({'type': 'fav-btn', 'item_type': MATCH, 'index': MATCH}, 'children'),
+    Input({'type': 'fav-btn', 'item_type': MATCH, 'index': MATCH}, 'n_clicks'),
+    State({'type': 'fav-btn', 'item_type': MATCH, 'index': MATCH}, 'id'),
+    State('session-store', 'data'),
+    prevent_initial_call=True
+)
+def toggle_favorite_state(n_clicks, btn_id, session_data):
+    if not session_data or 'session_id' not in session_data:
+        raise PreventUpdate # 未登入不處理
+        
+    # 這裡需要從 session_id 換取 user_id (假設 session_data 裡有 user_id)
+    # 如果你的 session_data 只有 session_id，你需要用 get_session(session_id)
+    user_id = get_session(session_data['session_id']) 
+    
+    if not user_id: raise PreventUpdate
 
+    item_type = btn_id['item_type']
+    item_id = btn_id['index']
+    
+    # 呼叫 DB 更新狀態
+    from utils.database import toggle_favorite_db
+    is_fav = toggle_favorite_db(user_id, item_id, item_type)
+    
+    # 更新圖示
+    icon_cls = "fas fa-heart" if is_fav else "far fa-heart"
+    color = "#ff4757" if is_fav else "white"
+    
+    return html.I(className=icon_cls, style={'color': color, 'fontSize': '1.2rem'})
+
+# 2. 首頁收藏區內容切換
+@app.callback(
+    [Output('fav-tab-rest', 'className'),
+     Output('fav-tab-hotel', 'className'),
+     Output('fav-tab-attr', 'className'),
+     Output('favorites-content-container', 'children')],
+    [Input('fav-tab-rest', 'n_clicks'),
+     Input('fav-tab-hotel', 'n_clicks'),
+     Input('fav-tab-attr', 'n_clicks')],
+    State('session-store', 'data')
+)
+def update_favorites_section(btn1, btn2, btn3, session_data):
+    ctx = callback_context
+    trigger_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else 'fav-tab-rest'
+    
+    active_cls = 'tab-item active'
+    base_cls = 'tab-item'
+    
+    target_type = 'Restaurant'
+    c1, c2, c3 = active_cls, base_cls, base_cls
+    
+    if trigger_id == 'fav-tab-hotel':
+        target_type = 'Hotel'
+        c1, c2, c3 = base_cls, active_cls, base_cls
+    elif trigger_id == 'fav-tab-attr':
+        target_type = 'Attraction'
+        c1, c2, c3 = base_cls, base_cls, active_cls
+        
+    # 獲取資料
+    content = html.Div("Please login to see favorites.", style={'textAlign':'center', 'padding':'2rem'})
+    
+    if session_data and 'session_id' in session_data:
+        user_id = get_session(session_data['session_id'])
+        if user_id:
+            # 從 DB 撈取該用戶的所有收藏 ID
+            from utils.database import get_user_favorites
+            favs = get_user_favorites(user_id) # 回傳 {'Restaurant': [ids], ...}
+            ids = favs.get(target_type, [])
+            
+            if not ids:
+                content = html.Div(f"No favorite {target_type.lower()}s yet.", style={'textAlign':'center', 'color':'#888'})
+            else:
+                # 根據 ID 撈取詳細資料並生成卡片
+                cards = []
+                for iid in ids:
+                    try:
+                        if target_type == 'Restaurant':
+                            data = get_restaurant_by_id(iid)
+                            if data: cards.append(create_destination_card(dict(data), is_favorite=True))
+                        elif target_type == 'Hotel':
+                            data = get_hotel_by_id(iid)
+                            if data: cards.append(create_hotel_card(dict(data), is_favorite=True))
+                        elif target_type == 'Attraction':
+                            data = get_attraction_by_id(iid)
+                            if data: cards.append(create_attraction_card(dict(data), is_favorite=True))
+                    except: pass
+                
+                content = html.Div(cards, className='card-row') # 橫向滾動
+                content = html.Div(content, className='card-scroll-container')
+                
+    return c1, c2, c3, content
+
+# 3. Planner: 更新左側來源清單 (Source List)
+# [FIX 5 - Final] Planner: 更新左側來源清單 (過濾幽靈資料 + 修正按鈕 ID)
+@app.callback(
+    Output("planner-source-list", "children"),
+    [Input("planner-tabs", "active_tab"),
+     Input('session-store', 'data')]
+)
+def update_planner_source(active_tab, session_data):
+    if not session_data or 'session_id' not in session_data: 
+        return html.Div("Please login to see favorites.", className="text-center p-4")
+    
+    user_id = get_session(session_data['session_id'])
+    items_ui = []
+    
+    if active_tab == "tab-plan-fav":
+        from utils.database import get_user_favorites
+        favs = get_user_favorites(user_id) 
+        
+        for cat, ids in favs.items():
+            if not ids: continue
+            
+            # 先收集有效的項目，避免顯示空標題
+            valid_items = []
+            for iid in ids:
+                try:
+                    int_id = int(iid) 
+                    item_data = None
+                    name = None
+                    
+                    if cat == 'Restaurant': 
+                        item_data = get_restaurant_by_id(int_id)
+                        if item_data: name = item_data['Name']
+                    elif cat == 'Hotel': 
+                        item_data = get_hotel_by_id(int_id)
+                        if item_data: name = item_data['HotelName']
+                    elif cat == 'Attraction': 
+                        item_data = get_attraction_by_id(int_id)
+                        if item_data: name = item_data['Name']
+                    
+                    # 只有當找到名字時才加入列表 (過濾掉幽靈資料)
+                    if name:
+                        valid_items.append({'name': name, 'id': iid, 'cat': cat})
+                except: continue
+            
+            if valid_items:
+                items_ui.append(html.H6(f"{cat}s", className="mt-3 mb-2 text-primary border-bottom pb-1"))
+                for item in valid_items:
+                    items_ui.append(
+                        dbc.Card([
+                            dbc.CardBody([
+                                html.Div(item['name'], style={'fontWeight':'bold', 'fontSize':'0.9rem', 'whiteSpace': 'nowrap', 'overflow': 'hidden', 'textOverflow': 'ellipsis'}),
+                                # [關鍵修正] ID 裡面不放 name，避免特殊字元導致報錯
+                                dbc.Button("Add", 
+                                           id={'type': 'add-to-plan', 'index': item['id'], 'cat': item['cat']}, 
+                                           size="sm", color="primary", outline=True, className="mt-2 w-100", style={'fontSize':'0.8rem'})
+                            ], className="p-2")
+                        ], className="mb-2 shadow-sm")
+                    )
+    
+    elif active_tab == "tab-plan-rec":
+        items_ui = [html.Div("System recommendations will appear here.", className="text-muted text-center p-4")]
+
+    return items_ui
+
+# 4. Planner: 處理 "Add" 和 "Remove" 與 "Add Day" (更新右側行程)
+# [FIX 2 & 3 - Final] Planner 邏輯修正：重新查詢名稱，確保資料正確
+@app.callback(
+    Output("trip-plan-data", "data"),
+    [Input({'type': 'add-to-plan', 'index': ALL, 'cat': ALL}, 'n_clicks'), # ID 結構已改變
+     Input({'type': 'remove-plan-item', 'day': ALL, 'idx': ALL}, 'n_clicks'),
+     Input({'type': 'remove-day-btn', 'day': ALL}, 'n_clicks'),
+     Input('add-day-btn', 'n_clicks')],
+    [State("trip-plan-data", "data")],
+    prevent_initial_call=True
+)
+def update_trip_data(add_clicks, remove_item_clicks, remove_day_clicks, add_day_click, current_data):
+    ctx = callback_context
+    if not ctx.triggered: raise PreventUpdate
+    
+    trigger_prop_id = ctx.triggered[0]['prop_id']
+    trigger_value = ctx.triggered[0]['value']
+    
+    if not trigger_value or trigger_value == 0: raise PreventUpdate
+
+    trigger_id_str = trigger_prop_id.split('.')[0]
+    if not current_data: current_data = {'days': [{'day': 1, 'items': []}]}
+    
+    # CASE 1: 新增天數
+    if trigger_id_str == 'add-day-btn':
+        new_day_num = len(current_data['days']) + 1
+        current_data['days'].append({'day': new_day_num, 'items': []})
+        return current_data
+        
+    try:
+        trigger_obj = json.loads(trigger_id_str)
+    except: raise PreventUpdate
+
+    # CASE 2: 加入項目 (現在需要去查詢名字)
+    if trigger_obj.get('type') == 'add-to-plan':
+        item_cat = trigger_obj['cat']
+        item_id = trigger_obj['index'] # 這裡原本叫 id，現在改成 index 以符合 Dash 規範
+        item_name = "Unknown Item"
+
+        # 重新查詢名稱
+        try:
+            int_id = int(item_id)
+            if item_cat == 'Restaurant': 
+                res = get_restaurant_by_id(int_id)
+                if res: item_name = res['Name']
+            elif item_cat == 'Hotel': 
+                res = get_hotel_by_id(int_id)
+                if res: item_name = res['HotelName']
+            elif item_cat == 'Attraction': 
+                res = get_attraction_by_id(int_id)
+                if res: item_name = res['Name']
+        except: pass
+        
+        if not current_data['days']:
+             current_data['days'] = [{'day': 1, 'items': []}]
+             
+        current_data['days'][-1]['items'].append({
+            'name': item_name,
+            'cat': item_cat,
+            'id': item_id
+        })
+        
+    # CASE 3: 移除項目
+    elif trigger_obj.get('type') == 'remove-plan-item':
+        day_num = trigger_obj['day']
+        item_idx = trigger_obj['idx']
+        for d in current_data['days']:
+            if d['day'] == day_num:
+                if 0 <= item_idx < len(d['items']):
+                    d['items'].pop(item_idx)
+                break
+
+    # CASE 4: 移除整天
+    elif trigger_obj.get('type') == 'remove-day-btn':
+        day_to_remove = trigger_obj['day']
+        current_data['days'] = [d for d in current_data['days'] if d['day'] != day_to_remove]
+        for i, d in enumerate(current_data['days']):
+            d['day'] = i + 1
+        if not current_data['days']:
+             current_data['days'] = [{'day': 1, 'items': []}]
+
+    return current_data
+
+# 5. Planner: 渲染右側行程表 (View)
+# [FIX 3] Planner: 渲染右側行程表 (加入刪除天數按鈕)
+@app.callback(
+    Output("planner-itinerary-view", "children"),
+    Input("trip-plan-data", "data")
+)
+def render_trip_itinerary(data):
+    if not data or not data.get('days'): 
+        return html.Div("Start adding items!", className="text-center text-muted mt-5")
+    
+    days_ui = []
+    for day in data.get('days', []):
+        day_num = day['day']
+        items = day['items']
+        
+        item_list = []
+        for idx, item in enumerate(items):
+            icon = "fas fa-utensils" if item['cat'] == 'Restaurant' else "fas fa-hotel" if item['cat'] == 'Hotel' else "fas fa-torii-gate"
+            item_list.append(
+                dbc.ListGroupItem([
+                    dbc.Row([
+                        dbc.Col([html.I(className=f"{icon} me-2 text-muted"), html.Span(item['name'])], width=10),
+                        dbc.Col(
+                            dbc.Button(html.I(className="fas fa-times"), 
+                                       id={'type': 'remove-plan-item', 'day': day_num, 'idx': idx},
+                                       color="danger", outline=True, size="sm", className="border-0"), 
+                            width=2, className="text-end"
+                        )
+                    ], align="center")
+                ])
+            )
+        
+        # Day Card Header with Delete Button
+        header_content = dbc.Row([
+            dbc.Col(html.Span(f"Day {day_num}", className="fw-bold"), width=8),
+            dbc.Col(
+                dbc.Button(html.I(className="fas fa-trash-alt"), 
+                           id={'type': 'remove-day-btn', 'day': day_num},
+                           color="danger", outline=True, size="sm", className="float-end"),
+                width=4
+            )
+        ], align="center")
+
+        days_ui.append(
+            dbc.Card([
+                dbc.CardHeader(header_content, className="bg-light"),
+                dbc.ListGroup(item_list, flush=True) if item_list else dbc.CardBody("No items yet.", className="text-muted small p-2")
+            ], className="mb-3 shadow-sm")
+        )
+        
+    return days_ui
+
+# [MISSING] 點擊首頁 "Create a Trip" 按鈕 -> 進入 /create-trip
+@app.callback(
+    Output('url', 'pathname', allow_duplicate=True),
+    Input('create-trip-btn', 'n_clicks'),
+    prevent_initial_call=True
+)
+def navigate_to_create_trip(n_clicks):
+    if n_clicks:
+        return '/create-trip'
+    return no_update
+
+# [FIX 4] 處理 Trip Planner 頁面上的返回按鈕 (修正 NoneType 錯誤)
+@app.callback(
+    Output('url', 'pathname', allow_duplicate=True),
+    Input({'type': 'back-btn', 'index': 'planner'}, 'n_clicks'),
+    prevent_initial_call=True
+)
+def go_back_from_planner(n_clicks):
+    # 修正：先確認 n_clicks 不是 None，且大於 0
+    if n_clicks:
+        return '/'
+    return no_update
     
 if __name__ == '__main__':
     app.run(debug=True, port=8050)
-
-
-
-# --- START: 新增的程式碼 (Create Trip 功能) ---
-
-# Callback 1: 將餐廳加入 'selected-restaurants' store
-@app.callback(
-    Output('selected-restaurants', 'data'),
-    Input({'type': 'add-to-trip-btn', 'index': ALL}, 'n_clicks'),
-    State('selected-restaurants', 'data'),
-    State('search-results-store', 'data'),
-    prevent_initial_call=True
-)
-def add_restaurant_to_trip(n_clicks, selected_data, search_data):
-    if not any(n_clicks):
-        raise PreventUpdate
-
-    ctx = callback_context
-    triggered_id = ctx.triggered_id
-    if not triggered_id:
-        raise PreventUpdate
-
-    restaurant_id = triggered_id['index']
-    
-    # 初始化
-    if selected_data is None:
-        selected_data = []
-
-    # 檢查是否已存在
-    existing_ids = {r['Restaurant_ID'] for r in selected_data}
-    if restaurant_id in existing_ids:
-        return no_update # or provide user feedback
-
-    # 從搜尋結果中找到餐廳的完整資料
-    restaurant_to_add = None
-    if search_data:
-        for r in search_data:
-            if r['Restaurant_ID'] == restaurant_id:
-                restaurant_to_add = r
-                break
-    
-    if restaurant_to_add:
-        selected_data.append(restaurant_to_add)
-
-    return selected_data
-
-# Callback 2: 在 Create Trip 頁面顯示選擇的餐廳列表
-@app.callback(
-    Output('selected-restaurants-container', 'children'),
-    Input('selected-restaurants', 'data')
-)
-def display_selected_restaurants(selected_data):
-    if not selected_data:
-        return html.Div("No restaurants selected yet. Go to 'View All' to add some!", style={'textAlign': 'center', 'padding': '2rem', 'color': '#888'})
-
-    list_items = []
-    for restaurant in selected_data:
-        item = dbc.ListGroupItem([
-            dbc.Row([
-                dbc.Col(
-                    html.Div([
-                        html.H5(restaurant['Name'], className="mb-1"),
-                        html.Small(restaurant.get('FirstCategory', ''), className="text-muted"),
-                    ]),
-                    width=10
-                ),
-                dbc.Col(
-                    dbc.Button(
-                        "Remove",
-                        id={'type': 'remove-from-trip-btn', 'index': restaurant['Restaurant_ID']},
-                        color="danger",
-                        outline=True,
-                        size="sm"
-                    ),
-                    width=2,
-                    className="d-flex align-items-center justify-content-end"
-                )
-            ], align="center")
-        ])
-        list_items.append(item)
-    
-    return dbc.ListGroup(list_items)
-
-# Callback 3: 從選擇列表中移除餐廳
-@app.callback(
-    Output('selected-restaurants', 'data', allow_duplicate=True),
-    Input({'type': 'remove-from-trip-btn', 'index': ALL}, 'n_clicks'),
-    State('selected-restaurants', 'data'),
-    prevent_initial_call=True
-)
-def remove_restaurant_from_trip(n_clicks, selected_data):
-    if not any(n_clicks) or not selected_data:
-        raise PreventUpdate
-
-    ctx = callback_context
-    triggered_id = ctx.triggered_id
-    if not triggered_id:
-        raise PreventUpdate
-        
-    restaurant_id_to_remove = triggered_id['index']
-
-    # 創建一個新的列表，排除要被刪除的餐廳
-    updated_list = [r for r in selected_data if r['Restaurant_ID'] != restaurant_id_to_remove]
-    
-    return updated_list
-
-# Callback 4: 處理 Create Trip 頁面上的返回按鈕
-@app.callback(
-    Output('url', 'pathname', allow_duplicate=True),
-    Input({'type': 'back-btn', 'index': 'create-trip'}, 'n_clicks'),
-    prevent_initial_call=True
-)
-def go_back_from_create_trip(n_clicks):
-    if n_clicks > 0:
-        return '/'
-    return no_update
-
-# --- END: 新增的程式碼 (Create Trip 功能) ---
