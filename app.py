@@ -3497,43 +3497,6 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
                         'boxShadow': '0 4px 20px rgba(0,0,0,0.1)'
                     }),
                     
-                    # Hero Section with Icon
-                    html.Div([
-                        html.Div([
-                            html.Div([
-                                html.I(className='fas fa-route', style={
-                                    'fontSize': '3rem',
-                                    'color': '#667eea'
-                                })
-                            ], style={
-                                'width': '80px',
-                                'height': '80px',
-                                'backgroundColor': '#FFFFFF',
-                                'borderRadius': '50%',
-                                'display': 'flex',
-                                'alignItems': 'center',
-                                'justifyContent': 'center',
-                                'margin': '0 auto 1.5rem',
-                                'boxShadow': '0 8px 24px rgba(102, 126, 234, 0.25)'
-                            }),
-                            html.H1("Travel Distance Calculator", style={
-                                'color': '#1A1A1A',
-                                'fontSize': '2.5rem',
-                                'fontWeight': 'bold',
-                                'textAlign': 'center',
-                                'marginBottom': '1rem'
-                            }),
-                            html.P("Calculate distances and estimated travel times between destinations using different modes of transportation", 
-                                style={
-                                    'color': '#6B7280',
-                                    'fontSize': '1.1rem',
-                                    'textAlign': 'center',
-                                    'maxWidth': '600px',
-                                    'margin': '0 auto'
-                                })
-                        ], style={'padding': '3rem 2rem'})
-                    ], style={'backgroundColor': '#F2F6FA'}),
-                    
                     # Toggle buttons with modern styling
                     html.Div([
                         html.Div([
@@ -3614,29 +3577,6 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
                                     )
                                 ]),
                                 
-                                # Swap Button
-                                html.Div([
-                                    html.Button([
-                                        html.I(className='fas fa-exchange-alt', style={'transform': 'rotate(90deg)'})
-                                    ], style={
-                                        'backgroundColor': '#FFFFFF',
-                                        'border': '2px solid #E5E7EB',
-                                        'borderRadius': '50%',
-                                        'width': '40px',
-                                        'height': '40px',
-                                        'display': 'flex',
-                                        'alignItems': 'center',
-                                        'justifyContent': 'center',
-                                        'cursor': 'pointer',
-                                        'color': '#667eea',
-                                        'transition': 'all 0.3s ease',
-                                        'boxShadow': '0 2px 8px rgba(0,0,0,0.08)'
-                                    }, className='swap-button')
-                                ], style={
-                                    'display': 'flex',
-                                    'justifyContent': 'center',
-                                    'margin': '-0.75rem 0'
-                                }),
                                 
                                 # Destination
                                 html.Div([
