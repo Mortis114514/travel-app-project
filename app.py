@@ -34,7 +34,7 @@ from utils.database import get_revenue_trend, get_occupancy_status
 ########################
 #### 資料載入與前處理 ####
 ########################
-# 導入數據庫工具
+# 導入數據庫工具 (已整理重複項)
 from utils.database import (
     get_all_restaurants,
     get_random_top_restaurants as db_get_random_top_restaurants,
@@ -55,16 +55,34 @@ from utils.database import (
     search_attractions, 
     get_unique_attraction_types,
     get_attraction_by_id,
+    get_all_attractions,
     get_combined_analytics_data,
-    get_unique_attraction_types, 
-    get_attraction_by_id,
-    get_all_attractions
+    # 👇 關鍵的新函式
+    initialize_database 
 )
 
+# ==========================
+# 資料庫初始化與資料載入
+# ==========================
 
-restaurants_df = get_all_restaurants()  # 從數據庫加載（用於選項列表）
-hotels_df = get_all_hotels()
-analytics_df = load_and_prepare_data()
+# 1. 優先執行初始化：檢查資料表，若無則從 CSV 重建 (包含建立 Favorites/Trips 表)
+# 這行會解決 "no such table: restaurants" 的錯誤
+initialize_database()
+
+# 2. 資料載入：將資料讀入 Pandas DataFrame (記憶體中)
+try:
+    print("Loading data into memory...")
+    restaurants_df = get_all_restaurants()  # 從數據庫加載（用於選項列表）
+    hotels_df = get_all_hotels()
+    analytics_df = load_and_prepare_data()
+    print("Data loaded successfully.")
+except Exception as e:
+    print(f"❌ Error loading data: {e}")
+    # 如果出錯，給予空的 DataFrame 防止 App 崩潰
+    import pandas as pd
+    restaurants_df = pd.DataFrame()
+    hotels_df = pd.DataFrame()
+    analytics_df = pd.DataFrame()
 
 
 # 隨機選擇4-5星餐廳（使用數據庫查詢）
@@ -249,6 +267,7 @@ def create_destination_card(restaurant, id_type='restaurant-card'): # <--- [修�
     """創建目的地卡片 (修正版：支援自定義 ID 類型)"""
 
     card_content = html.Div([
+        # Image section (需加上 relative 定位以放置愛心)
         html.Div([
             html.Img(src=get_random_image_from_folder('Food'), className='card-image')
         ], className='card-image-section'),
@@ -266,9 +285,8 @@ def create_destination_card(restaurant, id_type='restaurant-card'): # <--- [修�
                 html.Span(f"{restaurant['TotalRating']:.1f}")
             ], className='card-rating'),
         ], className='card-content-section')
-    ], className='destination-card')
+    ])
 
-    # [修正] 使用傳入的 id_type，而不是寫死的字串
     return html.Div(
         card_content,
         id={'type': id_type, 'index': restaurant['Restaurant_ID']},
@@ -1251,57 +1269,68 @@ def create_restaurant_detail_content(data):
 
 
 def create_trip_layout():
-    """創建 "Create Trip" 頁面佈局 - 功能開發中"""
+    """創建行程規劃頁面 (左右欄位設計)"""
     return html.Div([
+        # Header
         html.Div([
-            html.Div([
-                # Back button and title
-                html.Div([
-                    html.Button([
-                        html.I(className='fas fa-arrow-left'),
-                        html.Span('Back', style={'marginLeft': '8px'})
-                    ], id={'type': 'back-btn', 'index': 'create-trip'}, className='btn-back', n_clicks=0),
-                    html.H1('Create Your Trip', style={
-                        'color': '#003580',
-                        'marginLeft': '2rem',
-                        'fontSize': '2rem',
-                        'fontWeight': 'bold'
-                    })
-                ], style={'display': 'flex', 'alignItems': 'center'}),
-            ], style={
-                'display': 'flex',
-                'justifyContent': 'space-between',
-                'alignItems': 'center',
-                'maxWidth': '1400px',
-                'margin': '0 auto',
-                'padding': '1.5rem 2rem'
-            })
-        ], style={
-            'backgroundColor': '#F2F6FA',
-            'borderBottom': '1px solid #E8ECEF',
-            'position': 'sticky',
-            'top': '0',
-            'zIndex': '1000'
-        }),
+            html.Button([html.I(className='fas fa-arrow-left'), ' Back'], id={'type': 'back-btn', 'index': 'planner'}, className='btn-secondary'),
+            html.H1("Trip Planner", style={'color': '#003580', 'marginLeft': '2rem'})
+        ], style={'display': 'flex', 'alignItems': 'center', 'padding': '1rem 2rem', 'backgroundColor': '#fff', 'borderBottom': '1px solid #eee'}),
 
-        html.Div([
-            # Main content area
-            html.Div("功能開發中...", style={
-                'textAlign': 'center',
-                'marginTop': '5rem',
-                'fontSize': '1.5rem',
-                'color': '#6c757d'
-            })
-        ], className='page-content', style={'padding': '2rem'})
-    ])
+        # Main Workspace
+        dbc.Row([
+            # --- LEFT COLUMN: Source Items ---
+            dbc.Col([
+                dbc.Card([
+                    dbc.CardHeader([
+                        dbc.Tabs([
+                            dbc.Tab(label="My Favorites", tab_id="tab-plan-fav", label_style={"fontWeight": "bold"}),
+                            dbc.Tab(label="Recommendations", tab_id="tab-plan-rec", label_style={"fontWeight": "bold"}),
+                        ], id="planner-tabs", active_tab="tab-plan-fav")
+                    ]),
+                    dbc.CardBody([
+                        # 這裡顯示可加入的項目
+                        html.Div(id="planner-source-list", style={'height': '70vh', 'overflowY': 'auto', 'paddingRight': '10px'})
+                    ])
+                ], style={'height': '80vh', 'border': 'none', 'boxShadow': '0 4px 12px rgba(0,0,0,0.05)'})
+            ], width=4, style={'paddingRight': '0'}),
 
-def create_hotel_card(hotel, id_type='hotel-card'): # <--- [修正] 加入參數
-    """創建旅館卡片 (支援自定義 ID 類型)"""
+            # --- RIGHT COLUMN: Itinerary ---
+            dbc.Col([
+                dbc.Card([
+                    dbc.CardHeader([
+                        html.H4("My Itinerary", className="m-0", style={'color': '#003580'}),
+                        html.Small("Click 'Add' on items from the left to populate your trip", className="text-muted")
+                    ], style={'backgroundColor': '#f8f9fa'}),
+                    dbc.CardBody([
+                        # 這裡顯示已加入的行程
+                        html.Div(id="planner-itinerary-view", style={'minHeight': '60vh'}),
+                        
+                        html.Hr(),
+                        dbc.Button("+ Add Day", id="add-day-btn", color="secondary", outline=True, size="sm", className="me-2"),
+                        dbc.Button("Save Trip Plan", id="save-trip-plan-btn", color="primary", className="float-end")
+                    ], style={'height': '75vh', 'overflowY': 'auto'})
+                ], style={'height': '80vh', 'border': 'none', 'boxShadow': '0 4px 12px rgba(0,0,0,0.05)'})
+            ], width=8)
+        ], style={'padding': '2rem', 'maxWidth': '1600px', 'margin': '0 auto'}),
+        
+        # 暫存行程資料
+        dcc.Store(id='trip-plan-data', data={'days': [{'day': 1, 'items': []}]}) 
+
+    ], style={'backgroundColor': '#F2F6FA', 'minHeight': '100vh'})
+
+def create_hotel_card(hotel, id_type='hotel-card', is_favorite=False): # [新增] is_favorite 參數
+    """創建旅館卡片 (支援自定義 ID 類型與收藏狀態)"""
     types_text = ', '.join(hotel['Types'][:2]) if isinstance(hotel['Types'], list) and hotel['Types'] else 'Hotel'
     rating = hotel.get('Rating', 0)
     rating_text = f"{rating:.1f}" if rating is not None else "N/A"
 
+    # 決定愛心樣式
+    heart_icon = "fas fa-heart" if is_favorite else "far fa-heart"
+    heart_color = "#ff4757" if is_favorite else "white"
+
     card_content = html.Div([
+        # Image section
         html.Div([
             html.Img(src=get_random_image_from_folder('Hotel'), className='card-image')
         ], className='card-image-section'),
@@ -1324,7 +1353,6 @@ def create_hotel_card(hotel, id_type='hotel-card'): # <--- [修正] 加入參數
         ], className='card-content-section')
     ], className='destination-card')
 
-    # [修正] 使用傳入的 id_type
     return html.Div(
         card_content,
         id={'type': id_type, 'index': hotel['Hotel_ID']},
@@ -1674,7 +1702,7 @@ def create_hotel_detail_content(hotel_data):
 
 # --- Attractions UI Components ---
 
-def create_attraction_card(attr):
+def create_attraction_card(attr, id_type='attraction-card', is_favorite=False): # [新增] 參數
     """建立景點小卡 (樣式與 Hotel/Restaurant 完全一致)"""
     # 處理 Price Level
     price_level = attr.get('PriceLevel')
@@ -1683,10 +1711,12 @@ def create_attraction_card(attr):
         try:
             p_val = float(price_level)
             price_display = '💰' * int(p_val)
-        except:
-            pass
-            
-    # 使用與 Hotel Card 相同的 CSS class 結構
+        except: pass
+    
+    # 決定愛心樣式
+    heart_icon = "fas fa-heart" if is_favorite else "far fa-heart"
+    heart_color = "#ff4757" if is_favorite else "white"
+
     card_content = html.Div([
         # 上半部：圖片區
         html.Div([
@@ -1694,7 +1724,7 @@ def create_attraction_card(attr):
                 src=get_random_image_from_folder('Attraction'),
                 className='card-image'
             )
-        ], className='card-image-section'),
+        ], className='card-image-section', style={'position': 'relative'}),
         
         # 下半部：內容區
         html.Div([
@@ -1723,9 +1753,9 @@ def create_attraction_card(attr):
 
     return html.Div(
         card_content,
-        id={'type': 'attraction-card', 'index': attr['ID']},
+        id={'type': id_type, 'index': attr['ID']},
         style={'cursor': 'pointer'},
-        n_clicks=0  # <--- 🚨 關鍵修正：必須加上這一行，點擊才會生效！
+        n_clicks=0
     )
 
 def create_attraction_search_bar():
@@ -2155,79 +2185,81 @@ def create_attraction_detail_content(data):
 
 def create_restaurant_map_chart():
     """Creates a mapbox scatter plot of all restaurants."""
-    df = get_all_restaurants()
-    # Filter out entries without coordinates
-    df = df.dropna(subset=['Lat', 'Long'])
+    try:
+        # [防呆] 嘗試讀取資料
+        df = get_all_restaurants()
+        # 如果讀出來是空的，或發生錯誤，回傳空圖表
+        if df is None or df.empty:
+            raise ValueError("No data returned from database")
 
-    # Create 'RatingCategory' based on 'TotalRating'
-    bins = [0, 2, 3, 4, 5]
-    labels = ['1-2 Stars', '2-3 Stars', '3-4 Stars', '4-5 Stars']
-    df['RatingCategory'] = pd.cut(df['TotalRating'], bins=bins, labels=labels, right=False, include_lowest=True)
+        # Filter out entries without coordinates
+        df = df.dropna(subset=['Lat', 'Long'])
 
-    # Ensure Restaurant_ID is integer
-    df['Restaurant_ID_int'] = df['Restaurant_ID'].astype(int)
+        # Create 'RatingCategory' based on 'TotalRating'
+        bins = [0, 2, 3, 4, 5]
+        labels = ['1-2 Stars', '2-3 Stars', '3-4 Stars', '4-5 Stars']
+        df['RatingCategory'] = pd.cut(df['TotalRating'], bins=bins, labels=labels, right=False, include_lowest=True)
 
-    fig = px.scatter_map(
-        df,
-        lat="Lat",
-        lon="Long",
-        hover_name="JapaneseName",
-        hover_data={"TotalRating": ':.1f', "FirstCategory": True, "RatingCategory": True},
-        color="RatingCategory",
-        color_discrete_map={
-            "1-2 Stars": "#FF6347",
-            "2-3 Stars": "#FFA500",
-            "3-4 Stars": "#FFD700",
-            "4-5 Stars": "#32CD32"
-        },
-        zoom=11,
-        center={"lat": 35.0116, "lon": 135.7681},
-        height=600,
-        map_style="carto-positron",
-        custom_data=['Restaurant_ID_int', 'Name']  # Add Restaurant ID for click handling
-    )
-    fig.update_layout(
-        margin={"r":0,"t":0,"l":0,"b":0},
-        showlegend=True,
-        legend_title_text='Rating',
-        legend=dict(
-            yanchor="top",
-            y=0.99,
-            xanchor="left",
-            x=0.01,
-            bgcolor='rgba(0, 53, 128, 0.5)',
-            font=dict(
-                color='white'
-            )
-        ),
-        clickmode='event+select',  # Enable click events
-        hoverdistance=20  # Increase hover detection distance
-    )
-    # Update hover template to show it's clickable and enhance marker appearance
-    fig.update_traces(
-        hovertemplate='<b>%{hovertext}</b><br>' +
-                     'Rating: %{customdata[1]}<br>' +
-                     '<i>Click to view details</i><extra></extra>',
-        marker=dict(
-            size=12,  # Slightly larger markers
-            opacity=0.9
-        ),
-        hoverlabel=dict(
-            bgcolor='#003580',
-            font_size=14,
-            font_family='Arial, sans-serif'
+        # Ensure Restaurant_ID is integer
+        df['Restaurant_ID_int'] = df['Restaurant_ID'].astype(int)
+
+        fig = px.scatter_map(
+            df,
+            lat="Lat",
+            lon="Long",
+            hover_name="JapaneseName",
+            hover_data={"TotalRating": ':.1f', "FirstCategory": True, "RatingCategory": True},
+            color="RatingCategory",
+            color_discrete_map={
+                "1-2 Stars": "#FF6347",
+                "2-3 Stars": "#FFA500",
+                "3-4 Stars": "#FFD700",
+                "4-5 Stars": "#32CD32"
+            },
+            zoom=11,
+            center={"lat": 35.0116, "lon": 135.7681},
+            height=600,
+            map_style="carto-positron",
+            custom_data=['Restaurant_ID_int', 'Name']  # Add Restaurant ID for click handling
         )
-    )
-    return dcc.Graph(
-        id='restaurant-map-graph',
-        figure=fig,
-        config={
-            'displayModeBar': True,
-            'scrollZoom': True,
-            'doubleClick': 'reset',
-            'modeBarButtonsToRemove': ['lasso2d', 'select2d']
-        }
-    )
+        fig.update_layout(
+            margin={"r":0,"t":0,"l":0,"b":0},
+            showlegend=True,
+            legend_title_text='Rating',
+            legend=dict(
+                yanchor="top",
+                y=0.99,
+                xanchor="left",
+                x=0.01,
+                bgcolor='rgba(0, 53, 128, 0.5)',
+                font=dict(color='white')
+            ),
+            clickmode='event+select',
+            hoverdistance=20
+        )
+        fig.update_traces(
+            hovertemplate='<b>%{hovertext}</b><br>' +
+                          'Rating: %{customdata[1]}<br>' +
+                          '<i>Click to view details</i><extra></extra>',
+            marker=dict(size=12, opacity=0.9),
+            hoverlabel=dict(bgcolor='#003580', font_size=14, font_family='Arial, sans-serif')
+        )
+        return dcc.Graph(
+            id='restaurant-map-graph',
+            figure=fig,
+            config={'displayModeBar': True, 'scrollZoom': True, 'doubleClick': 'reset', 'modeBarButtonsToRemove': ['lasso2d', 'select2d']}
+        )
+
+    except Exception as e:
+        print(f"⚠️ Warning: Could not load Restaurant Map. Error: {e}")
+        # 回傳一個空白圖表，避免 App 崩潰
+        fig = go.Figure()
+        fig.update_layout(
+            title="Map Data Unavailable (Please check database)",
+            xaxis={'visible': False}, yaxis={'visible': False}
+        )
+        return dcc.Graph(id='restaurant-map-graph', figure=fig)
+    
 def load_all_place_names():
     """Load all place names from restaurants, hotels, and attractions CSV files"""
     places = []
@@ -2281,155 +2313,145 @@ def load_all_place_names():
 
 def create_hotel_map_chart():
     """Creates a mapbox scatter plot of all hotels."""
-    df = get_all_hotels()
-    # Filter out entries without coordinates
-    df = df.dropna(subset=['Lat', 'Long'])
+    try:
+        # [防呆] 嘗試讀取資料
+        df = get_all_hotels()
+        if df is None or df.empty:
+            raise ValueError("No data returned from database")
 
-    # Create 'RatingCategory' based on 'Rating'
-    bins = [0, 2, 3, 4, 5]
-    labels = ['1-2 Stars', '2-3 Stars', '3-4 Stars', '4-5 Stars']
-    df['RatingCategory'] = pd.cut(df['Rating'], bins=bins, labels=labels, right=False, include_lowest=True)
+        # Filter out entries without coordinates
+        df = df.dropna(subset=['Lat', 'Long'])
 
-    # Ensure Hotel_ID is integer
-    df['Hotel_ID_int'] = df['Hotel_ID'].astype(int)
+        # Create 'RatingCategory' based on 'Rating'
+        bins = [0, 2, 3, 4, 5]
+        labels = ['1-2 Stars', '2-3 Stars', '3-4 Stars', '4-5 Stars']
+        df['RatingCategory'] = pd.cut(df['Rating'], bins=bins, labels=labels, right=False, include_lowest=True)
 
-    fig = px.scatter_map(
-        df,
-        lat="Lat",
-        lon="Long",
-        hover_name="HotelName",
-        hover_data={"Rating": ':.1f', "Types": True, "RatingCategory": True},
-        color="RatingCategory",
-        color_discrete_map={
-            "1-2 Stars": "#FF6347",
-            "2-3 Stars": "#FFA500",
-            "3-4 Stars": "#FFD700",
-            "4-5 Stars": "#32CD32"
-        },
-        zoom=11,
-        center={"lat": 35.0116, "lon": 135.7681},
-        height=600,
-        map_style="carto-positron",
-        custom_data=['Hotel_ID_int', 'HotelName']  # Add Hotel ID for click handling
-    )
-    fig.update_layout(
-        margin={"r":0,"t":0,"l":0,"b":0},
-        showlegend=True,
-        legend_title_text='Rating',
-        legend=dict(
-            yanchor="top",
-            y=0.99,
-            xanchor="left",
-            x=0.01,
-            bgcolor='rgba(0, 53, 128, 0.5)',
-            font=dict(
-                color='white'
-            )
-        ),
-        clickmode='event+select',  # Enable click events
-        hoverdistance=20  # Increase hover detection distance
-    )
-    # Update hover template to show it's clickable and enhance marker appearance
-    fig.update_traces(
-        hovertemplate='<b>%{hovertext}</b><br>' +
-                     'Hotel: %{customdata[1]}<br>' +
-                     '<i>Click to view details</i><extra></extra>',
-        marker=dict(
-            size=12,  # Slightly larger markers
-            opacity=0.9
-        ),
-        hoverlabel=dict(
-            bgcolor='#003580',
-            font_size=14,
-            font_family='Arial, sans-serif'
+        # Ensure Hotel_ID is integer
+        df['Hotel_ID_int'] = df['Hotel_ID'].astype(int)
+
+        fig = px.scatter_map(
+            df,
+            lat="Lat",
+            lon="Long",
+            hover_name="HotelName",
+            hover_data={"Rating": ':.1f', "Types": True, "RatingCategory": True},
+            color="RatingCategory",
+            color_discrete_map={
+                "1-2 Stars": "#FF6347",
+                "2-3 Stars": "#FFA500",
+                "3-4 Stars": "#FFD700",
+                "4-5 Stars": "#32CD32"
+            },
+            zoom=11,
+            center={"lat": 35.0116, "lon": 135.7681},
+            height=600,
+            map_style="carto-positron",
+            custom_data=['Hotel_ID_int', 'HotelName']  # Add Hotel ID for click handling
         )
-    )
-    return dcc.Graph(
-        id='hotel-map-graph',
-        figure=fig,
-        config={
-            'displayModeBar': True,
-            'scrollZoom': True,
-            'doubleClick': 'reset',
-            'modeBarButtonsToRemove': ['lasso2d', 'select2d']
-        }
-    )
+        fig.update_layout(
+            margin={"r":0,"t":0,"l":0,"b":0},
+            showlegend=True,
+            legend_title_text='Rating',
+            legend=dict(
+                yanchor="top",
+                y=0.99,
+                xanchor="left",
+                x=0.01,
+                bgcolor='rgba(0, 53, 128, 0.5)',
+                font=dict(color='white')
+            ),
+            clickmode='event+select',
+            hoverdistance=20
+        )
+        fig.update_traces(
+            hovertemplate='<b>%{hovertext}</b><br>' +
+                          'Hotel: %{customdata[1]}<br>' +
+                          '<i>Click to view details</i><extra></extra>',
+            marker=dict(size=12, opacity=0.9),
+            hoverlabel=dict(bgcolor='#003580', font_size=14, font_family='Arial, sans-serif')
+        )
+        return dcc.Graph(
+            id='hotel-map-graph',
+            figure=fig,
+            config={'displayModeBar': True, 'scrollZoom': True, 'doubleClick': 'reset', 'modeBarButtonsToRemove': ['lasso2d', 'select2d']}
+        )
+    except Exception as e:
+        print(f"⚠️ Warning: Could not load Hotel Map. Error: {e}")
+        fig = go.Figure()
+        fig.update_layout(title="Map Data Unavailable", xaxis={'visible': False}, yaxis={'visible': False})
+        return dcc.Graph(id='hotel-map-graph', figure=fig)
 
 def create_attraction_map_chart():
     """Creates a mapbox scatter plot of all attractions."""
-    df = get_all_attractions()
-    # Filter out entries without coordinates
-    df = df.dropna(subset=['Lat', 'Long'])
+    try:
+        # [防呆] 嘗試讀取資料
+        df = get_all_attractions()
+        if df is None or df.empty:
+            raise ValueError("No data returned from database")
 
-    # Create 'RatingCategory' based on 'Rating'
-    bins = [0, 2, 3, 4, 5]
-    labels = ['1-2 Stars', '2-3 Stars', '3-4 Stars', '4-5 Stars']
-    df['RatingCategory'] = pd.cut(df['Rating'], bins=bins, labels=labels, right=False, include_lowest=True)
+        # Filter out entries without coordinates
+        df = df.dropna(subset=['Lat', 'Long'])
 
-    # Ensure ID is integer
-    df['ID_int'] = df['ID'].astype(int)
+        # Create 'RatingCategory' based on 'Rating'
+        bins = [0, 2, 3, 4, 5]
+        labels = ['1-2 Stars', '2-3 Stars', '3-4 Stars', '4-5 Stars']
+        df['RatingCategory'] = pd.cut(df['Rating'], bins=bins, labels=labels, right=False, include_lowest=True)
 
-    fig = px.scatter_map(
-        df,
-        lat="Lat",
-        lon="Long",
-        hover_name="Name",
-        hover_data={"Rating": ':.1f', "Type": True, "RatingCategory": True},
-        color="RatingCategory",
-        color_discrete_map={
-            "1-2 Stars": "#FF6347",
-            "2-3 Stars": "#FFA500",
-            "3-4 Stars": "#FFD700",
-            "4-5 Stars": "#32CD32"
-        },
-        zoom=11,
-        center={"lat": 35.0116, "lon": 135.7681},
-        height=600,
-        map_style="carto-positron",
-        custom_data=['ID_int', 'Name']  # Add Attraction ID for click handling
-    )
-    fig.update_layout(
-        margin={"r":0,"t":0,"l":0,"b":0},
-        showlegend=True,
-        legend_title_text='Rating',
-        legend=dict(
-            yanchor="top",
-            y=0.99,
-            xanchor="left",
-            x=0.01,
-            bgcolor='rgba(0, 53, 128, 0.5)',
-            font=dict(
-                color='white'
-            )
-        ),
-        clickmode='event+select',  # Enable click events
-        hoverdistance=20  # Increase hover detection distance
-    )
-    # Update hover template to show it's clickable and enhance marker appearance
-    fig.update_traces(
-        hovertemplate='<b>%{hovertext}</b><br>' +
-                     'Attraction: %{customdata[1]}<br>' +
-                     '<i>Click to view details</i><extra></extra>',
-        marker=dict(
-            size=12,  # Slightly larger markers
-            opacity=0.9
-        ),
-        hoverlabel=dict(
-            bgcolor='#003580',
-            font_size=14,
-            font_family='Arial, sans-serif'
+        # Ensure ID is integer
+        df['ID_int'] = df['ID'].astype(int)
+
+        fig = px.scatter_map(
+            df,
+            lat="Lat",
+            lon="Long",
+            hover_name="Name",
+            hover_data={"Rating": ':.1f', "Type": True, "RatingCategory": True},
+            color="RatingCategory",
+            color_discrete_map={
+                "1-2 Stars": "#FF6347",
+                "2-3 Stars": "#FFA500",
+                "3-4 Stars": "#FFD700",
+                "4-5 Stars": "#32CD32"
+            },
+            zoom=11,
+            center={"lat": 35.0116, "lon": 135.7681},
+            height=600,
+            map_style="carto-positron",
+            custom_data=['ID_int', 'Name']  # Add Attraction ID for click handling
         )
-    )
-    return dcc.Graph(
-        id='attraction-map-graph',
-        figure=fig,
-        config={
-            'displayModeBar': True,
-            'scrollZoom': True,
-            'doubleClick': 'reset',
-            'modeBarButtonsToRemove': ['lasso2d', 'select2d']
-        }
-    )
+        fig.update_layout(
+            margin={"r":0,"t":0,"l":0,"b":0},
+            showlegend=True,
+            legend_title_text='Rating',
+            legend=dict(
+                yanchor="top",
+                y=0.99,
+                xanchor="left",
+                x=0.01,
+                bgcolor='rgba(0, 53, 128, 0.5)',
+                font=dict(color='white')
+            ),
+            clickmode='event+select',
+            hoverdistance=20
+        )
+        fig.update_traces(
+            hovertemplate='<b>%{hovertext}</b><br>' +
+                          'Attraction: %{customdata[1]}<br>' +
+                          '<i>Click to view details</i><extra></extra>',
+            marker=dict(size=12, opacity=0.9),
+            hoverlabel=dict(bgcolor='#003580', font_size=14, font_family='Arial, sans-serif')
+        )
+        return dcc.Graph(
+            id='attraction-map-graph',
+            figure=fig,
+            config={'displayModeBar': True, 'scrollZoom': True, 'doubleClick': 'reset', 'modeBarButtonsToRemove': ['lasso2d', 'select2d']}
+        )
+    except Exception as e:
+        print(f"⚠️ Warning: Could not load Attraction Map. Error: {e}")
+        fig = go.Figure()
+        fig.update_layout(title="Map Data Unavailable", xaxis={'visible': False}, yaxis={'visible': False})
+        return dcc.Graph(id='attraction-map-graph', figure=fig)
 
 # --- 新增這個輔助函式 ---
 def create_help_section(index_id, button_text, explanation_content):
@@ -3105,19 +3127,19 @@ def create_main_layout():
             ], className='card-scroll-container')
         ], className='content-section'),
         
-        # ===== Personalized Content Section - Your Saved Trips & Favorites =====
+        # ===== Personalized Content Section (Favorites) =====
         html.Div([
-            html.H2('Your Saved Trips & Favorites', className='section-title'),
+            html.H2('My Favorites Collection', className='section-title'),
 
-            # Tab Navigation
+            # Tab Navigation for Favorites
             html.Div([
-                html.Div('Saved Trips', id='tab-saved-trips', className='tab-item active', n_clicks=0),
-                html.Div('Wishlisted Hotels', id='tab-wishlisted', className='tab-item', n_clicks=0),
-                html.Div('Favorite Restaurants', id='tab-favorites', className='tab-item', n_clicks=0)
+                html.Div('Restaurants', id='fav-tab-rest', className='tab-item active', n_clicks=0),
+                html.Div('Hotels', id='fav-tab-hotel', className='tab-item', n_clicks=0),
+                html.Div('Attractions', id='fav-tab-attr', className='tab-item', n_clicks=0)
             ], className='tab-navigation'),
 
-            # Tab Content
-            html.Div(id='tab-content-container')
+            # Favorites Content Container (由 Callback 填充)
+            html.Div(id='favorites-content-container', style={'minHeight': '200px', 'padding': '1rem 0'})
         ], className='content-section'),
 
         # ===== NEW: Map Section =====
@@ -4185,17 +4207,6 @@ def view_analytics(n_clicks, current_view):
 def view_traffic(n_clicks, current_view):
     if n_clicks and current_view != 'traffic':
         return 'traffic'
-    raise PreventUpdate
-
-@app.callback(
-    Output('url', 'pathname', allow_duplicate=True),
-    [Input('create-trip-btn', 'n_clicks')],
-    prevent_initial_call=True
-)
-def navigate_to_create_trip(n_clicks):
-    """Navigate to Create Trip page when button is clicked"""
-    if n_clicks:
-        return '/create-trip'
     raise PreventUpdate
 
 
@@ -7882,120 +7893,281 @@ def calculate_text_distance(n_clicks, start_value, end_value, places_data):
 if __name__ == '__main__':
     app.run(debug=True, port=8050)
 
-
-
-# --- START: 新增的程式碼 (Create Trip 功能) ---
-
-# Callback 1: 將餐廳加入 'selected-restaurants' store
+# 2. 首頁收藏區內容切換
 @app.callback(
-    Output('selected-restaurants', 'data'),
-    Input({'type': 'add-to-trip-btn', 'index': ALL}, 'n_clicks'),
-    State('selected-restaurants', 'data'),
-    State('search-results-store', 'data'),
-    prevent_initial_call=True
+    [Output('fav-tab-rest', 'className'),
+     Output('fav-tab-hotel', 'className'),
+     Output('fav-tab-attr', 'className'),
+     Output('favorites-content-container', 'children')],
+    [Input('fav-tab-rest', 'n_clicks'),
+     Input('fav-tab-hotel', 'n_clicks'),
+     Input('fav-tab-attr', 'n_clicks')],
+    State('session-store', 'data')
 )
-def add_restaurant_to_trip(n_clicks, selected_data, search_data):
-    if not any(n_clicks):
-        raise PreventUpdate
-
+def update_favorites_section(btn1, btn2, btn3, session_data):
     ctx = callback_context
-    triggered_id = ctx.triggered_id
-    if not triggered_id:
-        raise PreventUpdate
-
-    restaurant_id = triggered_id['index']
+    trigger_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else 'fav-tab-rest'
     
-    # 初始化
-    if selected_data is None:
-        selected_data = []
-
-    # 檢查是否已存在
-    existing_ids = {r['Restaurant_ID'] for r in selected_data}
-    if restaurant_id in existing_ids:
-        return no_update # or provide user feedback
-
-    # 從搜尋結果中找到餐廳的完整資料
-    restaurant_to_add = None
-    if search_data:
-        for r in search_data:
-            if r['Restaurant_ID'] == restaurant_id:
-                restaurant_to_add = r
-                break
+    active_cls = 'tab-item active'
+    base_cls = 'tab-item'
     
-    if restaurant_to_add:
-        selected_data.append(restaurant_to_add)
-
-    return selected_data
-
-# Callback 2: 在 Create Trip 頁面顯示選擇的餐廳列表
-@app.callback(
-    Output('selected-restaurants-container', 'children'),
-    Input('selected-restaurants', 'data')
-)
-def display_selected_restaurants(selected_data):
-    if not selected_data:
-        return html.Div("No restaurants selected yet. Go to 'View All' to add some!", style={'textAlign': 'center', 'padding': '2rem', 'color': '#888'})
-
-    list_items = []
-    for restaurant in selected_data:
-        item = dbc.ListGroupItem([
-            dbc.Row([
-                dbc.Col(
-                    html.Div([
-                        html.H5(restaurant['Name'], className="mb-1"),
-                        html.Small(restaurant.get('FirstCategory', ''), className="text-muted"),
-                    ]),
-                    width=10
-                ),
-                dbc.Col(
-                    dbc.Button(
-                        "Remove",
-                        id={'type': 'remove-from-trip-btn', 'index': restaurant['Restaurant_ID']},
-                        color="danger",
-                        outline=True,
-                        size="sm"
-                    ),
-                    width=2,
-                    className="d-flex align-items-center justify-content-end"
-                )
-            ], align="center")
-        ])
-        list_items.append(item)
+    target_type = 'Restaurant'
+    c1, c2, c3 = active_cls, base_cls, base_cls
     
-    return dbc.ListGroup(list_items)
-
-# Callback 3: 從選擇列表中移除餐廳
-@app.callback(
-    Output('selected-restaurants', 'data', allow_duplicate=True),
-    Input({'type': 'remove-from-trip-btn', 'index': ALL}, 'n_clicks'),
-    State('selected-restaurants', 'data'),
-    prevent_initial_call=True
-)
-def remove_restaurant_from_trip(n_clicks, selected_data):
-    if not any(n_clicks) or not selected_data:
-        raise PreventUpdate
-
-    ctx = callback_context
-    triggered_id = ctx.triggered_id
-    if not triggered_id:
-        raise PreventUpdate
+    if trigger_id == 'fav-tab-hotel':
+        target_type = 'Hotel'
+        c1, c2, c3 = base_cls, active_cls, base_cls
+    elif trigger_id == 'fav-tab-attr':
+        target_type = 'Attraction'
+        c1, c2, c3 = base_cls, base_cls, active_cls
         
-    restaurant_id_to_remove = triggered_id['index']
-
-    # 創建一個新的列表，排除要被刪除的餐廳
-    updated_list = [r for r in selected_data if r['Restaurant_ID'] != restaurant_id_to_remove]
+    # 獲取資料
+    content = html.Div("Please login to see favorites.", style={'textAlign':'center', 'padding':'2rem'})
     
-    return updated_list
+    if session_data and 'session_id' in session_data:
+        user_id = get_session(session_data['session_id'])
+        if user_id:
+            # 從 DB 撈取該用戶的所有收藏 ID
+            from utils.database import get_user_favorites
+            favs = get_user_favorites(user_id) # 回傳 {'Restaurant': [ids], ...}
+            ids = favs.get(target_type, [])
+            
+            if not ids:
+                content = html.Div(f"No favorite {target_type.lower()}s yet.", style={'textAlign':'center', 'color':'#888'})
+            else:
+                # 根據 ID 撈取詳細資料並生成卡片
+                cards = []
+                for iid in ids:
+                    try:
+                        if target_type == 'Restaurant':
+                            data = get_restaurant_by_id(iid)
+                            if data: cards.append(create_destination_card(dict(data), is_favorite=True))
+                        elif target_type == 'Hotel':
+                            data = get_hotel_by_id(iid)
+                            if data: cards.append(create_hotel_card(dict(data), is_favorite=True))
+                        elif target_type == 'Attraction':
+                            data = get_attraction_by_id(iid)
+                            if data: cards.append(create_attraction_card(dict(data), is_favorite=True))
+                    except: pass
+                
+                content = html.Div(cards, className='card-row') # 橫向滾動
+                content = html.Div(content, className='card-scroll-container')
+                
+    return c1, c2, c3, content
 
-# Callback 4: 處理 Create Trip 頁面上的返回按鈕
+# 3. Planner: 更新左側來源清單 (Source List)
+# [FIX 5] Planner: 更新左側來源清單 (確保按鈕 ID 結構簡單)
+@app.callback(
+    Output("planner-source-list", "children"),
+    [Input("planner-tabs", "active_tab"),
+     Input('session-store', 'data')]
+)
+def update_planner_source(active_tab, session_data):
+    if not session_data or 'session_id' not in session_data: 
+        return html.Div("Please login to see favorites.", className="text-center p-4")
+    
+    user_id = get_session(session_data['session_id'])
+    items_ui = []
+    
+    if active_tab == "tab-plan-fav":
+        from utils.database import get_user_favorites
+        favs = get_user_favorites(user_id) 
+        
+        for cat, ids in favs.items():
+            if not ids: continue
+            
+            # 建立分類標題
+            items_ui.append(html.H6(f"{cat}s", className="mt-3 mb-2 text-primary border-bottom pb-1"))
+            
+            for iid in ids:
+                name = f"{cat} #{iid}" 
+                try:
+                    int_id = int(iid) # 確保轉型
+                    item_data = None
+                    
+                    if cat == 'Restaurant': item_data = get_restaurant_by_id(int_id)
+                    elif cat == 'Hotel': item_data = get_hotel_by_id(int_id)
+                    elif cat == 'Attraction': item_data = get_attraction_by_id(int_id)
+                    
+                    if item_data:
+                        # 統一取 Name 欄位 (因為我们在 initialize_database 統一了欄位名)
+                        name = item_data.get('Name') or item_data.get('HotelName') or name
+
+                        items_ui.append(
+                            dbc.Card([
+                                dbc.CardBody([
+                                    html.Div(name, style={'fontWeight':'bold', 'fontSize':'0.9rem', 'whiteSpace': 'nowrap', 'overflow': 'hidden', 'textOverflow': 'ellipsis'}),
+                                    # [重點] 按鈕 ID 只包含 type, index, cat。不包含 name。
+                                    dbc.Button("Add", 
+                                               id={'type': 'add-to-plan', 'index': str(int_id), 'cat': cat}, 
+                                               size="sm", color="primary", outline=True, className="mt-2 w-100", style={'fontSize':'0.8rem'})
+                                ], className="p-2")
+                            ], className="mb-2 shadow-sm")
+                        )
+                except: continue
+                
+    elif active_tab == "tab-plan-rec":
+        items_ui = [html.Div("System recommendations will appear here.", className="text-muted text-center p-4")]
+
+    return items_ui
+
+# 4. Planner: 處理 "Add" 和 "Remove" 與 "Add Day" (更新右側行程)
+# [FIX 2 & 3] Planner 邏輯修正：配合新的 ID 結構
+@app.callback(
+    Output("trip-plan-data", "data"),
+    [Input({'type': 'add-to-plan', 'index': ALL, 'cat': ALL}, 'n_clicks'), # [修正] 這裡拿掉 name 和 id，改用 index
+     Input({'type': 'remove-plan-item', 'day': ALL, 'idx': ALL}, 'n_clicks'),
+     Input({'type': 'remove-day-btn', 'day': ALL}, 'n_clicks'),
+     Input('add-day-btn', 'n_clicks')],
+    [State("trip-plan-data", "data")],
+    prevent_initial_call=True
+)
+def update_trip_data(add_clicks, remove_item_clicks, remove_day_clicks, add_day_click, current_data):
+    ctx = callback_context
+    if not ctx.triggered: raise PreventUpdate
+    
+    trigger_prop_id = ctx.triggered[0]['prop_id']
+    trigger_value = ctx.triggered[0]['value']
+    
+    if not trigger_value or trigger_value == 0: raise PreventUpdate
+
+    trigger_id_str = trigger_prop_id.split('.')[0]
+    if not current_data: current_data = {'days': [{'day': 1, 'items': []}]}
+    
+    # CASE 1: 新增天數
+    if trigger_id_str == 'add-day-btn':
+        new_day_num = len(current_data['days']) + 1
+        current_data['days'].append({'day': new_day_num, 'items': []})
+        return current_data
+        
+    try:
+        trigger_obj = json.loads(trigger_id_str)
+    except: raise PreventUpdate
+
+    # CASE 2: 加入項目
+    if trigger_obj.get('type') == 'add-to-plan':
+        item_cat = trigger_obj['cat']
+        item_id = trigger_obj['index']
+        item_name = "Unknown Item"
+
+        # 重新查詢名稱 (因為 ID 裡沒放名稱了)
+        try:
+            int_id = int(item_id)
+            if item_cat == 'Restaurant': 
+                res = get_restaurant_by_id(int_id)
+                if res: item_name = res.get('Name')
+            elif item_cat == 'Hotel': 
+                res = get_hotel_by_id(int_id)
+                if res: item_name = res.get('Name') # 資料庫已統一名稱
+            elif item_cat == 'Attraction': 
+                res = get_attraction_by_id(int_id)
+                if res: item_name = res.get('Name')
+        except: pass
+        
+        if not current_data['days']:
+             current_data['days'] = [{'day': 1, 'items': []}]
+             
+        current_data['days'][-1]['items'].append({
+            'name': item_name,
+            'cat': item_cat,
+            'id': item_id
+        })
+        
+    # CASE 3: 移除項目
+    elif trigger_obj.get('type') == 'remove-plan-item':
+        day_num = trigger_obj['day']
+        item_idx = trigger_obj['idx']
+        for d in current_data['days']:
+            if d['day'] == day_num:
+                if 0 <= item_idx < len(d['items']):
+                    d['items'].pop(item_idx)
+                break
+
+    # CASE 4: 移除整天
+    elif trigger_obj.get('type') == 'remove-day-btn':
+        day_to_remove = trigger_obj['day']
+        current_data['days'] = [d for d in current_data['days'] if d['day'] != day_to_remove]
+        for i, d in enumerate(current_data['days']):
+            d['day'] = i + 1
+        if not current_data['days']:
+             current_data['days'] = [{'day': 1, 'items': []}]
+
+    return current_data
+
+# 5. Planner: 渲染右側行程表 (View)
+# [FIX 3] Planner: 渲染右側行程表 (加入刪除天數按鈕)
+@app.callback(
+    Output("planner-itinerary-view", "children"),
+    Input("trip-plan-data", "data")
+)
+def render_trip_itinerary(data):
+    if not data or not data.get('days'): 
+        return html.Div("Start adding items!", className="text-center text-muted mt-5")
+    
+    days_ui = []
+    for day in data.get('days', []):
+        day_num = day['day']
+        items = day['items']
+        
+        item_list = []
+        for idx, item in enumerate(items):
+            icon = "fas fa-utensils" if item['cat'] == 'Restaurant' else "fas fa-hotel" if item['cat'] == 'Hotel' else "fas fa-torii-gate"
+            item_list.append(
+                dbc.ListGroupItem([
+                    dbc.Row([
+                        dbc.Col([html.I(className=f"{icon} me-2 text-muted"), html.Span(item['name'])], width=10),
+                        dbc.Col(
+                            dbc.Button(html.I(className="fas fa-times"), 
+                                       id={'type': 'remove-plan-item', 'day': day_num, 'idx': idx},
+                                       color="danger", outline=True, size="sm", className="border-0"), 
+                            width=2, className="text-end"
+                        )
+                    ], align="center")
+                ])
+            )
+        
+        # Day Card Header with Delete Button
+        header_content = dbc.Row([
+            dbc.Col(html.Span(f"Day {day_num}", className="fw-bold"), width=8),
+            dbc.Col(
+                dbc.Button(html.I(className="fas fa-trash-alt"), 
+                           id={'type': 'remove-day-btn', 'day': day_num},
+                           color="danger", outline=True, size="sm", className="float-end"),
+                width=4
+            )
+        ], align="center")
+
+        days_ui.append(
+            dbc.Card([
+                dbc.CardHeader(header_content, className="bg-light"),
+                dbc.ListGroup(item_list, flush=True) if item_list else dbc.CardBody("No items yet.", className="text-muted small p-2")
+            ], className="mb-3 shadow-sm")
+        )
+        
+    return days_ui
+
+# [MISSING] 點擊首頁 "Create a Trip" 按鈕 -> 進入 /create-trip
 @app.callback(
     Output('url', 'pathname', allow_duplicate=True),
-    Input({'type': 'back-btn', 'index': 'create-trip'}, 'n_clicks'),
+    Input('create-trip-btn', 'n_clicks'),
     prevent_initial_call=True
 )
-def go_back_from_create_trip(n_clicks):
-    if n_clicks > 0:
-        return '/'
+def navigate_to_create_trip(n_clicks):
+    if n_clicks:
+        return '/create-trip'
     return no_update
 
-# --- END: 新增的程式碼 (Create Trip 功能) ---
+# [FIX 4] 處理 Trip Planner 頁面上的返回按鈕 (修正 NoneType 錯誤)
+@app.callback(
+    Output('url', 'pathname', allow_duplicate=True),
+    Input({'type': 'back-btn', 'index': 'planner'}, 'n_clicks'),
+    prevent_initial_call=True
+)
+def go_back_from_planner(n_clicks):
+    # 修正：先確認 n_clicks 不是 None，且大於 0
+    if n_clicks:
+        return '/'
+    return no_update
+    
+if __name__ == '__main__':
+    app.run(debug=True, port=8050)
