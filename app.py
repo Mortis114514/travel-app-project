@@ -2409,7 +2409,6 @@ app.layout = html.Div([
     dcc.Store(id='hotel-detail-data', storage_type='memory'),  # 旅館詳細資料（包含 reviews）
     dcc.Store(id='selected-restaurants', storage_type='session', data=[]),
     dcc.Store(id='favorite-restaurants', storage_type='session', data=[]),  # Store for favorite restaurants
-    dcc.Store(id='favorite-hotels', storage_type='session', data=[]),  # Store for favorite hotels
     # 新增景點相關 Stores
     dcc.Store(id='attraction-search-results-store', storage_type='memory'),  # 存儲景點搜尋結果
             dcc.Store(id='attraction-current-page-store', data=1, storage_type='memory'),  # 存儲景點列表分頁狀態
@@ -3709,7 +3708,10 @@ def handle_tab_navigation(saved_clicks, wishlisted_clicks, favorites_clicks):
         content = html.Div(content, className='card-scroll-container')
 
     elif active_tab == 'wishlisted':
-        content = html.Div(id='favorite-hotels-container')
+        content = html.Div([
+            html.P('No wishlisted hotels yet. Start exploring!',
+                   style={'color': '#888888', 'fontSize': '1.1rem', 'textAlign': 'center', 'padding': '3rem'})
+        ])
 
     else:  # favorites
         content = html.Div(id='favorite-restaurants-container')
@@ -6742,7 +6744,7 @@ def toggle_restaurant_favorite(n_clicks, restaurant_data, favorites, current_sty
     [Input('restaurant-detail-data', 'data'),
      Input('favorite-restaurants', 'data')],
     State('restaurant-favorite-button', 'style'),
-    prevent_initial_call='initial_duplicate'
+    prevent_initial_call=True
 )
 def initialize_favorite_button_style(restaurant_data, favorites, current_style):
     """Set button style based on whether restaurant is in favorites when page loads"""
@@ -6897,6 +6899,33 @@ def display_favorite_restaurants(favorites, n_clicks):
             'gap': '1.5rem'
         })
     ])
+
+# Callback 4: Hotel favorite button (placeholder for future implementation)
+@app.callback(
+    Output('hotel-favorite-button', 'style'),
+    Input('hotel-favorite-button', 'n_clicks'),
+    State('hotel-favorite-button', 'style'),
+    prevent_initial_call=True
+)
+def toggle_hotel_favorite(n_clicks, current_style):
+    """Toggle hotel favorite button style"""
+    if not n_clicks:
+        return no_update
+    
+    new_style = current_style.copy() if current_style else {}
+    
+    if n_clicks % 2 == 1:
+        # Favorited
+        new_style['backgroundColor'] = 'rgba(0, 53, 128, 0.4)'
+        new_style['border'] = '1.5px solid rgba(0, 53, 128, 0.8)'
+    else:
+        # Unfavorited
+        new_style['backgroundColor'] = 'rgba(255, 255, 255, 0.25)'
+        new_style['border'] = '1.5px solid rgba(255, 255, 255, 0.5)'
+    
+    return new_style
+
+
 
 
 #這行一定放最後
