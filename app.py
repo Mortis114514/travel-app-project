@@ -6701,25 +6701,6 @@ app.clientside_callback(
     Input('current-page-store', 'data')
 )
 
-# [FIX 1] 強制停止愛心按鈕的點擊事件傳遞
-app.clientside_callback(
-    """
-    function(n_clicks) {
-        if (n_clicks > 0) {
-            var e = window.event;
-            if (e) {
-                e.stopPropagation();
-                e.cancelBubble = true; 
-            }
-        }
-        return window.dash_clientside.no_update;
-    }
-    """,
-    Output({'type': 'fav-btn', 'item_type': MATCH, 'index': MATCH}, 'className'), 
-    Input({'type': 'fav-btn', 'item_type': MATCH, 'index': MATCH}, 'n_clicks'),
-    prevent_initial_call=True
-)
-
 # ===== Clientside Callback: Scroll to Map Section on Hash Navigation =====
 app.clientside_callback(
     """
