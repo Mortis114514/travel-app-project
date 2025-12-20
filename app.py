@@ -1985,19 +1985,134 @@ def create_attraction_detail_content(data):
         print(f"Error parsing attraction data: {e}")
         return create_error_state(f"Data Error: {e}")
 
+    # Generate star rating
+    full_stars = int(rating)
+    stars = []
+    for i in range(5):
+        if i < full_stars:
+            stars.append(html.I(className='fas fa-star', style={'color': '#deb522', 'marginRight': '4px', 'textShadow': '1px 1px 3px rgba(0,0,0,0.5)'}))
+        else:
+            stars.append(html.I(className='far fa-star', style={'color': 'rgba(255, 255, 255, 0.5)', 'marginRight': '4px', 'textShadow': '1px 1px 3px rgba(0,0,0,0.5)'}))
+
     return html.Div([
-        # Hero Image Area
+        # Hero Image Area (matching restaurant style)
         html.Div([
-            html.Img(src='/assets/food_dirtyrice.png', style={'width':'100%', 'height':'100%', 'objectFit':'cover', 'position': 'absolute', 'top': '0', 'left': '0'}),
-            html.Div(style={'position': 'absolute', 'bottom': '0', 'left': '0', 'right': '0', 'height': '70%', 'background': 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)'}),
+            # Image gallery
+            create_image_gallery(),
+
+            # Gradient overlay for text readability
+            html.Div(style={
+                'position': 'absolute',
+                'bottom': '0',
+                'left': '0',
+                'right': '0',
+                'height': '70%',
+                'background': 'linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.2) 70%, transparent 100%)',
+                'pointerEvents': 'none'
+            }),
+
+            # Hero content
             html.Div([
-                html.H1(name, style={'color': '#fff', 'fontSize': '3rem', 'fontWeight': 'bold', 'textShadow': '2px 2px 4px rgba(0,0,0,0.8)', 'marginBottom': '0.5rem'}),
+                html.H1(name, style={
+                    'color': '#FFFFFF',
+                    'fontSize': '3rem',
+                    'fontWeight': 'bold',
+                    'marginBottom': '0.5rem',
+                    'textShadow': '2px 2px 8px rgba(0,0,0,0.7)'
+                }),
                 html.Div([
-                    html.Span(attr_type, style={'backgroundColor': 'rgba(255,255,255,0.2)', 'backdropFilter': 'blur(5px)', 'color': '#fff', 'padding': '5px 15px', 'borderRadius': '20px', 'marginRight': '10px', 'border': '1px solid rgba(255,255,255,0.5)'}),
-                    html.Span(f"{rating} ★ ({review_count} reviews)", style={'color': '#FBC02D', 'fontSize': '1.2rem', 'fontWeight': 'bold', 'textShadow': '1px 1px 2px rgba(0,0,0,0.8)'})
+                    html.Div(stars + [
+                        html.Span(f"{rating:.1f}", style={
+                            'color': '#deb522',
+                            'fontSize': '1.8rem',
+                            'fontWeight': 'bold',
+                            'marginLeft': '12px',
+                            'textShadow': '1px 1px 3px rgba(0,0,0,0.5)'
+                        })
+                    ], style={'marginBottom': '1rem'}),
+                    html.Div([
+                        html.Span([
+                            html.I(className='fas fa-map-pin', style={'marginRight': '6px'}),
+                            attr_type
+                        ], style={
+                            'backgroundColor': 'rgba(255, 255, 255, 0.25)',
+                            'backdropFilter': 'blur(10px)',
+                            'border': '1.5px solid rgba(255, 255, 255, 0.5)',
+                            'color': '#FFFFFF',
+                            'padding': '8px 16px',
+                            'borderRadius': '20px',
+                            'marginRight': '10px',
+                            'fontSize': '1rem',
+                            'fontWeight': '500',
+                            'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)'
+                        }),
+                        html.Span([
+                            html.I(className='fas fa-yen-sign', style={'marginRight': '6px'}),
+                            price_text
+                        ], style={
+                            'backgroundColor': 'rgba(255, 255, 255, 0.25)',
+                            'backdropFilter': 'blur(10px)',
+                            'border': '1.5px solid rgba(255, 255, 255, 0.5)',
+                            'color': '#FFFFFF',
+                            'padding': '8px 16px',
+                            'borderRadius': '20px',
+                            'marginRight': '10px',
+                            'fontSize': '1rem',
+                            'fontWeight': '500',
+                            'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)'
+                        }),
+                        html.Span([
+                            html.I(className='fas fa-comment', style={'marginRight': '6px'}),
+                            f"{review_count} reviews"
+                        ], style={
+                            'backgroundColor': 'rgba(255, 255, 255, 0.25)',
+                            'backdropFilter': 'blur(10px)',
+                            'border': '1.5px solid rgba(255, 255, 255, 0.5)',
+                            'color': '#FFFFFF',
+                            'padding': '8px 16px',
+                            'borderRadius': '20px',
+                            'marginRight': '10px',
+                            'fontSize': '1rem',
+                            'fontWeight': '500',
+                            'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)'
+                        }),
+                        html.Button([
+                            html.I(className='fas fa-heart', style={'marginRight': '6px'}),
+                            'Add to Favorites'
+                        ], id='favorite-button-attraction', n_clicks=0, style={
+                            'backgroundColor': 'rgba(255, 255, 255, 0.25)',
+                            'backdropFilter': 'blur(10px)',
+                            'border': '1.5px solid rgba(255, 255, 255, 0.5)',
+                            'color': '#FFFFFF',
+                            'padding': '8px 16px',
+                            'borderRadius': '20px',
+                            'fontSize': '1rem',
+                            'fontWeight': '500',
+                            'cursor': 'pointer',
+                            'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)',
+                            'transition': 'all 0.3s ease'
+                        })
+                    ], style={
+                        'display': 'flex',
+                        'alignItems': 'center',
+                        'flexWrap': 'wrap'
+                    })
                 ])
-            ], style={'position': 'absolute', 'bottom': '3rem', 'left': '2rem', 'maxWidth': '1200px'})
-        ], style={'position': 'relative', 'height': '50vh', 'minHeight': '400px', 'overflow': 'hidden'}),
+            ], style={
+                'position': 'absolute',
+                'bottom': '3rem',
+                'left': '2rem',
+                'right': '2rem',
+                'maxWidth': '1400px',
+                'margin': '0 auto',
+                'pointerEvents': 'none'
+            })
+        ], style={
+            'position': 'relative',
+            'height': '50vh',
+            'minHeight': '400px',
+            'overflow': 'hidden'
+        }),
 
         # Info Grid
         html.Div([
