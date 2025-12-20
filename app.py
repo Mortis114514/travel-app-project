@@ -34,7 +34,7 @@ from utils.database import get_revenue_trend, get_occupancy_status
 ########################
 #### 資料載入與前處理 ####
 ########################
-# 導入數據庫工具
+# 導入數據庫工具 (已整理重複項)
 from utils.database import (
     get_all_restaurants,
     get_random_top_restaurants as db_get_random_top_restaurants,
@@ -55,18 +55,34 @@ from utils.database import (
     search_attractions, 
     get_unique_attraction_types,
     get_attraction_by_id,
-    get_combined_analytics_data,
-    get_unique_attraction_types, 
-    get_attraction_by_id,
     get_all_attractions,
-    init_new_tables
+    get_combined_analytics_data,
+    # 👇 關鍵的新函式
+    initialize_database 
 )
 
+# ==========================
+# 資料庫初始化與資料載入
+# ==========================
 
-restaurants_df = get_all_restaurants()  # 從數據庫加載（用於選項列表）
-hotels_df = get_all_hotels()
-analytics_df = load_and_prepare_data()
-init_new_tables()
+# 1. 優先執行初始化：檢查資料表，若無則從 CSV 重建 (包含建立 Favorites/Trips 表)
+# 這行會解決 "no such table: restaurants" 的錯誤
+initialize_database()
+
+# 2. 資料載入：將資料讀入 Pandas DataFrame (記憶體中)
+try:
+    print("Loading data into memory...")
+    restaurants_df = get_all_restaurants()  # 從數據庫加載（用於選項列表）
+    hotels_df = get_all_hotels()
+    analytics_df = load_and_prepare_data()
+    print("Data loaded successfully.")
+except Exception as e:
+    print(f"❌ Error loading data: {e}")
+    # 如果出錯，給予空的 DataFrame 防止 App 崩潰
+    import pandas as pd
+    restaurants_df = pd.DataFrame()
+    hotels_df = pd.DataFrame()
+    analytics_df = pd.DataFrame()
 
 
 # 隨機選擇4-5星餐廳（使用數據庫查詢）
@@ -2091,79 +2107,81 @@ def create_attraction_detail_content(data):
 
 def create_restaurant_map_chart():
     """Creates a mapbox scatter plot of all restaurants."""
-    df = get_all_restaurants()
-    # Filter out entries without coordinates
-    df = df.dropna(subset=['Lat', 'Long'])
+    try:
+        # [防呆] 嘗試讀取資料
+        df = get_all_restaurants()
+        # 如果讀出來是空的，或發生錯誤，回傳空圖表
+        if df is None or df.empty:
+            raise ValueError("No data returned from database")
 
-    # Create 'RatingCategory' based on 'TotalRating'
-    bins = [0, 2, 3, 4, 5]
-    labels = ['1-2 Stars', '2-3 Stars', '3-4 Stars', '4-5 Stars']
-    df['RatingCategory'] = pd.cut(df['TotalRating'], bins=bins, labels=labels, right=False, include_lowest=True)
+        # Filter out entries without coordinates
+        df = df.dropna(subset=['Lat', 'Long'])
 
-    # Ensure Restaurant_ID is integer
-    df['Restaurant_ID_int'] = df['Restaurant_ID'].astype(int)
+        # Create 'RatingCategory' based on 'TotalRating'
+        bins = [0, 2, 3, 4, 5]
+        labels = ['1-2 Stars', '2-3 Stars', '3-4 Stars', '4-5 Stars']
+        df['RatingCategory'] = pd.cut(df['TotalRating'], bins=bins, labels=labels, right=False, include_lowest=True)
 
-    fig = px.scatter_map(
-        df,
-        lat="Lat",
-        lon="Long",
-        hover_name="JapaneseName",
-        hover_data={"TotalRating": ':.1f', "FirstCategory": True, "RatingCategory": True},
-        color="RatingCategory",
-        color_discrete_map={
-            "1-2 Stars": "#FF6347",
-            "2-3 Stars": "#FFA500",
-            "3-4 Stars": "#FFD700",
-            "4-5 Stars": "#32CD32"
-        },
-        zoom=11,
-        center={"lat": 35.0116, "lon": 135.7681},
-        height=600,
-        map_style="carto-positron",
-        custom_data=['Restaurant_ID_int', 'Name']  # Add Restaurant ID for click handling
-    )
-    fig.update_layout(
-        margin={"r":0,"t":0,"l":0,"b":0},
-        showlegend=True,
-        legend_title_text='Rating',
-        legend=dict(
-            yanchor="top",
-            y=0.99,
-            xanchor="left",
-            x=0.01,
-            bgcolor='rgba(0, 53, 128, 0.5)',
-            font=dict(
-                color='white'
-            )
-        ),
-        clickmode='event+select',  # Enable click events
-        hoverdistance=20  # Increase hover detection distance
-    )
-    # Update hover template to show it's clickable and enhance marker appearance
-    fig.update_traces(
-        hovertemplate='<b>%{hovertext}</b><br>' +
-                     'Rating: %{customdata[1]}<br>' +
-                     '<i>Click to view details</i><extra></extra>',
-        marker=dict(
-            size=12,  # Slightly larger markers
-            opacity=0.9
-        ),
-        hoverlabel=dict(
-            bgcolor='#003580',
-            font_size=14,
-            font_family='Arial, sans-serif'
+        # Ensure Restaurant_ID is integer
+        df['Restaurant_ID_int'] = df['Restaurant_ID'].astype(int)
+
+        fig = px.scatter_map(
+            df,
+            lat="Lat",
+            lon="Long",
+            hover_name="JapaneseName",
+            hover_data={"TotalRating": ':.1f', "FirstCategory": True, "RatingCategory": True},
+            color="RatingCategory",
+            color_discrete_map={
+                "1-2 Stars": "#FF6347",
+                "2-3 Stars": "#FFA500",
+                "3-4 Stars": "#FFD700",
+                "4-5 Stars": "#32CD32"
+            },
+            zoom=11,
+            center={"lat": 35.0116, "lon": 135.7681},
+            height=600,
+            map_style="carto-positron",
+            custom_data=['Restaurant_ID_int', 'Name']  # Add Restaurant ID for click handling
         )
-    )
-    return dcc.Graph(
-        id='restaurant-map-graph',
-        figure=fig,
-        config={
-            'displayModeBar': True,
-            'scrollZoom': True,
-            'doubleClick': 'reset',
-            'modeBarButtonsToRemove': ['lasso2d', 'select2d']
-        }
-    )
+        fig.update_layout(
+            margin={"r":0,"t":0,"l":0,"b":0},
+            showlegend=True,
+            legend_title_text='Rating',
+            legend=dict(
+                yanchor="top",
+                y=0.99,
+                xanchor="left",
+                x=0.01,
+                bgcolor='rgba(0, 53, 128, 0.5)',
+                font=dict(color='white')
+            ),
+            clickmode='event+select',
+            hoverdistance=20
+        )
+        fig.update_traces(
+            hovertemplate='<b>%{hovertext}</b><br>' +
+                          'Rating: %{customdata[1]}<br>' +
+                          '<i>Click to view details</i><extra></extra>',
+            marker=dict(size=12, opacity=0.9),
+            hoverlabel=dict(bgcolor='#003580', font_size=14, font_family='Arial, sans-serif')
+        )
+        return dcc.Graph(
+            id='restaurant-map-graph',
+            figure=fig,
+            config={'displayModeBar': True, 'scrollZoom': True, 'doubleClick': 'reset', 'modeBarButtonsToRemove': ['lasso2d', 'select2d']}
+        )
+
+    except Exception as e:
+        print(f"⚠️ Warning: Could not load Restaurant Map. Error: {e}")
+        # 回傳一個空白圖表，避免 App 崩潰
+        fig = go.Figure()
+        fig.update_layout(
+            title="Map Data Unavailable (Please check database)",
+            xaxis={'visible': False}, yaxis={'visible': False}
+        )
+        return dcc.Graph(id='restaurant-map-graph', figure=fig)
+    
 def load_all_place_names():
     """Load all place names from restaurants, hotels, and attractions CSV files"""
     places = []
@@ -2217,155 +2235,145 @@ def load_all_place_names():
 
 def create_hotel_map_chart():
     """Creates a mapbox scatter plot of all hotels."""
-    df = get_all_hotels()
-    # Filter out entries without coordinates
-    df = df.dropna(subset=['Lat', 'Long'])
+    try:
+        # [防呆] 嘗試讀取資料
+        df = get_all_hotels()
+        if df is None or df.empty:
+            raise ValueError("No data returned from database")
 
-    # Create 'RatingCategory' based on 'Rating'
-    bins = [0, 2, 3, 4, 5]
-    labels = ['1-2 Stars', '2-3 Stars', '3-4 Stars', '4-5 Stars']
-    df['RatingCategory'] = pd.cut(df['Rating'], bins=bins, labels=labels, right=False, include_lowest=True)
+        # Filter out entries without coordinates
+        df = df.dropna(subset=['Lat', 'Long'])
 
-    # Ensure Hotel_ID is integer
-    df['Hotel_ID_int'] = df['Hotel_ID'].astype(int)
+        # Create 'RatingCategory' based on 'Rating'
+        bins = [0, 2, 3, 4, 5]
+        labels = ['1-2 Stars', '2-3 Stars', '3-4 Stars', '4-5 Stars']
+        df['RatingCategory'] = pd.cut(df['Rating'], bins=bins, labels=labels, right=False, include_lowest=True)
 
-    fig = px.scatter_map(
-        df,
-        lat="Lat",
-        lon="Long",
-        hover_name="HotelName",
-        hover_data={"Rating": ':.1f', "Types": True, "RatingCategory": True},
-        color="RatingCategory",
-        color_discrete_map={
-            "1-2 Stars": "#FF6347",
-            "2-3 Stars": "#FFA500",
-            "3-4 Stars": "#FFD700",
-            "4-5 Stars": "#32CD32"
-        },
-        zoom=11,
-        center={"lat": 35.0116, "lon": 135.7681},
-        height=600,
-        map_style="carto-positron",
-        custom_data=['Hotel_ID_int', 'HotelName']  # Add Hotel ID for click handling
-    )
-    fig.update_layout(
-        margin={"r":0,"t":0,"l":0,"b":0},
-        showlegend=True,
-        legend_title_text='Rating',
-        legend=dict(
-            yanchor="top",
-            y=0.99,
-            xanchor="left",
-            x=0.01,
-            bgcolor='rgba(0, 53, 128, 0.5)',
-            font=dict(
-                color='white'
-            )
-        ),
-        clickmode='event+select',  # Enable click events
-        hoverdistance=20  # Increase hover detection distance
-    )
-    # Update hover template to show it's clickable and enhance marker appearance
-    fig.update_traces(
-        hovertemplate='<b>%{hovertext}</b><br>' +
-                     'Hotel: %{customdata[1]}<br>' +
-                     '<i>Click to view details</i><extra></extra>',
-        marker=dict(
-            size=12,  # Slightly larger markers
-            opacity=0.9
-        ),
-        hoverlabel=dict(
-            bgcolor='#003580',
-            font_size=14,
-            font_family='Arial, sans-serif'
+        # Ensure Hotel_ID is integer
+        df['Hotel_ID_int'] = df['Hotel_ID'].astype(int)
+
+        fig = px.scatter_map(
+            df,
+            lat="Lat",
+            lon="Long",
+            hover_name="HotelName",
+            hover_data={"Rating": ':.1f', "Types": True, "RatingCategory": True},
+            color="RatingCategory",
+            color_discrete_map={
+                "1-2 Stars": "#FF6347",
+                "2-3 Stars": "#FFA500",
+                "3-4 Stars": "#FFD700",
+                "4-5 Stars": "#32CD32"
+            },
+            zoom=11,
+            center={"lat": 35.0116, "lon": 135.7681},
+            height=600,
+            map_style="carto-positron",
+            custom_data=['Hotel_ID_int', 'HotelName']  # Add Hotel ID for click handling
         )
-    )
-    return dcc.Graph(
-        id='hotel-map-graph',
-        figure=fig,
-        config={
-            'displayModeBar': True,
-            'scrollZoom': True,
-            'doubleClick': 'reset',
-            'modeBarButtonsToRemove': ['lasso2d', 'select2d']
-        }
-    )
+        fig.update_layout(
+            margin={"r":0,"t":0,"l":0,"b":0},
+            showlegend=True,
+            legend_title_text='Rating',
+            legend=dict(
+                yanchor="top",
+                y=0.99,
+                xanchor="left",
+                x=0.01,
+                bgcolor='rgba(0, 53, 128, 0.5)',
+                font=dict(color='white')
+            ),
+            clickmode='event+select',
+            hoverdistance=20
+        )
+        fig.update_traces(
+            hovertemplate='<b>%{hovertext}</b><br>' +
+                          'Hotel: %{customdata[1]}<br>' +
+                          '<i>Click to view details</i><extra></extra>',
+            marker=dict(size=12, opacity=0.9),
+            hoverlabel=dict(bgcolor='#003580', font_size=14, font_family='Arial, sans-serif')
+        )
+        return dcc.Graph(
+            id='hotel-map-graph',
+            figure=fig,
+            config={'displayModeBar': True, 'scrollZoom': True, 'doubleClick': 'reset', 'modeBarButtonsToRemove': ['lasso2d', 'select2d']}
+        )
+    except Exception as e:
+        print(f"⚠️ Warning: Could not load Hotel Map. Error: {e}")
+        fig = go.Figure()
+        fig.update_layout(title="Map Data Unavailable", xaxis={'visible': False}, yaxis={'visible': False})
+        return dcc.Graph(id='hotel-map-graph', figure=fig)
 
 def create_attraction_map_chart():
     """Creates a mapbox scatter plot of all attractions."""
-    df = get_all_attractions()
-    # Filter out entries without coordinates
-    df = df.dropna(subset=['Lat', 'Long'])
+    try:
+        # [防呆] 嘗試讀取資料
+        df = get_all_attractions()
+        if df is None or df.empty:
+            raise ValueError("No data returned from database")
 
-    # Create 'RatingCategory' based on 'Rating'
-    bins = [0, 2, 3, 4, 5]
-    labels = ['1-2 Stars', '2-3 Stars', '3-4 Stars', '4-5 Stars']
-    df['RatingCategory'] = pd.cut(df['Rating'], bins=bins, labels=labels, right=False, include_lowest=True)
+        # Filter out entries without coordinates
+        df = df.dropna(subset=['Lat', 'Long'])
 
-    # Ensure ID is integer
-    df['ID_int'] = df['ID'].astype(int)
+        # Create 'RatingCategory' based on 'Rating'
+        bins = [0, 2, 3, 4, 5]
+        labels = ['1-2 Stars', '2-3 Stars', '3-4 Stars', '4-5 Stars']
+        df['RatingCategory'] = pd.cut(df['Rating'], bins=bins, labels=labels, right=False, include_lowest=True)
 
-    fig = px.scatter_map(
-        df,
-        lat="Lat",
-        lon="Long",
-        hover_name="Name",
-        hover_data={"Rating": ':.1f', "Type": True, "RatingCategory": True},
-        color="RatingCategory",
-        color_discrete_map={
-            "1-2 Stars": "#FF6347",
-            "2-3 Stars": "#FFA500",
-            "3-4 Stars": "#FFD700",
-            "4-5 Stars": "#32CD32"
-        },
-        zoom=11,
-        center={"lat": 35.0116, "lon": 135.7681},
-        height=600,
-        map_style="carto-positron",
-        custom_data=['ID_int', 'Name']  # Add Attraction ID for click handling
-    )
-    fig.update_layout(
-        margin={"r":0,"t":0,"l":0,"b":0},
-        showlegend=True,
-        legend_title_text='Rating',
-        legend=dict(
-            yanchor="top",
-            y=0.99,
-            xanchor="left",
-            x=0.01,
-            bgcolor='rgba(0, 53, 128, 0.5)',
-            font=dict(
-                color='white'
-            )
-        ),
-        clickmode='event+select',  # Enable click events
-        hoverdistance=20  # Increase hover detection distance
-    )
-    # Update hover template to show it's clickable and enhance marker appearance
-    fig.update_traces(
-        hovertemplate='<b>%{hovertext}</b><br>' +
-                     'Attraction: %{customdata[1]}<br>' +
-                     '<i>Click to view details</i><extra></extra>',
-        marker=dict(
-            size=12,  # Slightly larger markers
-            opacity=0.9
-        ),
-        hoverlabel=dict(
-            bgcolor='#003580',
-            font_size=14,
-            font_family='Arial, sans-serif'
+        # Ensure ID is integer
+        df['ID_int'] = df['ID'].astype(int)
+
+        fig = px.scatter_map(
+            df,
+            lat="Lat",
+            lon="Long",
+            hover_name="Name",
+            hover_data={"Rating": ':.1f', "Type": True, "RatingCategory": True},
+            color="RatingCategory",
+            color_discrete_map={
+                "1-2 Stars": "#FF6347",
+                "2-3 Stars": "#FFA500",
+                "3-4 Stars": "#FFD700",
+                "4-5 Stars": "#32CD32"
+            },
+            zoom=11,
+            center={"lat": 35.0116, "lon": 135.7681},
+            height=600,
+            map_style="carto-positron",
+            custom_data=['ID_int', 'Name']  # Add Attraction ID for click handling
         )
-    )
-    return dcc.Graph(
-        id='attraction-map-graph',
-        figure=fig,
-        config={
-            'displayModeBar': True,
-            'scrollZoom': True,
-            'doubleClick': 'reset',
-            'modeBarButtonsToRemove': ['lasso2d', 'select2d']
-        }
-    )
+        fig.update_layout(
+            margin={"r":0,"t":0,"l":0,"b":0},
+            showlegend=True,
+            legend_title_text='Rating',
+            legend=dict(
+                yanchor="top",
+                y=0.99,
+                xanchor="left",
+                x=0.01,
+                bgcolor='rgba(0, 53, 128, 0.5)',
+                font=dict(color='white')
+            ),
+            clickmode='event+select',
+            hoverdistance=20
+        )
+        fig.update_traces(
+            hovertemplate='<b>%{hovertext}</b><br>' +
+                          'Attraction: %{customdata[1]}<br>' +
+                          '<i>Click to view details</i><extra></extra>',
+            marker=dict(size=12, opacity=0.9),
+            hoverlabel=dict(bgcolor='#003580', font_size=14, font_family='Arial, sans-serif')
+        )
+        return dcc.Graph(
+            id='attraction-map-graph',
+            figure=fig,
+            config={'displayModeBar': True, 'scrollZoom': True, 'doubleClick': 'reset', 'modeBarButtonsToRemove': ['lasso2d', 'select2d']}
+        )
+    except Exception as e:
+        print(f"⚠️ Warning: Could not load Attraction Map. Error: {e}")
+        fig = go.Figure()
+        fig.update_layout(title="Map Data Unavailable", xaxis={'visible': False}, yaxis={'visible': False})
+        return dcc.Graph(id='attraction-map-graph', figure=fig)
 
 # --- 新增這個輔助函式 ---
 def create_help_section(index_id, button_text, explanation_content):
@@ -6693,7 +6701,7 @@ app.clientside_callback(
     Input('current-page-store', 'data')
 )
 
-# [FIX 1 - Final] 強制停止愛心按鈕的點擊事件傳遞 (更強效的 JS 版)
+# [FIX 1] 強制停止愛心按鈕的點擊事件傳遞
 app.clientside_callback(
     """
     function(n_clicks) {
@@ -6707,7 +6715,7 @@ app.clientside_callback(
         return window.dash_clientside.no_update;
     }
     """,
-    Output({'type': 'fav-btn', 'item_type': MATCH, 'index': MATCH}, 'className'), # 改 Output className 避免干擾 style
+    Output({'type': 'fav-btn', 'item_type': MATCH, 'index': MATCH}, 'className'), 
     Input({'type': 'fav-btn', 'item_type': MATCH, 'index': MATCH}, 'n_clicks'),
     prevent_initial_call=True
 )
@@ -7817,7 +7825,7 @@ def update_favorites_section(btn1, btn2, btn3, session_data):
     return c1, c2, c3, content
 
 # 3. Planner: 更新左側來源清單 (Source List)
-# [FIX 5 - Final] Planner: 更新左側來源清單 (過濾幽靈資料 + 修正按鈕 ID)
+# [FIX 5] Planner: 更新左側來源清單 (確保按鈕 ID 結構簡單)
 @app.callback(
     Output("planner-source-list", "children"),
     [Input("planner-tabs", "active_tab"),
@@ -7837,54 +7845,46 @@ def update_planner_source(active_tab, session_data):
         for cat, ids in favs.items():
             if not ids: continue
             
-            # 先收集有效的項目，避免顯示空標題
-            valid_items = []
-            for iid in ids:
-                try:
-                    int_id = int(iid) 
-                    item_data = None
-                    name = None
-                    
-                    if cat == 'Restaurant': 
-                        item_data = get_restaurant_by_id(int_id)
-                        if item_data: name = item_data['Name']
-                    elif cat == 'Hotel': 
-                        item_data = get_hotel_by_id(int_id)
-                        if item_data: name = item_data['HotelName']
-                    elif cat == 'Attraction': 
-                        item_data = get_attraction_by_id(int_id)
-                        if item_data: name = item_data['Name']
-                    
-                    # 只有當找到名字時才加入列表 (過濾掉幽靈資料)
-                    if name:
-                        valid_items.append({'name': name, 'id': iid, 'cat': cat})
-                except: continue
+            # 建立分類標題
+            items_ui.append(html.H6(f"{cat}s", className="mt-3 mb-2 text-primary border-bottom pb-1"))
             
-            if valid_items:
-                items_ui.append(html.H6(f"{cat}s", className="mt-3 mb-2 text-primary border-bottom pb-1"))
-                for item in valid_items:
-                    items_ui.append(
-                        dbc.Card([
-                            dbc.CardBody([
-                                html.Div(item['name'], style={'fontWeight':'bold', 'fontSize':'0.9rem', 'whiteSpace': 'nowrap', 'overflow': 'hidden', 'textOverflow': 'ellipsis'}),
-                                # [關鍵修正] ID 裡面不放 name，避免特殊字元導致報錯
-                                dbc.Button("Add", 
-                                           id={'type': 'add-to-plan', 'index': item['id'], 'cat': item['cat']}, 
-                                           size="sm", color="primary", outline=True, className="mt-2 w-100", style={'fontSize':'0.8rem'})
-                            ], className="p-2")
-                        ], className="mb-2 shadow-sm")
-                    )
-    
+            for iid in ids:
+                name = f"{cat} #{iid}" 
+                try:
+                    int_id = int(iid) # 確保轉型
+                    item_data = None
+                    
+                    if cat == 'Restaurant': item_data = get_restaurant_by_id(int_id)
+                    elif cat == 'Hotel': item_data = get_hotel_by_id(int_id)
+                    elif cat == 'Attraction': item_data = get_attraction_by_id(int_id)
+                    
+                    if item_data:
+                        # 統一取 Name 欄位 (因為我们在 initialize_database 統一了欄位名)
+                        name = item_data.get('Name') or item_data.get('HotelName') or name
+
+                        items_ui.append(
+                            dbc.Card([
+                                dbc.CardBody([
+                                    html.Div(name, style={'fontWeight':'bold', 'fontSize':'0.9rem', 'whiteSpace': 'nowrap', 'overflow': 'hidden', 'textOverflow': 'ellipsis'}),
+                                    # [重點] 按鈕 ID 只包含 type, index, cat。不包含 name。
+                                    dbc.Button("Add", 
+                                               id={'type': 'add-to-plan', 'index': str(int_id), 'cat': cat}, 
+                                               size="sm", color="primary", outline=True, className="mt-2 w-100", style={'fontSize':'0.8rem'})
+                                ], className="p-2")
+                            ], className="mb-2 shadow-sm")
+                        )
+                except: continue
+                
     elif active_tab == "tab-plan-rec":
         items_ui = [html.Div("System recommendations will appear here.", className="text-muted text-center p-4")]
 
     return items_ui
 
 # 4. Planner: 處理 "Add" 和 "Remove" 與 "Add Day" (更新右側行程)
-# [FIX 2 & 3 - Final] Planner 邏輯修正：重新查詢名稱，確保資料正確
+# [FIX 2 & 3] Planner 邏輯修正：配合新的 ID 結構
 @app.callback(
     Output("trip-plan-data", "data"),
-    [Input({'type': 'add-to-plan', 'index': ALL, 'cat': ALL}, 'n_clicks'), # ID 結構已改變
+    [Input({'type': 'add-to-plan', 'index': ALL, 'cat': ALL}, 'n_clicks'), # [修正] 這裡拿掉 name 和 id，改用 index
      Input({'type': 'remove-plan-item', 'day': ALL, 'idx': ALL}, 'n_clicks'),
      Input({'type': 'remove-day-btn', 'day': ALL}, 'n_clicks'),
      Input('add-day-btn', 'n_clicks')],
@@ -7913,24 +7913,24 @@ def update_trip_data(add_clicks, remove_item_clicks, remove_day_clicks, add_day_
         trigger_obj = json.loads(trigger_id_str)
     except: raise PreventUpdate
 
-    # CASE 2: 加入項目 (現在需要去查詢名字)
+    # CASE 2: 加入項目
     if trigger_obj.get('type') == 'add-to-plan':
         item_cat = trigger_obj['cat']
-        item_id = trigger_obj['index'] # 這裡原本叫 id，現在改成 index 以符合 Dash 規範
+        item_id = trigger_obj['index']
         item_name = "Unknown Item"
 
-        # 重新查詢名稱
+        # 重新查詢名稱 (因為 ID 裡沒放名稱了)
         try:
             int_id = int(item_id)
             if item_cat == 'Restaurant': 
                 res = get_restaurant_by_id(int_id)
-                if res: item_name = res['Name']
+                if res: item_name = res.get('Name')
             elif item_cat == 'Hotel': 
                 res = get_hotel_by_id(int_id)
-                if res: item_name = res['HotelName']
+                if res: item_name = res.get('Name') # 資料庫已統一名稱
             elif item_cat == 'Attraction': 
                 res = get_attraction_by_id(int_id)
-                if res: item_name = res['Name']
+                if res: item_name = res.get('Name')
         except: pass
         
         if not current_data['days']:
