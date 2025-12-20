@@ -2847,8 +2847,6 @@ def create_main_layout():
 
                 # Navigation
                 html.Div([
-                    html.Div('Destinations', className='nav-link', id='nav-destinations', n_clicks=0),
-                    html.Div('Trip Planner', className='nav-link', id='nav-planner', n_clicks=0),
                     html.Div('Analytics', className='nav-link', id='nav-analytics', n_clicks=0),
                     html.Div('Traffic', className='nav-link', id='nav-traffic', n_clicks=0)
                 ], className='header-nav'),
