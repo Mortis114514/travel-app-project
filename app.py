@@ -2408,6 +2408,7 @@ app.layout = html.Div([
     dcc.Store(id='hotel-current-page-store', data=1, storage_type='memory'),  # 👈 存儲旅館列表分頁狀態
     dcc.Store(id='hotel-detail-data', storage_type='memory'),  # 旅館詳細資料（包含 reviews）
     dcc.Store(id='selected-restaurants', storage_type='session', data=[]),
+    dcc.Store(id='favorite-restaurants', storage_type='session', data=[]),  # Store for favorite restaurants
     # 新增景點相關 Stores
     dcc.Store(id='attraction-search-results-store', storage_type='memory'),  # 存儲景點搜尋結果
             dcc.Store(id='attraction-current-page-store', data=1, storage_type='memory'),  # 存儲景點列表分頁狀態
@@ -3713,19 +3714,7 @@ def handle_tab_navigation(saved_clicks, wishlisted_clicks, favorites_clicks):
         ])
 
     else:  # favorites
-        # Show favorite restaurants
-        fav_restaurants = get_random_top_restaurants(6)
-        cards = []
-        for _, restaurant in fav_restaurants.iterrows():
-            card = create_saved_trip_card({
-                'title': restaurant['Name'],
-                'description': f"{restaurant['FirstCategory']} - {restaurant['SecondCategory']}",
-                'duration': f"{restaurant['TotalRating']:.1f} ⭐",
-                'location': restaurant['Station']
-            })
-            cards.append(card)
-
-        content = html.Div(cards, className='card-grid')
+        content = html.Div(id='favorite-restaurants-container')
 
     return (*tab_classes, content)
 
@@ -6696,21 +6685,245 @@ def go_back_from_create_trip(n_clicks):
 
 
 # ---------------- Favorite Button Callbacks ----------------
+# Callback 1: Save restaurant to favorites when button is clicked
 @app.callback(
-    Output('restaurant-favorite-button', 'n_clicks'),  # 這裡用 no_update 避免改 UI
-    Input('restaurant-favorite-button', 'n_clicks')
+    [Output('favorite-restaurants', 'data'),
+     Output('restaurant-favorite-button', 'style')],
+    Input('restaurant-favorite-button', 'n_clicks'),
+    [State('restaurant-detail-data', 'data'),
+     State('favorite-restaurants', 'data'),
+     State('restaurant-favorite-button', 'style')],
+    prevent_initial_call=True
 )
-def debug_restaurant(n_clicks):
-    print(f"Restaurant Favorite clicked: {n_clicks}")
-    return no_update
+def toggle_restaurant_favorite(n_clicks, restaurant_data, favorites, current_style):
+    """Add or remove restaurant from favorites"""
+    if not n_clicks or not restaurant_data:
+        return no_update, no_update
+    
+    # Initialize favorites list if None
+    if favorites is None:
+        favorites = []
+    
+    restaurant_id = restaurant_data.get('Restaurant_ID')
+    
+    # Check if already in favorites
+    existing_ids = [r.get('Restaurant_ID') for r in favorites]
+    
+    new_style = current_style.copy() if current_style else {}
+    
+    if restaurant_id in existing_ids:
+        # Remove from favorites
+        favorites = [r for r in favorites if r.get('Restaurant_ID') != restaurant_id]
+        # Reset button style
+        new_style['backgroundColor'] = 'rgba(255, 255, 255, 0.25)'
+        new_style['border'] = '1.5px solid rgba(255, 255, 255, 0.5)'
+        print(f"Removed restaurant {restaurant_id} from favorites")
+    else:
+        # Add to favorites
+        favorite_data = {
+            'Restaurant_ID': restaurant_id,
+            'Name': restaurant_data.get('Name'),
+            'JapaneseName': restaurant_data.get('JapaneseName'),
+            'FirstCategory': restaurant_data.get('FirstCategory'),
+            'SecondCategory': restaurant_data.get('SecondCategory'),
+            'TotalRating': restaurant_data.get('TotalRating'),
+            'Station': restaurant_data.get('Station'),
+            'PriceRange': restaurant_data.get('PriceRange')
+        }
+        favorites.append(favorite_data)
+        # Highlight button
+        new_style['backgroundColor'] = 'rgba(255, 77, 77, 0.4)'
+        new_style['border'] = '1.5px solid rgba(255, 77, 77, 0.8)'
+        print(f"Added restaurant {restaurant_id} to favorites")
+    
+    return favorites, new_style
 
+# Callback 2: Initialize button style when restaurant detail page loads
 @app.callback(
-    Output('hotel-favorite-button', 'n_clicks'),
-    Input('hotel-favorite-button', 'n_clicks')
+    Output('restaurant-favorite-button', 'style', allow_duplicate=True),
+    [Input('restaurant-detail-data', 'data'),
+     Input('favorite-restaurants', 'data')],
+    State('restaurant-favorite-button', 'style'),
+    prevent_initial_call=True
 )
-def debug_hotel(n_clicks):
-    print(f"Hotel Favorite clicked: {n_clicks}")
-    return no_update
+def initialize_favorite_button_style(restaurant_data, favorites, current_style):
+    """Set button style based on whether restaurant is in favorites when page loads"""
+    if not restaurant_data:
+        return no_update
+    
+    # Initialize favorites list if None
+    if favorites is None:
+        favorites = []
+    
+    restaurant_id = restaurant_data.get('Restaurant_ID')
+    existing_ids = [r.get('Restaurant_ID') for r in favorites]
+    
+    # Create base style if not exists
+    if not current_style:
+        current_style = {
+            'backgroundColor': 'rgba(255, 255, 255, 0.25)',
+            'backdropFilter': 'blur(10px)',
+            'border': '1.5px solid rgba(255, 255, 255, 0.5)',
+            'color': '#FFFFFF',
+            'padding': '8px 16px',
+            'borderRadius': '20px',
+            'fontSize': '1rem',
+            'fontWeight': '500',
+            'cursor': 'pointer',
+            'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)',
+            'transition': 'all 0.3s ease',
+            'pointerEvents': 'auto'
+        }
+    
+    new_style = current_style.copy()
+    
+    # Check if restaurant is in favorites and set style accordingly
+    if restaurant_id in existing_ids:
+        # Highlight as favorited
+        new_style['backgroundColor'] = 'rgba(255, 77, 77, 0.4)'
+        new_style['border'] = '1.5px solid rgba(255, 77, 77, 0.8)'
+    else:
+        # Reset to default
+        new_style['backgroundColor'] = 'rgba(255, 255, 255, 0.25)'
+        new_style['border'] = '1.5px solid rgba(255, 255, 255, 0.5)'
+    
+    return new_style
+
+# Callback 3: Display favorite restaurants in the Favorite Restaurants tab
+@app.callback(
+    Output('favorite-restaurants-container', 'children'),
+    [Input('favorite-restaurants', 'data'),
+     Input('tab-favorites', 'n_clicks')]
+)
+def display_favorite_restaurants(favorites, n_clicks):
+    """Display saved favorite restaurants"""
+    if not favorites or len(favorites) == 0:
+        return html.Div([
+            html.I(className='fas fa-heart-broken', style={
+                'fontSize': '4rem',
+                'color': '#DEB522',
+                'marginBottom': '1rem'
+            }),
+            html.P('No favorite restaurants yet.',
+                   style={'color': '#666', 'fontSize': '1.2rem', 'marginBottom': '0.5rem'}),
+            html.P('Click the heart button on restaurant detail pages to save your favorites!',
+                   style={'color': '#888', 'fontSize': '1rem'})
+        ], style={
+            'textAlign': 'center',
+            'padding': '4rem 2rem',
+            'backgroundColor': '#f9f9f9',
+            'borderRadius': '12px',
+            'border': '2px dashed #ddd'
+        })
+    
+    # Create restaurant cards
+    cards = []
+    for restaurant in favorites:
+        card = html.Div([
+            html.Div([
+                html.Div([
+                    html.H3(restaurant.get('Name', 'Unknown'), style={
+                        'fontSize': '1.3rem',
+                        'fontWeight': '600',
+                        'marginBottom': '0.5rem',
+                        'color': '#1a1a1a'
+                    }),
+                    html.P(restaurant.get('JapaneseName', ''), style={
+                        'fontSize': '0.9rem',
+                        'color': '#666',
+                        'marginBottom': '0.5rem'
+                    }),
+                    html.Div([
+                        html.Span(restaurant.get('FirstCategory', ''), style={
+                            'backgroundColor': '#DEB522',
+                            'color': 'white',
+                            'padding': '4px 12px',
+                            'borderRadius': '12px',
+                            'fontSize': '0.85rem',
+                            'marginRight': '8px'
+                        }),
+                        html.Span(f"{restaurant.get('TotalRating', 0):.1f} ⭐", style={
+                            'fontSize': '1rem',
+                            'fontWeight': '600',
+                            'color': '#FF4D4D'
+                        })
+                    ], style={'marginBottom': '0.5rem'}),
+                    html.Div([
+                        html.I(className='fas fa-map-marker-alt', style={'marginRight': '6px', 'color': '#666'}),
+                        html.Span(restaurant.get('Station', 'N/A'), style={'color': '#666', 'fontSize': '0.9rem'})
+                    ], style={'marginBottom': '0.5rem'}),
+                    html.Div([
+                        html.I(className='fas fa-yen-sign', style={'marginRight': '6px', 'color': '#666'}),
+                        html.Span(restaurant.get('PriceRange', 'N/A'), style={'color': '#666', 'fontSize': '0.9rem'})
+                    ])
+                ]),
+                html.Div([
+                    html.A(
+                        'View Details',
+                        href=f"/restaurant/{restaurant.get('Restaurant_ID')}",
+                        className='btn-primary',
+                        style={
+                            'display': 'inline-block',
+                            'padding': '8px 16px',
+                            'backgroundColor': '#003580',
+                            'color': 'white',
+                            'textDecoration': 'none',
+                            'borderRadius': '6px',
+                            'fontSize': '0.9rem',
+                            'fontWeight': '500',
+                            'transition': 'all 0.3s ease'
+                        }
+                    )
+                ], style={'marginTop': '1rem'})
+            ])
+        ], style={
+            'backgroundColor': 'white',
+            'padding': '1.5rem',
+            'borderRadius': '12px',
+            'boxShadow': '0 2px 8px rgba(0,0,0,0.1)',
+            'transition': 'transform 0.3s ease, box-shadow 0.3s ease',
+            'cursor': 'pointer',
+            'border': '1px solid #e0e0e0'
+        }, className='favorite-restaurant-card')
+        cards.append(card)
+    
+    return html.Div([
+        html.Div([
+            html.I(className='fas fa-heart', style={'marginRight': '8px', 'color': '#FF4D4D'}),
+            html.Span(f'{len(favorites)} Favorite Restaurant{"s" if len(favorites) != 1 else ""}',
+                     style={'fontSize': '1.1rem', 'fontWeight': '600', 'color': '#1a1a1a'})
+        ], style={'marginBottom': '1.5rem'}),
+        html.Div(cards, style={
+            'display': 'grid',
+            'gridTemplateColumns': 'repeat(auto-fill, minmax(320px, 1fr))',
+            'gap': '1.5rem'
+        })
+    ])
+
+# Callback 4: Hotel favorite button (placeholder for future implementation)
+@app.callback(
+    Output('hotel-favorite-button', 'style'),
+    Input('hotel-favorite-button', 'n_clicks'),
+    State('hotel-favorite-button', 'style'),
+    prevent_initial_call=True
+)
+def toggle_hotel_favorite(n_clicks, current_style):
+    """Toggle hotel favorite button style"""
+    if not n_clicks:
+        return no_update
+    
+    new_style = current_style.copy() if current_style else {}
+    
+    if n_clicks % 2 == 1:
+        # Favorited
+        new_style['backgroundColor'] = 'rgba(0, 53, 128, 0.4)'
+        new_style['border'] = '1.5px solid rgba(0, 53, 128, 0.8)'
+    else:
+        # Unfavorited
+        new_style['backgroundColor'] = 'rgba(255, 255, 255, 0.25)'
+        new_style['border'] = '1.5px solid rgba(255, 255, 255, 0.5)'
+    
+    return new_style
 
 
 
