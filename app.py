@@ -3598,28 +3598,13 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
                 traffic_layout = html.Div([
                     # Modern Header with gradient background
                     html.Div([
-                        html.Div([
-                            html.Button([
-                                html.I(className='fas fa-arrow-left'),
-                                html.Span('Back', style={'marginLeft': '8px'})
-                            ], id={'type': 'back-btn', 'index': 'traffic'}, 
-                            className='btn-secondary',
-                            style={
-                                'backgroundColor': '#FFFFFF',
-                                'border': '2px solid #E8ECEF',
-                                'borderRadius': '12px',
-                                'padding': '12px 24px',
-                                'fontWeight': '600',
-                                'transition': 'all 0.3s ease',
-                                'boxShadow': '0 2px 8px rgba(0,0,0,0.08)'
-                            }),
-                        ], style={'position': 'absolute', 'left': '2rem', 'top': '50%', 'transform': 'translateY(-50%)'})
-                    ], style={
-                        'position': 'relative',
-                        'background': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        'padding': '2rem',
-                        'boxShadow': '0 4px 20px rgba(0,0,0,0.1)'
-                    }),
+                        html.Button([html.I(className='fas fa-arrow-left'), ' Back'], 
+                                id={'type': 'back-btn', 'index': 'traffic'}, 
+                                className='btn-secondary'),
+                        html.H1("Kyoto Transportation Guide", 
+                            style={'color': '#003580', 'marginLeft': '2rem'})
+                    ], style={'display': 'flex', 'alignItems': 'center', 'padding': '2rem', 
+                            'borderBottom': '1px solid #E8ECEF'}),
                     
                     # Toggle buttons with modern styling
                     html.Div([
