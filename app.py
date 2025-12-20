@@ -2706,7 +2706,7 @@ def create_advanced_analytics_layout():
 ##########################
 app = Dash(__name__, external_stylesheets=[
     '/assets/bootstrap.min.css',
-    '/assets/fontawesome-local.css',
+    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
     '/assets/voyage_styles.css'
 ],
            title='柔成員的旅遊平台',
@@ -7280,81 +7280,18 @@ def handle_distance_calculation(click_data, store_data):
             dlat = lat2_rad - lat1_rad
             a = np.sin(dlat / 2.0)**2 + np.cos(lat1_rad) * np.cos(lat2_rad) * np.sin(dlon / 2.0)**2
             c = 2 * np.arcsin(np.sqrt(a))
-            distance = R * c
+            distance = R * c * 1.3
             
-            google_maps_url = f"https://www.google.com/maps/dir/?api=1&origin={lat1},{lon1}&destination={lat2},{lon2}&travelmode=transit"
+            # Use the same UI component as the text calculator
+            result_content = create_travel_time_cards(
+                distance, 
+                p1['name'], 
+                p2['name'], 
+                lat1, lon1, 
+                lat2, lon2
+            )
             
-            result_content = html.Div([
-                html.Div("🎯", style={'fontSize': '3rem', 'textAlign': 'center', 'marginBottom': '1rem'}),
-                html.H3("Route Calculated!", style={'color': '#003580', 'textAlign': 'center', 'marginBottom': '2rem'}),
-                
-                # From/To display
-                html.Div([
-                    html.Div([
-                        html.Span("📍", style={'fontSize': '1.5rem'}),
-                        html.Strong("From: ", style={'color': '#1A1A1A', 'fontSize': '1.1rem'}),
-                        html.Span(p1['name'], style={'color': '#1A1A1A', 'fontSize': '1.1rem'})
-                    ], style={'marginBottom': '1rem', 'textAlign': 'center'}),
-                    html.Div([
-                        html.Span("📍", style={'fontSize': '1.5rem'}),
-                        html.Strong("To: ", style={'color': '#1A1A1A', 'fontSize': '1.1rem'}),
-                        html.Span(p2['name'], style={'color': '#1A1A1A', 'fontSize': '1.1rem'})
-                    ], style={'marginBottom': '2rem', 'textAlign': 'center'}),
-                ]),
-                
-                # Distance
-                html.Div([
-                    html.Div("Straight-Line Distance:", style={'fontSize': '1.5rem', 'marginBottom': '0.5rem'}),
-                    html.Div(f"{distance:.2f} km", style={
-                        'fontSize': '2.5rem',
-                        'fontWeight': 'bold',
-                        'color': '#003580',
-                        'marginBottom': '0.5rem'
-                    }),
-                    html.Div([
-                        html.I(className='fas fa-info-circle', style={'marginRight': '8px'}),
-                        "Click 'View Directions' below for actual travel distance & time"
-                    ], style={
-                        'fontSize': '0.9rem',
-                        'color': '#666',
-                        'fontStyle': 'italic',
-                        'marginBottom': '2rem'
-                    })
-                ], style={'textAlign': 'center'}),
-                
-                # Google Maps button
-                html.Div([
-                    html.A([
-                        html.I(className='fas fa-directions', style={'marginRight': '10px', 'fontSize': '1.2rem'}),
-                        'View Directions on Google Maps'
-                    ], href=google_maps_url, target="_blank", style={
-                        'display': 'inline-block',
-                        'padding': '15px 30px',
-                        'backgroundColor': '#4285f4',
-                        'color': 'white',
-                        'textDecoration': 'none',
-                        'borderRadius': '8px',
-                        'fontWeight': '600',
-                        'fontSize': '1.1rem',
-                        'boxShadow': '0 4px 6px rgba(66, 133, 244, 0.3)',
-                        'transition': 'all 0.3s'
-                    })
-                ], style={'textAlign': 'center', 'marginBottom': '2rem'}),
-                
-                html.Div("Click two new points for another route", style={
-                    'textAlign': 'center',
-                    'fontSize': '0.9rem',
-                    'color': '#888',
-                    'fontStyle': 'italic'
-                })
-            ], style={
-                'backgroundColor': '#E6F3FF',
-                'padding': '2rem',
-                'borderRadius': '8px',
-                'border': '2px solid #003580'
-            })
-            
-            # CHANGE THIS LINE - keep points with value 2 to hide instruction
+            # Reset points but keep the result
             return {'points': []}, result_content# Changed from {'points': []} to keep the 2 points
             
         except (ValueError, TypeError) as e:
