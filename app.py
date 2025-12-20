@@ -234,12 +234,12 @@ def create_primary_button(text, button_id=None, icon=None):
 
 def create_destination_card(restaurant, id_type='restaurant-card'): # <--- [修正] 加入參數
     """創建目的地卡片 (修正版：支援自定義 ID 類型)"""
-    
+
     card_content = html.Div([
         html.Div([
             html.Img(src='/assets/food_dirtyrice.png', className='card-image')
         ], className='card-image-section'),
-        
+
         html.Div([
             html.Div(restaurant['Name'], className='card-title'),
             html.Div(restaurant.get('JapaneseName', ''), className='card-japanese-name'),
@@ -253,7 +253,7 @@ def create_destination_card(restaurant, id_type='restaurant-card'): # <--- [修�
                 html.Span(f"{restaurant['TotalRating']:.1f}")
             ], className='card-rating'),
         ], className='card-content-section')
-    ])
+    ], className='destination-card')
 
     # [修正] 使用傳入的 id_type，而不是寫死的字串
     return html.Div(
@@ -2847,8 +2847,6 @@ def create_main_layout():
 
                 # Navigation
                 html.Div([
-                    html.Div('Destinations', className='nav-link', id='nav-destinations', n_clicks=0),
-                    html.Div('Trip Planner', className='nav-link', id='nav-planner', n_clicks=0),
                     html.Div('Analytics', className='nav-link', id='nav-analytics', n_clicks=0),
                     html.Div('Traffic', className='nav-link', id='nav-traffic', n_clicks=0)
                 ], className='header-nav'),
