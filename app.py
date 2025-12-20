@@ -3642,7 +3642,7 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
                                 'borderRadius': '12px',
                                 'fontWeight': '600',
                                 'fontSize': '1rem',
-                                'backgroundColor': '#667eea',
+                                'backgroundColor': '#E5E7EB',
                                 'border': 'none',
                                 'boxShadow': '0 4px 12px rgba(102, 126, 234, 0.3)',
                                 'transition': 'all 0.3s ease'
@@ -3659,7 +3659,6 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
                                 'fontWeight': '600',
                                 'fontSize': '1rem',
                                 'backgroundColor': '#E5E7EB',
-                                'color': '#6B7280',
                                 'border': 'none',
                                 'transition': 'all 0.3s ease'
                             })
@@ -3748,7 +3747,7 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
                                     'borderRadius': '12px',
                                     'fontWeight': '600',
                                     'fontSize': '1.1rem',
-                                    'backgroundColor': '#667eea',
+                                    'backgroundColor': '#E5E7EB',
                                     'border': 'none',
                                     'boxShadow': '0 4px 12px rgba(102, 126, 234, 0.3)',
                                     'transition': 'all 0.3s ease',
@@ -3789,7 +3788,7 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
                             html.Div([
                                 html.Div([
                                     html.I(className='fas fa-info-circle', 
-                                        style={'marginRight': '10px', 'fontSize': '1.5rem', 'color': '#667eea'}),
+                                        style={'marginRight': '10px', 'fontSize': '1.5rem', 'color': '#F2F6FA'}),
                                     html.Span("Click on markers to select points", 
                                             style={'fontSize': '1.1rem', 'fontWeight': '600', 'color': '#1A1A1A'})
                                 ], style={'display': 'flex', 'alignItems': 'center', 
