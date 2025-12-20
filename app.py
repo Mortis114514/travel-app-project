@@ -712,6 +712,7 @@ def create_detail_hero(data):
                         'color': '#FFFFFF',
                         'padding': '8px 16px',
                         'borderRadius': '20px',
+                        'marginRight': '10px',
                         'fontSize': '1rem',
                         'fontWeight': '500',
                         'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)'
@@ -721,11 +722,12 @@ def create_detail_hero(data):
                         html.I(className='fas fa-heart', style={'marginRight': '6px'}),
                         'Add to Favorites'
                     ], id='favorite-button', n_clicks=0, style={
-                        'backgroundColor': '#FF4D4D',
-                        'border': 'none',
-                        'borderRadius': '20px',
+                        'backgroundColor': 'rgba(255, 255, 255, 0.25)',
+                        'backdropFilter': 'blur(10px)',
+                        'border': '1.5px solid rgba(255, 255, 255, 0.5)',
                         'color': '#FFFFFF',
                         'padding': '8px 16px',
+                        'borderRadius': '20px',
                         'fontSize': '1rem',
                         'fontWeight': '500',
                         'cursor': 'pointer',
@@ -1588,6 +1590,7 @@ def create_hotel_detail_content(hotel_data):
                             'color': '#FFFFFF',
                             'padding': '8px 16px',
                             'borderRadius': '20px',
+                            'marginRight': '10px',
                             'fontSize': '1rem',
                             'fontWeight': '500',
                             'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)'
@@ -1596,11 +1599,12 @@ def create_hotel_detail_content(hotel_data):
                             html.I(className='fas fa-heart', style={'marginRight': '6px'}),
                             'Add to Favorites'
                         ], id='favorite-button', n_clicks=0, style={
-                            'backgroundColor': '#FF4D4D',
-                            'border': 'none',
-                            'borderRadius': '20px',
+                            'backgroundColor': 'rgba(255, 255, 255, 0.25)',
+                            'backdropFilter': 'blur(10px)',
+                            'border': '1.5px solid rgba(255, 255, 255, 0.5)',
                             'color': '#FFFFFF',
                             'padding': '8px 16px',
+                            'borderRadius': '20px',
                             'fontSize': '1rem',
                             'fontWeight': '500',
                             'cursor': 'pointer',
