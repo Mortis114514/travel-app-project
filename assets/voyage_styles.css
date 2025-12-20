@@ -2408,3 +2408,20 @@ div[style*="justifyContent: center"] {
     min-height: 40px !important;
     height: auto !important;
 }
+.travel-time-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15) !important;
+}
+/* Hide all loading spinners */
+._dash-loading {
+    display: none !important;
+}
+
+._dash-loading-callback {
+    display: none !important;
+}
+
+/* Hide circular loading indicators */
+.dash-spinner {
+    display: none !important;
+}
