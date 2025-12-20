@@ -6744,7 +6744,7 @@ def toggle_restaurant_favorite(n_clicks, restaurant_data, favorites, current_sty
     [Input('restaurant-detail-data', 'data'),
      Input('favorite-restaurants', 'data')],
     State('restaurant-favorite-button', 'style'),
-    prevent_initial_call=True
+    prevent_initial_call='initial_duplicate'
 )
 def initialize_favorite_button_style(restaurant_data, favorites, current_style):
     """Set button style based on whether restaurant is in favorites when page loads"""
