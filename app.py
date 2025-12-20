@@ -3472,170 +3472,295 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
             # Find this section in the traffic layout (around line 1587)
             elif view_mode == 'traffic':
                 traffic_layout = html.Div([
-                    # Header
+                    # Modern Header with gradient background
                     html.Div([
-                        html.Button([html.I(className='fas fa-arrow-left'), ' Back'], 
-                                id={'type': 'back-btn', 'index': 'traffic'}, 
-                                className='btn-secondary'),
-                        html.H1("Kyoto Transportation Guide", 
-                            style={'color': '#003580', 'marginLeft': '2rem'})
-                    ], style={'display': 'flex', 'alignItems': 'center', 'padding': '2rem', 
-                            'borderBottom': '1px solid #E8ECEF'}),
+                        html.Div([
+                            html.Button([
+                                html.I(className='fas fa-arrow-left'),
+                                html.Span('Back', style={'marginLeft': '8px'})
+                            ], id={'type': 'back-btn', 'index': 'traffic'}, 
+                            className='btn-secondary',
+                            style={
+                                'backgroundColor': '#FFFFFF',
+                                'border': '2px solid #E8ECEF',
+                                'borderRadius': '12px',
+                                'padding': '12px 24px',
+                                'fontWeight': '600',
+                                'transition': 'all 0.3s ease',
+                                'boxShadow': '0 2px 8px rgba(0,0,0,0.08)'
+                            }),
+                        ], style={'position': 'absolute', 'left': '2rem', 'top': '50%', 'transform': 'translateY(-50%)'})
+                    ], style={
+                        'position': 'relative',
+                        'background': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        'padding': '2rem',
+                        'boxShadow': '0 4px 20px rgba(0,0,0,0.1)'
+                    }),
                     
-                    # Toggle buttons
+                    # Hero Section with Icon
+                    html.Div([
+                        html.Div([
+                            html.Div([
+                                html.I(className='fas fa-route', style={
+                                    'fontSize': '3rem',
+                                    'color': '#667eea'
+                                })
+                            ], style={
+                                'width': '80px',
+                                'height': '80px',
+                                'backgroundColor': '#FFFFFF',
+                                'borderRadius': '50%',
+                                'display': 'flex',
+                                'alignItems': 'center',
+                                'justifyContent': 'center',
+                                'margin': '0 auto 1.5rem',
+                                'boxShadow': '0 8px 24px rgba(102, 126, 234, 0.25)'
+                            }),
+                            html.H1("Travel Distance Calculator", style={
+                                'color': '#1A1A1A',
+                                'fontSize': '2.5rem',
+                                'fontWeight': 'bold',
+                                'textAlign': 'center',
+                                'marginBottom': '1rem'
+                            }),
+                            html.P("Calculate distances and estimated travel times between destinations using different modes of transportation", 
+                                style={
+                                    'color': '#6B7280',
+                                    'fontSize': '1.1rem',
+                                    'textAlign': 'center',
+                                    'maxWidth': '600px',
+                                    'margin': '0 auto'
+                                })
+                        ], style={'padding': '3rem 2rem'})
+                    ], style={'backgroundColor': '#F2F6FA'}),
+                    
+                    # Toggle buttons with modern styling
                     html.Div([
                         html.Div([
                             dbc.Button([
                                 html.I(className='fas fa-search-location', style={'marginRight': '8px'}),
                                 'Text Search Calculator'
-                            ], id='toggle-text-calculator', color='primary', size='lg',
-                            style={'marginRight': '1rem', 'minWidth': '250px'}),
+                            ], id='toggle-text-calculator', 
+                            style={
+                                'marginRight': '1rem',
+                                'minWidth': '250px',
+                                'padding': '14px 28px',
+                                'borderRadius': '12px',
+                                'fontWeight': '600',
+                                'fontSize': '1rem',
+                                'backgroundColor': '#667eea',
+                                'border': 'none',
+                                'boxShadow': '0 4px 12px rgba(102, 126, 234, 0.3)',
+                                'transition': 'all 0.3s ease'
+                            }),
                             
                             dbc.Button([
                                 html.I(className='fas fa-map-marked-alt', style={'marginRight': '8px'}),
                                 'Map Click Calculator'
-                            ], id='toggle-map-calculator', color='secondary', size='lg',
-                            style={'minWidth': '250px'})
+                            ], id='toggle-map-calculator',
+                            style={
+                                'minWidth': '250px',
+                                'padding': '14px 28px',
+                                'borderRadius': '12px',
+                                'fontWeight': '600',
+                                'fontSize': '1rem',
+                                'backgroundColor': '#E5E7EB',
+                                'color': '#6B7280',
+                                'border': 'none',
+                                'transition': 'all 0.3s ease'
+                            })
                         ], style={
                             'display': 'flex',
                             'justifyContent': 'center',
-                            'padding': '2rem 0'
+                            'padding': '2rem 0',
+                            'flexWrap': 'wrap',
+                            'gap': '1rem'
                         })
-                    ]),
+                    ], style={'backgroundColor': '#F2F6FA'}),
                     
                     # Store to track which calculator is active
                     dcc.Store(id='active-calculator', data='text'),
                     
-                    # Text-based calculator (visible by default)
+                    # Text-based calculator with card design
                     html.Div([
                         html.Div([
-                            html.H2("Distance Calculator", 
-                                style={'color': '#003580', 'marginBottom': '1rem', 'textAlign': 'center'}),
-                            html.P("Calculate distance between any two places in Kyoto", 
-                                style={'color': '#666', 'marginBottom': '2rem', 'textAlign': 'center'}),
-                            
-                            # First location input
+                            # Input Section
                             html.Div([
-                                html.Label([
-                                    html.I(className='fas fa-map-marker-alt', 
-                                        style={'marginRight': '8px', 'color': '#32CD32'}),
-                                    'Starting Point'
-                                ], style={'fontWeight': 'bold', 'color': '#1A1A1A', 'marginBottom': '0.5rem'}),
-                                # Find these lines in create traffic_layout (around line 1665-1680):
-                                dcc.Dropdown(
-                                    id='traffic-start-location',
-                                    placeholder='Type to search (restaurants, hotels, attractions)...',
-                                    searchable=True,
-                                    clearable=True,
-                                    style={
-                                        'marginBottom': '1.5rem',
-                                        'color': '#1A1A1A'  # Black text
-                                    },
-                                    # Add these new properties:
-                                    optionHeight=50,
-                                    maxHeight=300,
-                                    # Add inline CSS for dropdown menu
-                                    className='custom-location-dropdown'
-                                )
-                            ]),
-                            
-                            # Second location input
-                            html.Div([
-                                html.Label([
-                                    html.I(className='fas fa-map-marker-alt', 
-                                        style={'marginRight': '8px', 'color': '#FF4500'}),
-                                    'Destination'
-                                ], style={'fontWeight': 'bold', 'color': '#1A1A1A', 'marginBottom': '0.5rem'}),
-                                dcc.Dropdown(
-                                    id='traffic-end-location',
-                                    placeholder='Type to search (restaurants, hotels, attractions)...',
-                                    searchable=True,
-                                    clearable=True,
-                                    className='custom-location-dropdown',
-                                    style={
-                                        'marginBottom': '1.5rem',
-                                        'color': '#1A1A1A'
-                                        }
-                                )
-                            ]),
-                            
-                            # Calculate button
-                            html.Div([
+                                # Starting Point
+                                html.Div([
+                                    html.Label([
+                                        html.I(className='fas fa-map-marker-alt', 
+                                            style={'marginRight': '8px', 'color': '#10B981'}),
+                                        'Starting Point'
+                                    ], style={
+                                        'fontWeight': '600',
+                                        'color': '#1F2937',
+                                        'marginBottom': '0.5rem',
+                                        'display': 'block',
+                                        'fontSize': '1rem'
+                                    }),
+                                    dcc.Dropdown(
+                                        id='traffic-start-location',
+                                        placeholder='Enter starting location (e.g., Fushimi Inari Shrine)',
+                                        searchable=True,
+                                        clearable=True,
+                                        style={
+                                            'marginBottom': '1.5rem',
+                                            'borderRadius': '8px'
+                                        },
+                                        optionHeight=50,
+                                        maxHeight=300,
+                                        className='custom-location-dropdown'
+                                    )
+                                ]),
+                                
+                                # Swap Button
+                                html.Div([
+                                    html.Button([
+                                        html.I(className='fas fa-exchange-alt', style={'transform': 'rotate(90deg)'})
+                                    ], style={
+                                        'backgroundColor': '#FFFFFF',
+                                        'border': '2px solid #E5E7EB',
+                                        'borderRadius': '50%',
+                                        'width': '40px',
+                                        'height': '40px',
+                                        'display': 'flex',
+                                        'alignItems': 'center',
+                                        'justifyContent': 'center',
+                                        'cursor': 'pointer',
+                                        'color': '#667eea',
+                                        'transition': 'all 0.3s ease',
+                                        'boxShadow': '0 2px 8px rgba(0,0,0,0.08)'
+                                    }, className='swap-button')
+                                ], style={
+                                    'display': 'flex',
+                                    'justifyContent': 'center',
+                                    'margin': '-0.75rem 0'
+                                }),
+                                
+                                # Destination
+                                html.Div([
+                                    html.Label([
+                                        html.I(className='fas fa-map-marker-alt', 
+                                            style={'marginRight': '8px', 'color': '#EF4444'}),
+                                        'Destination'
+                                    ], style={
+                                        'fontWeight': '600',
+                                        'color': '#1F2937',
+                                        'marginBottom': '0.5rem',
+                                        'display': 'block',
+                                        'fontSize': '1rem'
+                                    }),
+                                    dcc.Dropdown(
+                                        id='traffic-end-location',
+                                        placeholder='Enter destination (e.g., Kinkaku-ji Temple)',
+                                        searchable=True,
+                                        clearable=True,
+                                        className='custom-location-dropdown',
+                                        style={
+                                            'marginBottom': '1.5rem',
+                                            'borderRadius': '8px'
+                                        },
+                                        optionHeight=50,
+                                        maxHeight=300
+                                    )
+                                ]),
+                                
+                                # Calculate Button
                                 dbc.Button([
-                                    html.I(className='fas fa-route', style={'marginRight': '8px'}),
-                                    'Calculate Distance'
-                                ], id='calculate-text-distance-btn', color='primary', size='lg',
-                                style={'width': '100%', 'padding': '12px'})
-                            ], style={'marginBottom': '2rem'}),
+                                    html.I(className='fas fa-calculator', style={'marginRight': '10px'}),
+                                    'Calculate Distance & Time'
+                                ], id='calculate-text-distance-btn',
+                                style={
+                                    'width': '100%',
+                                    'padding': '16px',
+                                    'borderRadius': '12px',
+                                    'fontWeight': '600',
+                                    'fontSize': '1.1rem',
+                                    'backgroundColor': '#667eea',
+                                    'border': 'none',
+                                    'boxShadow': '0 4px 12px rgba(102, 126, 234, 0.3)',
+                                    'transition': 'all 0.3s ease',
+                                    'marginBottom': '2rem'
+                                })
+                            ], style={
+                                'backgroundColor': '#FFFFFF',
+                                'padding': '2rem',
+                                'borderRadius': '16px',
+                                'boxShadow': '0 4px 16px rgba(0,0,0,0.08)',
+                                'marginBottom': '2rem'
+                            }),
                             
-                            # Text calculation result
+                            # Result Section
                             html.Div(id='text-distance-result', style={
-                                'padding': '1.5rem',
-                                'backgroundColor': '#F2F6FA',
-                                'borderRadius': '8px',
-                                'border': '2px solid #E8ECEF',
-                                'minHeight': '150px'
+                                'padding': '2rem',
+                                'backgroundColor': '#F9FAFB',
+                                'borderRadius': '16px',
+                                'border': '2px solid #E5E7EB',
+                                'minHeight': '200px',
+                                'boxShadow': '0 2px 8px rgba(0,0,0,0.05)'
                             })
                         ], style={
                             'maxWidth': '800px',
                             'margin': '0 auto',
-                            'padding': '2rem',
-                            'backgroundColor': '#FFFFFF',
-                            'borderRadius': '12px',
-                            'boxShadow': '0 2px 8px rgba(0,0,0,0.1)'
+                            'padding': '2rem'
                         })
-                    ], id='text-calculator-section', style={'padding': '2rem'}),
+                    ], id='text-calculator-section', style={'padding': '2rem', 'backgroundColor': '#F2F6FA'}),
                     
                     # Map-based calculator (hidden by default)
                     html.Div([
                         html.Div([
                             html.H2("Map-Based Calculator", 
-                                style={'color': '#003580', 'textAlign': 'center', 'marginBottom': '1rem'}),
+                                style={'color': '#1A1A1A', 'textAlign': 'center', 'marginBottom': '1rem', 'fontSize': '2rem', 'fontWeight': 'bold'}),
                             html.P("Click on two points on the map to calculate distance", 
-                                style={'textAlign': 'center', 'color': '#666', 'marginBottom': '1rem'}),
+                                style={'textAlign': 'center', 'color': '#6B7280', 'marginBottom': '2rem', 'fontSize': '1.1rem'}),
                             
                             html.Div([
                                 html.Div([
-                                    html.I(className='fas fa-map-marker-alt', 
-                                        style={'marginRight': '10px', 'fontSize': '1.5rem', 'color': '#003580'}),
+                                    html.I(className='fas fa-info-circle', 
+                                        style={'marginRight': '10px', 'fontSize': '1.5rem', 'color': '#667eea'}),
                                     html.Span("Click on markers to select points", 
-                                            style={'fontSize': '1rem', 'fontWeight': '600', 'color': '#003580'})
+                                            style={'fontSize': '1.1rem', 'fontWeight': '600', 'color': '#1A1A1A'})
                                 ], style={'display': 'flex', 'alignItems': 'center', 
-                                        'justifyContent': 'center', 'marginBottom': '10px'})
+                                        'justifyContent': 'center'})
                             ], id='point-selection-instruction', style={
-                                'backgroundColor': '#E6F3FF',
-                                'padding': '1rem',
-                                'borderRadius': '8px',
-                                'border': '2px solid #003580',
-                                'marginBottom': '1rem'
+                                'backgroundColor': '#EEF2FF',
+                                'padding': '1.5rem',
+                                'borderRadius': '12px',
+                                'border': '2px solid #667eea',
+                                'marginBottom': '2rem'
                             }),
                             
-                            create_traffic_map_chart(),
+                            html.Div([
+                                create_traffic_map_chart()
+                            ], style={
+                                'borderRadius': '16px',
+                                'overflow': 'hidden',
+                                'boxShadow': '0 4px 16px rgba(0,0,0,0.1)',
+                                'marginBottom': '2rem'
+                            }),
                             
                             html.Div(id='distance-calculation-result', style={
-                                'padding': '1.5rem',
-                                'minHeight': '80px',
-                                'backgroundColor': '#FFFFFF',
-                                'borderRadius': '8px',
-                                'border': '2px solid #E8ECEF',
-                                'marginTop': '1rem',
-                                'boxShadow': '0 2px 8px rgba(0,0,0,0.1)'
+                                'padding': '2rem',
+                                'minHeight': '100px',
+                                'backgroundColor': '#F9FAFB',
+                                'borderRadius': '16px',
+                                'border': '2px solid #E5E7EB',
+                                'boxShadow': '0 2px 8px rgba(0,0,0,0.05)'
                             })
                         ], style={
                             'maxWidth': '1200px',
                             'margin': '0 auto',
-                            'padding': '2rem',
-                            'backgroundColor': '#FFFFFF',
-                            'borderRadius': '12px',
-                            'boxShadow': '0 2px 8px rgba(0,0,0,0.1)'
+                            'padding': '2rem'
                         })
-                    ], id='map-calculator-section', style={'display': 'none', 'padding': '2rem'})
+                    ], id='map-calculator-section', style={'display': 'none', 'padding': '2rem', 'backgroundColor': '#F2F6FA'})
                     
                 ], style={
-                    'backgroundColor': '#F2F6FA',
+                    'background': 'linear-gradient(to bottom, #F2F6FA 0%, #FFFFFF 100%)',
                     'minHeight': '100vh'
                 })
                 return traffic_layout, 'main'
+
 
             # 檢查餐廳列表頁面
             elif view_mode == 'restaurant-list':
