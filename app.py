@@ -2684,7 +2684,7 @@ def create_advanced_analytics_layout():
 ##########################
 app = Dash(__name__, external_stylesheets=[
     '/assets/bootstrap.min.css',
-    '/assets/fontawesome-local.css',
+    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
     '/assets/voyage_styles.css'
 ],
            title='柔成員的旅遊平台',
@@ -3442,78 +3442,6 @@ def create_pagination_buttons(current_page, total_pages):
     return buttons
 
 
-TRAFFIC_GUIDE_EN = """
-# Navigating Kyoto: A Guide to Public Transportation
-
-Kyoto has an excellent public transport system. For most travelers, the most efficient way to get around is by using a combination of the city's subways, buses, and trains.
-
-## 1. The Kyoto Bus System
-
-- **How it Works:** The city is primarily served by the green Kyoto City Buses and the red-and-cream Kyoto Buses. Most of central Kyoto is a "flat-fare zone."
-- **How to Ride:** Board from the rear door, and exit from the front door, next to the driver.
-- **Payment:** The flat fare is typically ¥230. You can pay with cash (exact change is appreciated) or by tapping a major IC card (like Suica, Pasmo, or ICOCA) on the reader as you exit.
-
-## 2. The Kyoto Subway System
-
-- **The Lines:** There are two simple-to-use subway lines:
-    - **Karasuma Line:** Runs north-south.
-    - **Tozai Line:** Runs east-west.
-- **Why Use It:** Subways are the fastest way to travel longer distances across the city, bypassing all traffic. They are great for reaching major hubs like Kyoto Station.
-
-## 3. Popular Travel Passes
-
-- **Bus & Subway 1-Day Pass:**
-    - **Price:** Adults ¥1100, Children ¥550.
-    - **Coverage:** Unlimited rides on all Kyoto City Buses, Kyoto Buses, and both subway lines for one calendar day. A great all-in-one option.
-- **Subway 1-Day Pass:**
-    - **Price:** Adults ¥800, Children ¥400.
-    - **Coverage:** Unlimited rides on both the Karasuma and Tozai subway lines. Best if you plan to cover long distances quickly.
-
-## 4. Route Map
-
-For a detailed, zoomable map of the entire bus and subway network, it is highly recommended to download the official PDF guide.
-
-[**Download Official Kyoto Bus & Subway Route Map (PDF)**](https://www2.city.kyoto.lg.jp/kotsu/webguide/files/tikabusnavi/en_tikabusnavi_2.pdf)
-
-This map is invaluable for planning your routes and seeing how different lines connect.
-"""
-
-TRAFFIC_GUIDE_ZH = """
-# 京都導航：公共交通指南
-
-京都有一個優秀的公共交通系統。對於大多數遊客來說，最有效的出行方式是結合使用市內的地下鐵、巴士和火車。
-
-## 1. 京都巴士系統
-
-- **如何運作：** 該市主要由綠色的京都市營巴士和紅白相間的京都巴士提供服務。京都市中心大部分地區為「單一票價區」。
-- **如何乘車：** 從後門上車，從司機旁邊的前門下車。
-- **付款方式：** 單一票價通常為230日元。您可以使用現金（請準備好零錢）或在下車時在讀卡器上輕觸主要的IC卡（如Suica、Pasmo或ICOCA）支付。
-
-## 2. 京都地下鐵系統
-
-- **線路：** 有兩條簡單易用的地下鐵線路：
-    - **烏丸線：** 南北運行。
-    - **東西線：** 東西運行。
-- **為何使用：** 地下鐵是穿越城市長距離最快的方式，可避開所有交通擁堵。非常適合到達京都站等主要樞紐。
-
-## 3. 熱門交通票券
-
-- **巴士與地下鐵一日通票：**
-    - **價格：** 成人1100日元，兒童550日元。
-    - **覆蓋範圍：** 在一個日曆日內無限次乘坐所有京都市營巴士、京都巴士以及兩條地下鐵線路。是一個極佳的一體化選擇。
-- **地下鐵一日通票：**
-    - **價格：** 成人800日元，兒童400日元。
-    - **覆蓋範圍：** 無限次乘坐烏丸線和東西線兩條地下鐵線路。如果您計劃快速覆蓋長距離，這是最佳選擇。
-
-## 4. 路線圖
-
-為了獲得整個巴士和地下鐵網絡的詳細、可縮放的地圖，強烈建議下載官方的PDF指南。
-
-[**下載官方京都巴士和地下鐵路線圖（PDF）**](https://www2.city.kyoto.lg.jp/kotsu/webguide/files/tikabusnavi/ja_tikabusnavi_2.pdf)
-
-這張地圖對於規劃您的路線和了解不同線路的連接方式非常有價值。
-"""
-
 
 # ====== 認證相關 Callbacks ======
 
@@ -3620,7 +3548,7 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
                                 'borderRadius': '12px',
                                 'fontWeight': '600',
                                 'fontSize': '1rem',
-                                'backgroundColor': '#667eea',
+                                'backgroundColor': '#E5E7EB',
                                 'border': 'none',
                                 'boxShadow': '0 4px 12px rgba(102, 126, 234, 0.3)',
                                 'transition': 'all 0.3s ease'
@@ -3637,7 +3565,6 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
                                 'fontWeight': '600',
                                 'fontSize': '1rem',
                                 'backgroundColor': '#E5E7EB',
-                                'color': '#6B7280',
                                 'border': 'none',
                                 'transition': 'all 0.3s ease'
                             })
@@ -3726,7 +3653,7 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
                                     'borderRadius': '12px',
                                     'fontWeight': '600',
                                     'fontSize': '1.1rem',
-                                    'backgroundColor': '#667eea',
+                                    'backgroundColor': '#E5E7EB',
                                     'border': 'none',
                                     'boxShadow': '0 4px 12px rgba(102, 126, 234, 0.3)',
                                     'transition': 'all 0.3s ease',
@@ -3767,7 +3694,7 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
                             html.Div([
                                 html.Div([
                                     html.I(className='fas fa-info-circle', 
-                                        style={'marginRight': '10px', 'fontSize': '1.5rem', 'color': '#667eea'}),
+                                        style={'marginRight': '10px', 'fontSize': '1.5rem', 'color': '#F2F6FA'}),
                                     html.Span("Click on markers to select points", 
                                             style={'fontSize': '1.1rem', 'fontWeight': '600', 'color': '#1A1A1A'})
                                 ], style={'display': 'flex', 'alignItems': 'center', 
@@ -7022,17 +6949,15 @@ def create_traffic_map_chart(points=None):
 def calculate_travel_times(distance_km):
     """Calculate estimated travel times for different modes of transport"""
     speeds = {
-        'car': 80,
-        'train': 200,
-        'plane': 800,
-        'bus': 70
+        'car': 35,
+        'bicycle': 10,
+        'bus': 30,
+        'walk': 5
     }
     
     times = {}
     for mode, speed in speeds.items():
         hours = distance_km / speed
-        if mode == 'plane':
-            hours += 2
             
         days = int(hours // 24)
         remaining_hours = int(hours % 24)
@@ -7058,9 +6983,10 @@ def create_travel_time_cards(distance_km, start_name, end_name, start_lat, start
     
     card_styles = {
         'car': {'color': '#3B82F6', 'icon': 'fas fa-car', 'label': 'Car'},
-        'train': {'color': '#10B981', 'icon': 'fas fa-train', 'label': 'Train'},
+        'bicycle': {'color': '#10B981', 'icon': 'fas fa-bicycle', 'label': 'Bicycle'},
         'plane': {'color': '#A855F7', 'icon': 'fas fa-plane', 'label': 'Plane'},
-        'bus': {'color': '#F97316', 'icon': 'fas fa-bus', 'label': 'Bus'}
+        'bus': {'color': '#F97316', 'icon': 'fas fa-bus', 'label': 'Bus'},
+        'walk': {'color': '#14B8A6', 'icon': 'fas fa-walking', 'label': 'Walk'}
     }
     
     cards = []
@@ -7086,28 +7012,103 @@ def create_travel_time_cards(distance_km, start_name, end_name, start_lat, start
         cards.append(card)
     
     return html.Div([
+         # Vertical layout: Starting Point -> Destination -> Total Distance
         html.Div([
+            # Starting Point
             html.Div([
-                html.I(className='fas fa-location-dot', style={'fontSize': '1.5rem', 'color': '#3B82F6', 'marginRight': '15px'}),
-                html.Span(start_name, style={'fontSize': '1.3rem', 'fontWeight': '600', 'color': '#1A1A1A'})
-            ], style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '1rem'}),
-            
-            html.Div([html.I(className='fas fa-plane', style={'fontSize': '2rem', 'color': '#667eea', 'transform': 'rotate(90deg)'})], 
-                     style={'textAlign': 'center', 'margin': '0.5rem 0'}),
-            
+                html.Div([
+                    html.Span('Starting Point', style={
+                        'fontSize': '0.85rem',
+                        'fontWeight': '600',
+                        'color': '#003580',
+                        'textTransform': 'uppercase',
+                        'letterSpacing': '0.5px',
+                        'marginBottom': '8px',
+                        'display': 'block'
+                    }),
+                    html.Div([
+                        html.I(className='fas fa-map-marker-alt', style={
+                            'fontSize': '1.3rem',
+                            'color': '#10B981',
+                            'marginRight': '12px'
+                        }),
+                        html.Span(start_name, style={
+                            'fontSize': '1.3rem',
+                            'fontWeight': '600',
+                            'color': '#1A1A1A'
+                        })
+                    ], style={'display': 'flex', 'alignItems': 'center'})
+                ])
+            ], style={
+                'padding': '1.5rem',
+                'borderBottom': '2px dashed #E8ECEF',
+                'marginBottom': '1rem'
+            }),
+             # Destination
             html.Div([
-                html.I(className='fas fa-location-dot', style={'fontSize': '1.5rem', 'color': '#A855F7', 'marginRight': '15px'}),
-                html.Span(end_name, style={'fontSize': '1.3rem', 'fontWeight': '600', 'color': '#1A1A1A'})
-            ], style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '2rem'}),
-            
+                html.Div([
+                    html.Span('Destination', style={
+                        'fontSize': '0.85rem',
+                        'fontWeight': '600',
+                        'color': '#003580',
+                        'textTransform': 'uppercase',
+                        'letterSpacing': '0.5px',
+                        'marginBottom': '8px',
+                        'display': 'block'
+                    }),
+                    html.Div([
+                        html.I(className='fas fa-map-marker-alt', style={
+                            'fontSize': '1.3rem',
+                            'color': '#EF4444',
+                            'marginRight': '12px'
+                        }),
+                        html.Span(end_name, style={
+                            'fontSize': '1.3rem',
+                            'fontWeight': '600',
+                            'color': '#1A1A1A'
+                        })
+                    ], style={'display': 'flex', 'alignItems': 'center'})
+                ])
+            ], style={
+                'padding': '1.5rem',
+                'borderBottom': '2px solid #003580',
+                'marginBottom': '1.5rem'
+            }),
+            # Total Distance
             html.Div([
-                html.I(className='fas fa-route', style={'marginRight': '10px'}),
-                f"Total Distance: {distance_km:.2f} km ({distance_km * 0.621371:.0f} miles)"
-            ], style={'backgroundColor': '#EEF2FF', 'color': '#667eea', 'padding': '15px 25px', 
-                     'borderRadius': '50px', 'fontSize': '1.2rem', 'fontWeight': '600', 
-                     'textAlign': 'center', 'border': '2px solid #667eea', 'marginBottom': '2rem'})
-        ], style={'backgroundColor': '#FFFFFF', 'padding': '2rem', 'borderRadius': '16px', 
-                 'marginBottom': '2rem', 'boxShadow': '0 4px 16px rgba(0,0,0,0.08)'}),
+                html.I(className='fas fa-route', style={
+                    'marginRight': '12px',
+                    'color': '#003580',
+                    'fontSize': '1.5rem'
+                }),
+                html.Span('Total Distance: ', style={
+                    'color': '#1A1A1A',
+                    'fontWeight': '600',
+                    'fontSize': '1.1rem',
+                    'marginRight': '8px'
+                }),
+                html.Span(f"{distance_km:.2f} km", style={
+                    'color': '#003580',
+                    'fontWeight': 'bold',
+                    'fontSize': '2rem'
+                }),
+            ], style={
+                'display': 'flex',
+                'alignItems': 'center',
+                'justifyContent': 'center',
+                'backgroundColor': '#F2F6FA',
+                'padding': '1.5rem',
+                'borderRadius': '12px',
+                'border': '2px solid #003580'
+            })
+
+        ], style={
+            'backgroundColor': '#FFFFFF',
+            'padding': '2rem',
+            'borderRadius': '16px',
+            'marginBottom': '2rem',
+            'boxShadow': '0 4px 16px rgba(0,0,0,0.08)'
+        }),
         
         html.Div([
             html.I(className='fas fa-clock', style={'fontSize': '1.5rem', 'marginRight': '12px', 'color': '#667eea'}),
@@ -7267,81 +7268,17 @@ def handle_distance_calculation(click_data, store_data):
             dlat = lat2_rad - lat1_rad
             a = np.sin(dlat / 2.0)**2 + np.cos(lat1_rad) * np.cos(lat2_rad) * np.sin(dlon / 2.0)**2
             c = 2 * np.arcsin(np.sqrt(a))
-            distance = R * c
+            distance = R * c * 1.3
             
-            google_maps_url = f"https://www.google.com/maps/dir/?api=1&origin={lat1},{lon1}&destination={lat2},{lon2}&travelmode=transit"
-            
-            result_content = html.Div([
-                html.Div("🎯", style={'fontSize': '3rem', 'textAlign': 'center', 'marginBottom': '1rem'}),
-                html.H3("Route Calculated!", style={'color': '#003580', 'textAlign': 'center', 'marginBottom': '2rem'}),
-                
-                # From/To display
-                html.Div([
-                    html.Div([
-                        html.Span("📍", style={'fontSize': '1.5rem'}),
-                        html.Strong("From: ", style={'color': '#1A1A1A', 'fontSize': '1.1rem'}),
-                        html.Span(p1['name'], style={'color': '#1A1A1A', 'fontSize': '1.1rem'})
-                    ], style={'marginBottom': '1rem', 'textAlign': 'center'}),
-                    html.Div([
-                        html.Span("📍", style={'fontSize': '1.5rem'}),
-                        html.Strong("To: ", style={'color': '#1A1A1A', 'fontSize': '1.1rem'}),
-                        html.Span(p2['name'], style={'color': '#1A1A1A', 'fontSize': '1.1rem'})
-                    ], style={'marginBottom': '2rem', 'textAlign': 'center'}),
-                ]),
-                
-                # Distance
-                html.Div([
-                    html.Div("Straight-Line Distance:", style={'fontSize': '1.5rem', 'marginBottom': '0.5rem'}),
-                    html.Div(f"{distance:.2f} km", style={
-                        'fontSize': '2.5rem',
-                        'fontWeight': 'bold',
-                        'color': '#003580',
-                        'marginBottom': '0.5rem'
-                    }),
-                    html.Div([
-                        html.I(className='fas fa-info-circle', style={'marginRight': '8px'}),
-                        "Click 'View Directions' below for actual travel distance & time"
-                    ], style={
-                        'fontSize': '0.9rem',
-                        'color': '#666',
-                        'fontStyle': 'italic',
-                        'marginBottom': '2rem'
-                    })
-                ], style={'textAlign': 'center'}),
-                
-                # Google Maps button
-                html.Div([
-                    html.A([
-                        html.I(className='fas fa-directions', style={'marginRight': '10px', 'fontSize': '1.2rem'}),
-                        'View Directions on Google Maps'
-                    ], href=google_maps_url, target="_blank", style={
-                        'display': 'inline-block',
-                        'padding': '15px 30px',
-                        'backgroundColor': '#4285f4',
-                        'color': 'white',
-                        'textDecoration': 'none',
-                        'borderRadius': '8px',
-                        'fontWeight': '600',
-                        'fontSize': '1.1rem',
-                        'boxShadow': '0 4px 6px rgba(66, 133, 244, 0.3)',
-                        'transition': 'all 0.3s'
-                    })
-                ], style={'textAlign': 'center', 'marginBottom': '2rem'}),
-                
-                html.Div("Click two new points for another route", style={
-                    'textAlign': 'center',
-                    'fontSize': '0.9rem',
-                    'color': '#888',
-                    'fontStyle': 'italic'
-                })
-            ], style={
-                'backgroundColor': '#E6F3FF',
-                'padding': '2rem',
-                'borderRadius': '8px',
-                'border': '2px solid #003580'
-            })
-            
-            # CHANGE THIS LINE - keep points with value 2 to hide instruction
+             # Use the same UI component as the text calculator
+            result_content = create_travel_time_cards(
+                distance, 
+                p1['name'], 
+                p2['name'], 
+                lat1, lon1, 
+                lat2, lon2
+            )
+            # Reset points but keep the result
             return {'points': []}, result_content# Changed from {'points': []} to keep the 2 points
             
         except (ValueError, TypeError) as e:
@@ -7868,7 +7805,7 @@ def calculate_text_distance(n_clicks, start_value, end_value, places_data):
         dlat = lat2_rad - lat1_rad
         a = np.sin(dlat / 2.0)**2 + np.cos(lat1_rad) * np.cos(lat2_rad) * np.sin(dlon / 2.0)**2
         c = 2 * np.arcsin(np.sqrt(a))
-        distance = R * c
+        distance = R * c * 1.3
         
         # Pass coordinates to create_travel_time_cards
         return create_travel_time_cards(distance, start_place['name'], end_place['name'], lat1, lon1, lat2, lon2)
