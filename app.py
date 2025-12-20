@@ -642,7 +642,8 @@ def create_detail_hero(data):
             'right': '0',
             'height': '70%',
             'background': 'linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.2) 70%, transparent 100%)',
-            'pointerEvents': 'none'  # 讓遮罩不阻擋按鈕點擊
+            'pointerEvents': 'none',  # 讓遮罩不阻擋按鈕點擊,
+            'zIndex': 5
         }),
 
         # Hero 內容
@@ -685,7 +686,8 @@ def create_detail_hero(data):
                         'marginRight': '10px',
                         'fontSize': '1rem',
                         'fontWeight': '500',
-                        'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)'
+                        'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)',
+                        'pointerEvents': 'none'  # 讓類別不可點擊
                     }),
                     html.Span([
                         html.I(className='fas fa-yen-sign', style={'marginRight': '6px'}),
@@ -700,7 +702,8 @@ def create_detail_hero(data):
                         'marginRight': '10px',
                         'fontSize': '1rem',
                         'fontWeight': '500',
-                        'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)'
+                        'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)',
+                        'pointerEvents': 'none'  # 讓價格類別不可點擊
                     }),
                     html.Span([
                         html.I(className='fas fa-comment', style={'marginRight': '6px'}),
@@ -715,13 +718,14 @@ def create_detail_hero(data):
                         'marginRight': '10px',
                         'fontSize': '1rem',
                         'fontWeight': '500',
-                        'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)'
+                        'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)',
+                        'pointerEvents': 'none'  # 讓評論數不可點擊
                     }),
 
                     html.Button([
                         html.I(className='fas fa-heart', style={'marginRight': '6px'}),
                         'Add to Favorites'
-                    ], id='favorite-button', n_clicks=0, style={
+                    ], id='restaurant-favorite-button', n_clicks=0, style={
                         'backgroundColor': 'rgba(255, 255, 255, 0.25)',
                         'backdropFilter': 'blur(10px)',
                         'border': '1.5px solid rgba(255, 255, 255, 0.5)',
@@ -732,7 +736,9 @@ def create_detail_hero(data):
                         'fontWeight': '500',
                         'cursor': 'pointer',
                         'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)',
-                        'transition': 'all 0.3s ease'
+                        'transition': 'all 0.3s ease',
+                        'pointerEvents': 'auto' , # 讓按鈕可點擊
+                        'zIndex': 9999
                     })
                 ], style={
                     'display': 'flex', 
@@ -747,7 +753,7 @@ def create_detail_hero(data):
             'right': '2rem',
             'maxWidth': '1400px',
             'margin': '0 auto',
-            'pointerEvents': 'none'  # 讓文字不阻擋按鈕點擊
+            'zIndex': 10
         })
     ], style={
         'position': 'relative',
@@ -1598,7 +1604,7 @@ def create_hotel_detail_content(hotel_data):
                         html.Button([
                             html.I(className='fas fa-heart', style={'marginRight': '6px'}),
                             'Add to Favorites'
-                        ], id='favorite-button', n_clicks=0, style={
+                        ], id='hotel-favorite-button', n_clicks=0, style={
                             'backgroundColor': 'rgba(255, 255, 255, 0.25)',
                             'backdropFilter': 'blur(10px)',
                             'border': '1.5px solid rgba(255, 255, 255, 0.5)',
@@ -1609,7 +1615,8 @@ def create_hotel_detail_content(hotel_data):
                             'fontWeight': '500',
                             'cursor': 'pointer',
                             'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)',
-                            'transition': 'all 0.3s ease'
+                            'transition': 'all 0.3s ease',
+                            'pointerEvents': 'auto' # 讓按鈕可點擊
                         })
                     ], style={
                         'display': 'flex', 
@@ -2744,10 +2751,14 @@ def create_main_layout():
 
             # Tab Navigation
             html.Div([
-                html.Div('Saved Trips', id='tab-saved-trips', className='tab-item active', n_clicks=0),
-                html.Div('Wishlisted Hotels', id='tab-wishlisted', className='tab-item', n_clicks=0),
-                html.Div('Favorite Restaurants', id='tab-favorites', className='tab-item', n_clicks=0)
+                html.Div([
+                    html.Div('Saved Trips', id='tab-saved-trips', className='tab-item active', n_clicks=0),
+                    html.Div('Wishlisted Hotels', id='tab-wishlisted', className='tab-item', n_clicks=0),
+                    html.Div('Favorite Restaurants', id='tab-favorites', className='tab-item', n_clicks=0)
             ], className='tab-navigation'),
+
+            html.Div(id='tab-content-container', style={'marginTop': '2rem'})
+        ], className='content-section'),
 
             # Tab Content
             html.Div(id='tab-content-container')
@@ -6566,9 +6577,6 @@ def handle_distance_calculation(click_data, store_data):
     )
     return {'points': points}, default_result
 
-if __name__ == '__main__':
-    app.run(debug=True, port=8050)
-
 
 # --- START: 新增的程式碼 (Create Trip 功能) ---
 
@@ -6685,3 +6693,28 @@ def go_back_from_create_trip(n_clicks):
     return no_update
 
 # --- END: 新增的程式碼 (Create Trip 功能) ---
+
+
+# ---------------- Favorite Button Callbacks ----------------
+@app.callback(
+    Output('restaurant-favorite-button', 'n_clicks'),  # 這裡用 no_update 避免改 UI
+    Input('restaurant-favorite-button', 'n_clicks')
+)
+def debug_restaurant(n_clicks):
+    print(f"Restaurant Favorite clicked: {n_clicks}")
+    return no_update
+
+@app.callback(
+    Output('hotel-favorite-button', 'n_clicks'),
+    Input('hotel-favorite-button', 'n_clicks')
+)
+def debug_hotel(n_clicks):
+    print(f"Hotel Favorite clicked: {n_clicks}")
+    return no_update
+
+
+
+
+#這行一定放最後
+if __name__ == '__main__':
+    app.run(debug=True, port=8050)
