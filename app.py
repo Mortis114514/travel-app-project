@@ -7096,28 +7096,105 @@ def create_travel_time_cards(distance_km, start_name, end_name, start_lat, start
         cards.append(card)
     
     return html.Div([
+        # Vertical layout: Starting Point -> Destination -> Total Distance
         html.Div([
+            # Starting Point
             html.Div([
-                html.I(className='fas fa-location-dot', style={'fontSize': '1.5rem', 'color': '#3B82F6', 'marginRight': '15px'}),
-                html.Span(start_name, style={'fontSize': '1.3rem', 'fontWeight': '600', 'color': '#1A1A1A'})
-            ], style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '1rem'}),
+                html.Div([
+                    html.Span('Starting Point', style={
+                        'fontSize': '0.85rem',
+                        'fontWeight': '600',
+                        'color': '#003580',
+                        'textTransform': 'uppercase',
+                        'letterSpacing': '0.5px',
+                        'marginBottom': '8px',
+                        'display': 'block'
+                    }),
+                    html.Div([
+                        html.I(className='fas fa-map-marker-alt', style={
+                            'fontSize': '1.3rem',
+                            'color': '#10B981',
+                            'marginRight': '12px'
+                        }),
+                        html.Span(start_name, style={
+                            'fontSize': '1.3rem',
+                            'fontWeight': '600',
+                            'color': '#1A1A1A'
+                        })
+                    ], style={'display': 'flex', 'alignItems': 'center'})
+                ])
+            ], style={
+                'padding': '1.5rem',
+                'borderBottom': '2px dashed #E8ECEF',
+                'marginBottom': '1rem'
+            }),
             
-            html.Div([html.I(className='fas fa-plane', style={'fontSize': '2rem', 'color': '#667eea', 'transform': 'rotate(90deg)'})], 
-                     style={'textAlign': 'center', 'margin': '0.5rem 0'}),
-            
+            # Destination
             html.Div([
-                html.I(className='fas fa-location-dot', style={'fontSize': '1.5rem', 'color': '#A855F7', 'marginRight': '15px'}),
-                html.Span(end_name, style={'fontSize': '1.3rem', 'fontWeight': '600', 'color': '#1A1A1A'})
-            ], style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '2rem'}),
+                html.Div([
+                    html.Span('Destination', style={
+                        'fontSize': '0.85rem',
+                        'fontWeight': '600',
+                        'color': '#003580',
+                        'textTransform': 'uppercase',
+                        'letterSpacing': '0.5px',
+                        'marginBottom': '8px',
+                        'display': 'block'
+                    }),
+                    html.Div([
+                        html.I(className='fas fa-map-marker-alt', style={
+                            'fontSize': '1.3rem',
+                            'color': '#EF4444',
+                            'marginRight': '12px'
+                        }),
+                        html.Span(end_name, style={
+                            'fontSize': '1.3rem',
+                            'fontWeight': '600',
+                            'color': '#1A1A1A'
+                        })
+                    ], style={'display': 'flex', 'alignItems': 'center'})
+                ])
+            ], style={
+                'padding': '1.5rem',
+                'borderBottom': '2px solid #003580',
+                'marginBottom': '1.5rem'
+            }),
             
+            # Total Distance
             html.Div([
-                html.I(className='fas fa-route', style={'marginRight': '10px'}),
-                f"Total Distance: {distance_km:.2f} km ({distance_km * 0.621371:.0f} miles)"
-            ], style={'backgroundColor': '#EEF2FF', 'color': '#667eea', 'padding': '15px 25px', 
-                     'borderRadius': '50px', 'fontSize': '1.2rem', 'fontWeight': '600', 
-                     'textAlign': 'center', 'border': '2px solid #667eea', 'marginBottom': '2rem'})
-        ], style={'backgroundColor': '#FFFFFF', 'padding': '2rem', 'borderRadius': '16px', 
-                 'marginBottom': '2rem', 'boxShadow': '0 4px 16px rgba(0,0,0,0.08)'}),
+                html.I(className='fas fa-route', style={
+                    'marginRight': '12px',
+                    'color': '#003580',
+                    'fontSize': '1.5rem'
+                }),
+                html.Span('Total Distance: ', style={
+                    'color': '#1A1A1A',
+                    'fontWeight': '600',
+                    'fontSize': '1.1rem',
+                    'marginRight': '8px'
+                }),
+                html.Span(f"{distance_km:.2f} km", style={
+                    'color': '#003580',
+                    'fontWeight': 'bold',
+                    'fontSize': '2rem'
+                }),
+            ], style={
+                'display': 'flex',
+                'alignItems': 'center',
+                'justifyContent': 'center',
+                'backgroundColor': '#F2F6FA',
+                'padding': '1.5rem',
+                'borderRadius': '12px',
+                'border': '2px solid #003580'
+            })
+            
+        ], style={
+            'backgroundColor': '#FFFFFF',
+            'padding': '2rem',
+            'borderRadius': '16px',
+            'marginBottom': '2rem',
+            'boxShadow': '0 4px 16px rgba(0,0,0,0.08)'
+        }),
         
         html.Div([
             html.I(className='fas fa-clock', style={'fontSize': '1.5rem', 'marginRight': '12px', 'color': '#667eea'}),
