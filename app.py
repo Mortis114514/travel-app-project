@@ -509,26 +509,22 @@ def create_detail_header():
         'zIndex': '1000'
     })
 
-def create_image_gallery():
+def create_image_gallery(folder='Food'):
     """創建圖片畫廊輪播組件（交叉淡入淡出效果）"""
-    # Mujica文件夾中的圖片列表（使用前15張作為示例）
-    gallery_images = [
-        '/assets/Mujica/FB_IMG_1741782349578.jpg',
-        '/assets/Mujica/FB_IMG_1741782457313.jpg',
-        '/assets/Mujica/FB_IMG_1741782466354.jpg',
-        '/assets/Mujica/FB_IMG_1741782481779.jpg',
-        '/assets/Mujica/FB_IMG_1741782484895.jpg',
-        '/assets/Mujica/FB_IMG_1741782486450.jpg',
-        '/assets/Mujica/FB_IMG_1741782499553.jpg',
-        '/assets/Mujica/FB_IMG_1741782505028.jpg',
-        '/assets/Mujica/FB_IMG_1741782513961.jpg',
-        '/assets/Mujica/FB_IMG_1741782525678.jpg',
-        '/assets/Mujica/FB_IMG_1741782527528.jpg',
-        '/assets/Mujica/FB_IMG_1741782530270.jpg',
-        '/assets/Mujica/FB_IMG_1741782538112.jpg',
-        '/assets/Mujica/FB_IMG_1741885757345.jpg',
-        '/assets/Mujica/FB_IMG_1741885778449.jpg'
-    ]
+    # 根據文件夾動態生成圖片列表
+    import os
+    import glob
+
+    # 構建圖片文件夾路徑
+    folder_path = os.path.join('assets', folder)
+    # 獲取文件夾中的所有圖片
+    image_files = glob.glob(os.path.join(folder_path, '*.*'))
+    # 轉換為Web路徑格式
+    gallery_images = [f'/assets/{folder}/{os.path.basename(img)}' for img in image_files if img.lower().endswith(('.jpg', '.jpeg', '.png', '.gif'))]
+
+    # 如果沒有找到圖片，使用默認圖片
+    if not gallery_images:
+        gallery_images = ['/assets/Hazuki.jpg']
 
     return html.Div([
         # 圖片容器 - 雙層結構實現交叉淡入淡出
@@ -621,7 +617,7 @@ def create_detail_hero(data):
 
     return html.Div([
         # 圖片畫廊（替換原本的單一圖片）
-        create_image_gallery(),
+        create_image_gallery('Food'),
 
         # 漸層遮罩 (subtle shadow for text readability)
         html.Div(style={
@@ -1508,7 +1504,7 @@ def create_hotel_detail_content(hotel_data):
         # Hero 區域 (大圖)
         html.Div([
             # 圖片畫廊（替換原本的單一圖片）
-            create_image_gallery(),
+            create_image_gallery('Hotel'),
 
             # 漸層遮罩 (subtle shadow for text readability)
             html.Div(style={
@@ -1998,7 +1994,7 @@ def create_attraction_detail_content(data):
         # Hero Image Area (matching restaurant style)
         html.Div([
             # Image gallery
-            create_image_gallery(),
+            create_image_gallery('Attraction'),
 
             # Gradient overlay for text readability
             html.Div(style={
