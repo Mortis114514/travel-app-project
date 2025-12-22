@@ -2425,3 +2425,399 @@ div[style*="justifyContent: center"] {
 .dash-spinner {
     display: none !important;
 }
+
+/* ===== Favorite Button Styles ===== */
+.card-favorite-btn:hover {
+    transform: scale(1.15);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25) !important;
+}
+
+.card-favorite-btn:active {
+    transform: scale(0.95);
+}
+
+/* Prevent heart button from triggering card click */
+.card-favorite-btn {
+    pointer-events: auto !important;
+}
+
+/* ===== Toast Animations ===== */
+@keyframes slideInRight {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
+.toast-exit {
+    animation: slideOutRight 0.3s ease-in forwards;
+}
+
+/* ===== Favorites Empty State ===== */
+.favorites-empty {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #888888;
+}
+
+.favorites-empty i {
+    font-size: 4rem;
+    color: #D0D5DD;
+    margin-bottom: 1.5rem;
+}
+
+.favorites-empty h3 {
+    color: #1A1A1A;
+    margin-bottom: 0.5rem;
+    font-size: 1.5rem;
+}
+
+.favorites-empty p {
+    font-size: 1rem;
+}
+
+/* ===== Favorites Tab Filter Chips ===== */
+.favorites-filter-chips {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.favorites-filter-chip {
+    padding: 10px 20px;
+    border-radius: 25px;
+    border: 2px solid #D0D5DD;
+    background-color: #FFFFFF;
+    color: #4A5568;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.favorites-filter-chip:hover {
+    border-color: #003580;
+    color: #003580;
+}
+
+.favorites-filter-chip.active {
+    background-color: #003580;
+    color: #FFFFFF;
+    border-color: #003580;
+}
+
+/* ===== Create Trip Tab Styles ===== */
+.trip-tabs-container {
+    border-bottom: 1px solid #E8ECEF;
+    margin-bottom: 1.5rem;
+    display: flex;
+    gap: 0;
+}
+
+.trip-tab-button {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-bottom: 3px solid transparent;
+    background-color: transparent;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.trip-tab-button:hover {
+    background-color: rgba(0, 53, 128, 0.05);
+}
+
+.trip-tab-button.active-tab {
+    border-bottom-color: #deb522;
+    color: #003580;
+    font-weight: 600;
+}
+
+.trip-tab-button.inactive-tab {
+    border-bottom-color: transparent;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.trip-tab-button:not(:first-child) {
+    margin-left: 1rem;
+}
+
+
+
+/* ===== Drag and Drop Styles ===== */
+.draggable-item {
+    user-select: none;
+}
+
+.draggable-item:hover {
+    background-color: #E8F4F8 !important;
+    border-color: #B8D4E8 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.draggable-item:active {
+    cursor: grabbing !important;
+}
+
+.draggable-item.dragging {
+    opacity: 0.5;
+    cursor: grabbing !important;
+}
+
+.drop-zone {
+    transition: all 0.3s ease;
+}
+
+.drop-zone.drag-over {
+    background-color: #E8F4F8 !important;
+    border-color: #deb522 !important;
+    border-style: solid !important;
+    border-width: 3px !important;
+}
+
+.filter-chip {
+    padding: 0.5rem 1rem;
+    border: 2px solid #E0E0E0;
+    border-radius: 20px;
+    background-color: #FFFFFF;
+    color: #666;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.filter-chip:hover {
+    border-color: #deb522;
+    background-color: #FFF9E6;
+}
+
+.filter-chip.active-filter {
+    background-color: #deb522;
+    color: #FFFFFF;
+    border-color: #deb522;
+}
+
+/* Scrollbar styling */
+.draggable-favorites-container::-webkit-scrollbar,
+.trip-timeline-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.draggable-favorites-container::-webkit-scrollbar-track,
+.trip-timeline-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.draggable-favorites-container::-webkit-scrollbar-thumb,
+.trip-timeline-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+.draggable-favorites-container::-webkit-scrollbar-thumb:hover,
+.trip-timeline-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Time dropdown styling - comprehensive selectors */
+/* Legacy Select component */
+.Select-menu-outer {
+    background-color: #FFFFFF !important;
+    border: 1px solid #deb522 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+    z-index: 9999 !important;
+}
+
+.Select-menu {
+    background-color: #FFFFFF !important;
+}
+
+.Select-option {
+    background-color: #FFFFFF !important;
+    color: #003580 !important;
+    padding: 8px 12px !important;
+    cursor: pointer !important;
+}
+
+.Select-option:hover {
+    background-color: #FFF9E6 !important;
+    color: #003580 !important;
+}
+
+.Select-option.is-selected {
+    background-color: #deb522 !important;
+    color: #FFFFFF !important;
+}
+
+.Select-option.is-focused {
+    background-color: #FFF9E6 !important;
+    color: #003580 !important;
+}
+
+/* Modern Dash dropdown (react-select v2+) */
+.css-26l3qy-menu,
+.css-1n7v3ny-option,
+div[class*="-menu"],
+div[class*="MenuList"] {
+    background-color: #FFFFFF !important;
+    color: #003580 !important;
+}
+
+div[class*="-option"],
+div[class*="Option"] {
+    background-color: #FFFFFF !important;
+    color: #003580 !important;
+    padding: 8px 12px !important;
+}
+
+div[class*="-option"]:hover,
+div[class*="Option"]:hover {
+    background-color: #FFF9E6 !important;
+    color: #003580 !important;
+}
+
+/* All possible dropdown menu selectors */
+.VirtualizedSelectOption {
+    background-color: #FFFFFF !important;
+    color: #003580 !important;
+}
+
+.VirtualizedSelectFocusedOption {
+    background-color: #FFF9E6 !important;
+    color: #003580 !important;
+}
+
+/* Nuclear option - target ALL dropdown-related divs */
+div[id*="schedule-time"] div {
+    background-color: #FFFFFF !important;
+    color: #003580 !important;
+}
+
+div[id*="schedule-time"] div:hover {
+    background-color: #FFF9E6 !important;
+}
+
+/* Specific styling for time-dropdown class */
+/* Selected value display (when dropdown is closed) */
+.time-dropdown .Select-control {
+    background-color: #FFFFFF !important;
+    border: 1px solid #deb522 !important;
+}
+
+.time-dropdown .Select-value {
+    background-color: #FFFFFF !important;
+    padding: 5px 8px !important;
+}
+
+.time-dropdown .Select-value-label {
+    color: #003580 !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    font-family: monospace !important;
+}
+
+.time-dropdown .Select-placeholder {
+    color: #888 !important;
+    font-size: 0.85rem !important;
+}
+
+.time-dropdown .Select-input {
+    color: #003580 !important;
+}
+
+/* Dropdown menu (when open) */
+.time-dropdown .Select-menu-outer {
+    background-color: #FFFFFF !important;
+    border: 2px solid #deb522 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+    max-height: 300px !important;
+    z-index: 10000 !important;
+}
+
+.time-dropdown .Select-menu {
+    max-height: 298px !important;
+    background-color: #FFFFFF !important;
+}
+
+.time-dropdown .Select-option {
+    background-color: #FFFFFF !important;
+    color: #003580 !important;
+    padding: 10px 12px !important;
+    font-size: 0.9rem !important;
+    font-family: monospace !important;
+    cursor: pointer !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+}
+
+.time-dropdown .Select-option:hover,
+.time-dropdown .Select-option.is-focused {
+    background-color: #FFF9E6 !important;
+    color: #003580 !important;
+}
+
+.time-dropdown .Select-option.is-selected {
+    background-color: #deb522 !important;
+    color: #FFFFFF !important;
+    font-weight: 600 !important;
+}
+
+/* Trip card delete button hover */
+.trip-delete-btn:hover {
+    background-color: #dc3545 !important;
+    color: #FFFFFF !important;
+    transform: scale(1.1);
+}
+
+/* Prevent delete button click from triggering card click */
+.trip-delete-btn {
+    z-index: 20 !important;
+}
+
+
+/* Note separator hover effect */
+.note-separator:hover .add-note-between-btn {
+    display: inline-flex !important;
+    align-items: center;
+}
+
+.add-note-between-btn:hover {
+    background-color: #deb522 !important;
+    color: #FFFFFF !important;
+    transform: scale(1.05);
+}
+
+/* Note separator visual hint */
+.note-separator::before {
+    content: '';
+    display: block;
+    height: 2px;
+    background: linear-gradient(to right, transparent, #E0E0E0 20%, #E0E0E0 80%, transparent);
+    margin: 0.25rem 0;
+}
+
+.note-separator:hover::before {
+    background: linear-gradient(to right, transparent, #deb522 20%, #deb522 80%, transparent);
+}
