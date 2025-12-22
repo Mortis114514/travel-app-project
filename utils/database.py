@@ -916,3 +916,113 @@ def get_combined_analytics_data():
         print(f"CRITICAL ERROR in get_combined_analytics_data: {e}")
         # 回傳空 DataFrame 防止整個 App 崩潰
         return pd.DataFrame(columns=['ID', 'Name', 'Lat', 'Long', 'Rating', 'Price', 'Type', 'SubCategory'])
+
+
+# ===== Favorites Helper Functions =====
+# These functions enrich favorites data with full item details
+
+def get_favorite_restaurants_full(user_id: int) -> pd.DataFrame:
+    """
+    Get full restaurant data for user's favorited restaurants
+
+    Args:
+        user_id: User ID from session
+
+    Returns:
+        DataFrame with complete restaurant information
+    """
+    from utils.favorites import get_user_favorites
+
+    favorites = get_user_favorites(user_id, 'restaurant')
+    if not favorites:
+        return pd.DataFrame()
+
+    # Get list of favorited restaurant IDs
+    fav_ids = [f['item_id'] for f in favorites]
+
+    # Query restaurants database for full data
+    with get_db_connection() as conn:
+        placeholders = ','.join('?' * len(fav_ids))
+        query = f"SELECT * FROM restaurants WHERE Restaurant_ID IN ({placeholders})"
+        df = pd.read_sql_query(query, conn, params=fav_ids)
+
+    # Auto-cleanup: Remove favorites for deleted restaurants
+    if len(df) < len(fav_ids):
+        from utils.favorites import remove_favorite
+        found_ids = set(df['Restaurant_ID'].tolist())
+        missing_ids = set(fav_ids) - found_ids
+        for missing_id in missing_ids:
+            remove_favorite(user_id, 'restaurant', missing_id)
+
+    return df
+
+
+def get_favorite_hotels_full(user_id: int) -> pd.DataFrame:
+    """
+    Get full hotel data for user's favorited hotels
+
+    Args:
+        user_id: User ID from session
+
+    Returns:
+        DataFrame with complete hotel information
+    """
+    from utils.favorites import get_user_favorites
+
+    favorites = get_user_favorites(user_id, 'hotel')
+    if not favorites:
+        return pd.DataFrame()
+
+    fav_ids = [f['item_id'] for f in favorites]
+
+    # Hotels are loaded from CSV, so use existing get_all_hotels()
+    all_hotels = get_all_hotels()
+    if all_hotels.empty:
+        return pd.DataFrame()
+
+    # Filter for favorited hotels
+    favorited_hotels = all_hotels[all_hotels['Hotel_ID'].isin(fav_ids)]
+
+    # Auto-cleanup: Remove favorites for hotels no longer in CSV
+    if len(favorited_hotels) < len(fav_ids):
+        from utils.favorites import remove_favorite
+        found_ids = set(favorited_hotels['Hotel_ID'].tolist())
+        missing_ids = set(fav_ids) - found_ids
+        for missing_id in missing_ids:
+            remove_favorite(user_id, 'hotel', missing_id)
+
+    return favorited_hotels
+
+
+def get_favorite_attractions_full(user_id: int) -> pd.DataFrame:
+    """
+    Get full attraction data for user's favorited attractions
+
+    Args:
+        user_id: User ID from session
+
+    Returns:
+        DataFrame with complete attraction information
+    """
+    from utils.favorites import get_user_favorites
+
+    favorites = get_user_favorites(user_id, 'attraction')
+    if not favorites:
+        return pd.DataFrame()
+
+    fav_ids = [f['item_id'] for f in favorites]
+
+    with get_db_connection() as conn:
+        placeholders = ','.join('?' * len(fav_ids))
+        query = f"SELECT * FROM attractions WHERE ID IN ({placeholders})"
+        df = pd.read_sql_query(query, conn, params=fav_ids)
+
+    # Auto-cleanup: Remove favorites for deleted attractions
+    if len(df) < len(fav_ids):
+        from utils.favorites import remove_favorite
+        found_ids = set(df['ID'].tolist())
+        missing_ids = set(fav_ids) - found_ids
+        for missing_id in missing_ids:
+            remove_favorite(user_id, 'attraction', missing_id)
+
+    return df

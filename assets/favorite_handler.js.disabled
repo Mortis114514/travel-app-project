@@ -1,0 +1,56 @@
+// Prevent favorite button clicks from propagating to parent card
+console.log('favorite_handler.js loaded successfully!');
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM Content Loaded - setting up favorite button handlers');
+
+    setupCardHandlers();
+
+    // Also set up a MutationObserver to handle dynamically added cards
+    const observer = new MutationObserver(function(mutations) {
+        setupCardHandlers();
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+
+    console.log('Card event handlers registered with MutationObserver');
+});
+
+function setupCardHandlers() {
+    // Find all clickable cards (elements with restaurant-card, hotel-card, attraction-card IDs)
+    const cards = document.querySelectorAll('[id*="-card"]');
+
+    cards.forEach(function(card) {
+        // Check if we already added the handler
+        if (!card.hasAttribute('data-fav-handler-attached')) {
+            // Use BUBBLING phase to catch clicks AFTER they've been handled by child elements (including Dash)
+            card.addEventListener('click', function(e) {
+                // Check if the click originated from a favorite button
+                let target = e.target;
+                while (target && target !== card) {
+                    if (target.classList && target.classList.contains('card-favorite-btn')) {
+                        console.log('FAVORITE BUTTON CLICKED - Dash handled, now stopping card navigation');
+                        e.stopPropagation(); // Stop bubbling so card's parent handlers don't fire
+                        e.preventDefault(); // Also prevent default to stop card navigation
+                        return; // Exit early
+                    }
+                    target = target.parentElement;
+                }
+            }, false); // BUBBLING phase - runs after button handlers (Dash gets the click first)
+
+            card.setAttribute('data-fav-handler-attached', 'true');
+        }
+    });
+
+    console.log('Attached bubbling handlers to ' + cards.length + ' cards');
+}
+
+// Also try to set up handlers after a short delay in case DOM isn't ready
+setTimeout(function() {
+    console.log('Delayed setup check...');
+    const favoriteButtons = document.querySelectorAll('.card-favorite-btn');
+    console.log('Found ' + favoriteButtons.length + ' favorite buttons');
+}, 1000);

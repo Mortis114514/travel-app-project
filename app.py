@@ -1,4 +1,7 @@
 # Import 所有相關套件
+print("=" * 80, flush=True)
+print("APP.PY IS LOADING...", flush=True)
+print("=" * 80, flush=True)
 import os
 import warnings
 
@@ -51,14 +54,18 @@ from utils.database import (
     get_unique_hotel_types,
     get_nearby_hotels,
     get_hotels_by_type,
-    get_random_top_attractions, 
-    search_attractions, 
+    get_random_top_attractions,
+    search_attractions,
     get_unique_attraction_types,
     get_attraction_by_id,
     get_combined_analytics_data,
-    get_unique_attraction_types, 
+    get_unique_attraction_types,
+    get_db_connection,
     get_attraction_by_id,
-    get_all_attractions
+    get_all_attractions,
+    get_favorite_restaurants_full,
+    get_favorite_hotels_full,
+    get_favorite_attractions_full
 )
 
 
@@ -245,12 +252,12 @@ def get_random_image_from_folder(folder):
     else:
         return '/assets/Hazuki.jpg'  # 默認圖片
 
-def create_destination_card(restaurant, id_type='restaurant-card'): # <--- [修正] 加入參數
-    """創建目的地卡片 (修正版：支援自定義 ID 類型)"""
+def create_destination_card(restaurant, id_type='restaurant-card', is_favorited=False):
+    """創建目的地卡片 (修正版：支援自定義 ID 類型和收藏狀態)"""
 
     card_content = html.Div([
         html.Div([
-            html.Img(src=get_random_image_from_folder('Food'), className='card-image')
+            html.Img(src=get_random_image_from_folder('Food'), className='card-image'),
         ], className='card-image-section'),
 
         html.Div([
@@ -268,30 +275,142 @@ def create_destination_card(restaurant, id_type='restaurant-card'): # <--- [修�
         ], className='card-content-section')
     ], className='destination-card')
 
-    # [修正] 使用傳入的 id_type，而不是寫死的字串
-    return html.Div(
-        card_content,
-        id={'type': id_type, 'index': restaurant['Restaurant_ID']},
-        n_clicks=0,
-        style={'cursor': 'pointer'}
+    # Wrap card and button as siblings in a container
+    # Button is positioned absolutely over the card, but NOT a child of the card
+    return html.Div([
+        # The clickable card
+        html.Div(
+            card_content,
+            id={'type': id_type, 'index': restaurant['Restaurant_ID']},
+            n_clicks=0,
+            style={'cursor': 'pointer'}
+        ),
+        # Heart button as sibling, positioned over card
+        html.Button(
+            html.I(
+                className='fas fa-heart' if is_favorited else 'far fa-heart',
+                style={'fontSize': '1.2rem'}
+            ),
+            id={'type': 'favorite-btn', 'item-type': 'restaurant', 'index': restaurant['Restaurant_ID']},
+            n_clicks=0,
+            className='card-favorite-btn',
+            style={
+                'position': 'absolute',
+                'top': '12px',
+                'right': '12px',
+                'backgroundColor': 'rgba(255, 255, 255, 0.9)',
+                'border': 'none',
+                'borderRadius': '50%',
+                'width': '40px',
+                'height': '40px',
+                'display': 'flex',
+                'alignItems': 'center',
+                'justifyContent': 'center',
+                'cursor': 'pointer',
+                'boxShadow': '0 2px 8px rgba(0,0,0,0.15)',
+                'transition': 'all 0.2s ease',
+                'color': '#deb522' if is_favorited else '#888888',
+                'zIndex': '10'
+            }
+        )
+    ], style={'position': 'relative'}  # Container needs position: relative for absolute positioning
     )
+
+def get_trip_image_by_id(trip_id):
+    """Get a deterministic image based on trip_id"""
+    trip_images = [
+        'cosmin-georgian-gd3ysFyrsTQ-unsplash.jpg',
+        'kristin-wilson-wJvUBkLU0pA-unsplash.jpg',
+        'redd-francisco-Bxzrd0p6yOM-unsplash.jpg',
+        'romeo-a-SlIl9eZjWUc-unsplash.jpg',
+        'su-san-lee-E_eWwM29wfU-unsplash.jpg'
+    ]
+    # Use trip_id to deterministically select an image
+    index = trip_id % len(trip_images)
+    return f'/assets/savedtrip/{trip_images[index]}'
 
 def create_saved_trip_card(trip_data):
     """創建已存行程卡片"""
+    # Prepare cost and notes indicators
+    total_cost = trip_data.get('total_cost')
+    has_notes = trip_data.get('has_notes', False)
+
+    # Build meta items list
+    meta_items = [
+        html.Span([html.I(className='fas fa-calendar'), f" {trip_data['duration']}"]),
+        html.Span([html.I(className='fas fa-map-marker-alt'), f" {trip_data['location']}"])
+    ]
+
+    # Add cost badge if exists
+    if total_cost:
+        meta_items.append(
+            html.Span([
+                html.I(className='fas fa-yen-sign', style={'marginRight': '4px'}),
+                f"¥{int(total_cost):,}"
+            ], style={'color': '#10B981', 'fontWeight': '600'})
+        )
+
+    # Add notes indicator if exists
+    if has_notes:
+        meta_items.append(
+            html.Span([
+                html.I(className='fas fa-sticky-note', style={'marginRight': '4px'}),
+                "Has notes"
+            ], style={'color': '#deb522', 'fontSize': '0.85rem'})
+        )
+
     return html.Div([
-        html.Img(
-            src='/assets/food_dirtyrice.png',
-            className='trip-card-image'
+        # Delete button (top right)
+        html.Button(
+            html.I(className='fas fa-trash-alt'),
+            id={'type': 'delete-trip-btn', 'index': trip_data['trip_id']},
+            n_clicks=0,
+            className='trip-delete-btn',
+            style={
+                'position': 'absolute',
+                'top': '10px',
+                'right': '10px',
+                'backgroundColor': 'rgba(255, 255, 255, 0.9)',
+                'border': 'none',
+                'borderRadius': '50%',
+                'width': '35px',
+                'height': '35px',
+                'cursor': 'pointer',
+                'display': 'flex',
+                'alignItems': 'center',
+                'justifyContent': 'center',
+                'color': '#dc3545',
+                'fontSize': '0.9rem',
+                'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
+                'zIndex': '10',
+                'transition': 'all 0.2s ease'
+            }
         ),
+        # Clickable card content wrapper
         html.Div([
-            html.Div(trip_data['title'], className='trip-card-title'),
-            html.Div(trip_data['description'], className='trip-card-description'),
+            html.Img(
+                src=get_trip_image_by_id(trip_data['trip_id']),
+                className='trip-card-image',
+                style={
+                    'width': '100%',
+                    'height': '180px',
+                    'objectFit': 'cover',
+                    'objectPosition': 'center',
+                    'borderRadius': '12px 12px 0 0'
+                }
+            ),
             html.Div([
-                html.Span([html.I(className='fas fa-calendar'), trip_data['duration']]),
-                html.Span([html.I(className='fas fa-map-marker-alt'), trip_data['location']])
-            ], className='trip-card-meta')
-        ], className='trip-card-content')
-    ], className='saved-trip-card')
+                html.Div(trip_data['title'], className='trip-card-title'),
+                html.Div(trip_data['description'], className='trip-card-description'),
+                html.Div(meta_items, className='trip-card-meta')
+            ], className='trip-card-content')
+        ],
+        id={'type': 'saved-trip-card', 'index': trip_data['trip_id']},
+        n_clicks=0,
+        style={'cursor': 'pointer'})
+    ],
+    className='saved-trip-card',
+    style={'position': 'relative'})
 
 def create_add_new_card(text="Start planning a new trip..."):
     """創建新增功能卡片"""
@@ -301,6 +420,47 @@ def create_add_new_card(text="Start planning a new trip..."):
         ], className='add-new-icon'),
         html.Div(text, className='add-new-text')
     ], className='add-new-card', id='add-new-trip-btn', n_clicks=0)
+
+def create_toast(message, toast_type='success', toast_id=None):
+    """
+    Create a toast notification
+
+    Args:
+        message: Message to display
+        toast_type: 'success', 'error', 'info'
+        toast_id: Unique ID for the toast
+
+    Returns:
+        html.Div: Toast notification component
+    """
+    from datetime import datetime
+
+    colors = {
+        'success': {'bg': '#10B981', 'icon': 'fa-check-circle'},
+        'error': {'bg': '#EF4444', 'icon': 'fa-exclamation-circle'},
+        'info': {'bg': '#3B82F6', 'icon': 'fa-info-circle'}
+    }
+
+    config = colors.get(toast_type, colors['info'])
+
+    return html.Div([
+        html.Div([
+            html.I(className=f'fas {config["icon"]}',
+                   style={'fontSize': '1.2rem', 'marginRight': '12px'}),
+            html.Span(message, style={'flex': '1', 'fontSize': '0.95rem'})
+        ], style={
+            'display': 'flex',
+            'alignItems': 'center',
+            'backgroundColor': config['bg'],
+            'color': '#FFFFFF',
+            'padding': '14px 18px',
+            'borderRadius': '8px',
+            'boxShadow': '0 4px 12px rgba(0,0,0,0.25)',
+            'animation': 'slideInRight 0.3s ease-out',
+            'minWidth': '300px'
+        })
+    ], id={'type': 'toast', 'index': toast_id or str(datetime.now().timestamp())},
+       style={'marginBottom': '10px'})
 
 def create_compound_search_bar():
     """創建優化的複合式搜尋欄（帶即時建議和進階篩選）"""
@@ -616,7 +776,7 @@ def create_image_gallery(folder='Food'):
         dcc.Store(id='gallery-layer-toggle', data=False)
     ])
 
-def create_detail_hero(data):
+def create_detail_hero(data, is_favorited=False):
     """創建餐廳詳細頁面的 Hero 區域（大圖和主要資訊）"""
     # 生成星星評分
     rating = data.get('TotalRating', 0)
@@ -717,20 +877,23 @@ def create_detail_hero(data):
                     }),
 
                     html.Button([
-                        html.I(className='fas fa-heart', style={'marginRight': '6px'}),
-                        'Add to Favorites'
-                    ], id='favorite-button', n_clicks=0, style={
-                        'backgroundColor': 'rgba(255, 255, 255, 0.25)',
+                        html.I(className='fas fa-heart' if is_favorited else 'far fa-heart', style={'marginRight': '6px'}),
+                        'Remove from Favorites' if is_favorited else 'Add to Favorites'
+                    ], id={'type': 'favorite-btn', 'item-type': 'restaurant', 'index': data.get('Restaurant_ID', 0)},
+                    n_clicks=0, style={
+                        'backgroundColor': '#deb522' if is_favorited else 'rgba(255, 255, 255, 0.25)',
                         'backdropFilter': 'blur(10px)',
-                        'border': '1.5px solid rgba(255, 255, 255, 0.5)',
-                        'color': '#FFFFFF',
+                        'border': f"1.5px solid {'#deb522' if is_favorited else 'rgba(255, 255, 255, 0.5)'}",
+                        'color': '#FFFFFF' if is_favorited else '#1a1a1a',
                         'padding': '8px 16px',
                         'borderRadius': '20px',
                         'fontSize': '1rem',
                         'fontWeight': '500',
                         'cursor': 'pointer',
-                        'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)',
-                        'transition': 'all 0.3s ease'
+                        'boxShadow': '0 4px 12px rgba(222, 181, 34, 0.4)' if is_favorited else '0 2px 8px rgba(0, 0, 0, 0.2)',
+                        'transition': 'all 0.3s ease',
+                        'zIndex': '100',
+                        'position': 'relative'
                     })
                 ], style={
                     'display': 'flex', 
@@ -744,8 +907,8 @@ def create_detail_hero(data):
             'left': '2rem',
             'right': '2rem',
             'maxWidth': '1400px',
-            'margin': '0 auto',
-            'pointerEvents': 'none'  # 讓文字不阻擋按鈕點擊
+            'margin': '0 auto'
+            # Removed pointerEvents: none to allow button clicks
         })
     ], style={
         'position': 'relative',
@@ -1214,7 +1377,7 @@ def create_restaurant_detail_page(restaurant_id):
         ])
     ], style={'backgroundColor': '#F2F6FA', 'minHeight': '100vh'})
 
-def create_restaurant_detail_content(data):
+def create_restaurant_detail_content(data, is_favorited=False):
     """根據餐廳數據創建詳細頁面內容
 
     此函數由 callback 調用，用於填充實際數據
@@ -1226,7 +1389,7 @@ def create_restaurant_detail_content(data):
         return create_error_state(data.get('error', 'An error occurred'))
 
     return html.Div([
-        create_detail_hero(data),
+        create_detail_hero(data, is_favorited=is_favorited),
         html.Div([
             html.Div([
                 create_location_section(data),
@@ -1250,18 +1413,447 @@ def create_restaurant_detail_content(data):
     ])
 
 
-def create_trip_layout():
-    """創建 "Create Trip" 頁面佈局 - 功能開發中"""
+def create_draggable_favorite_item(fav):
+    """Create a draggable favorite item with grip handle and detailed info"""
+    icon_map = {
+        'restaurant': 'fas fa-utensils',
+        'hotel': 'fas fa-hotel',
+        'attraction': 'fas fa-map-marker-alt'
+    }
+
+    # Extract additional info from item_data
+    item_data = fav.get('item_data', {}) or {}
+    rating = item_data.get('rating', None)
+
+    # Determine secondary info based on item type with pipe format
+    if fav['item_type'] == 'restaurant':
+        category = item_data.get('category', '')
+        secondary_info = f"Restaurant | {category}" if category else 'Restaurant'
+    elif fav['item_type'] == 'hotel':
+        hotel_type = item_data.get('type', '')
+        secondary_info = f"Hotel | {hotel_type}" if hotel_type else 'Hotel'
+    elif fav['item_type'] == 'attraction':
+        attraction_type = item_data.get('type', '')
+        secondary_info = f"Attraction | {attraction_type}" if attraction_type else 'Attraction'
+    else:
+        secondary_info = fav['item_type'].capitalize()
+
+    # Create rating stars display
+    rating_display = []
+    if rating:
+        try:
+            rating_num = float(rating)
+            # Show rating with star
+            rating_display = [
+                html.Span([
+                    html.I(className='fas fa-star', style={'color': '#deb522', 'fontSize': '0.75rem', 'marginRight': '4px'}),
+                    html.Span(f"{rating_num:.1f}", style={'fontWeight': '600', 'color': '#deb522'})
+                ], style={'marginRight': '8px', 'display': 'inline-flex', 'alignItems': 'center'})
+            ]
+        except (ValueError, TypeError):
+            pass
+
     return html.Div([
         html.Div([
+            html.I(className=icon_map.get(fav['item_type'], 'fas fa-map-pin'),
+                   style={'marginRight': '0.75rem', 'color': '#deb522', 'fontSize': '1.1rem'}),
             html.Div([
-                # Back button and title
+                html.Div(fav['item_name'], style={'fontWeight': '500', 'color': '#003580', 'fontSize': '0.95rem', 'marginBottom': '4px'}),
+                html.Div([
+                    *rating_display,
+                    html.Span(secondary_info, style={'color': '#888'})
+                ], style={'fontSize': '0.8rem', 'display': 'flex', 'alignItems': 'center'})
+            ], style={'flex': '1'}),
+            html.I(className='fas fa-grip-vertical', style={'color': '#ccc'})
+        ], style={'display': 'flex', 'alignItems': 'center', 'width': '100%'})
+    ],
+    id={'type': 'draggable-fav', 'item-type': fav['item_type'], 'item-id': fav['item_id']},
+    draggable='true',
+    **{
+        'data-item-type': fav['item_type'],
+        'data-item-id': str(fav['item_id']),
+        'data-item-name': fav['item_name']
+    },
+    style={
+        'padding': '0.75rem',
+        'marginBottom': '0.5rem',
+        'backgroundColor': '#F8F9FA',
+        'border': '2px solid #E8ECEF',
+        'borderRadius': '8px',
+        'cursor': 'grab',
+        'transition': 'all 0.2s ease',
+        'userSelect': 'none'
+    },
+    className='draggable-item')
+
+
+def create_day_drop_zone(day_number, items_for_day=[]):
+    """Create a drop zone for a specific day with items"""
+    print(f"[CREATE_DROP_ZONE] Day {day_number}: Received {len(items_for_day)} items")
+    print(f"[CREATE_DROP_ZONE] Items: {items_for_day}")
+
+    # Create item cards for this day (sorted by time if available)
+    item_elements = []
+
+    # Sort items by time (items without time go to end)
+    # Use 'or' to handle None values from database
+    sorted_items = sorted(items_for_day, key=lambda x: x.get('time') or '99:99')
+
+    for idx, item in enumerate(sorted_items):
+        icon_map = {
+            'restaurant': 'fas fa-utensils',
+            'hotel': 'fas fa-hotel',
+            'attraction': 'fas fa-map-marker-alt'
+        }
+
+        # Get item metadata to display category/type
+        item_type = item['item_type']
+        item_id = item['item_id']
+
+        # Special handling for note items
+        if item_type == 'note':
+            note_card = html.Div([
+                html.Div([
+                    html.I(className='fas fa-sticky-note', style={'marginRight': '0.75rem', 'color': '#deb522', 'fontSize': '1rem'}),
+                    dcc.Textarea(
+                        id={'type': 'standalone-note', 'day': day_number, 'note-id': item_id},
+                        value=item.get('notes', ''),
+                        placeholder='Type your note here...',
+                        style={
+                            'flex': '1',
+                            'padding': '8px',
+                            'fontSize': '0.9rem',
+                            'border': '1px solid #ddd',
+                            'borderRadius': '4px',
+                            'resize': 'vertical',
+                            'minHeight': '50px',
+                            'fontFamily': 'inherit',
+                            'fontStyle': 'italic'
+                        }
+                    ),
+                    html.Button(
+                        html.I(className='fas fa-times'),
+                        id={'type': 'remove-note', 'day': day_number, 'note-id': item_id},
+                        style={
+                            'backgroundColor': 'transparent',
+                            'border': 'none',
+                            'color': '#dc3545',
+                            'cursor': 'pointer',
+                            'padding': '0.5rem',
+                            'fontSize': '0.9rem',
+                            'marginLeft': '0.5rem'
+                        }
+                    )
+                ], style={'display': 'flex', 'alignItems': 'flex-start'})
+            ], style={
+                'padding': '0.75rem',
+                'marginBottom': '0.5rem',
+                'backgroundColor': '#FFFEF0',
+                'border': '1px solid #deb522',
+                'borderRadius': '6px',
+                'borderLeft': '4px solid #deb522'
+            })
+            item_elements.append(note_card)
+            continue  # Skip regular item rendering
+
+        rating = None
+        type_info = None
+
+        # Fetch metadata based on item type
+        if item_type == 'restaurant':
+            rest_data = get_restaurant_by_id(item_id)
+            if rest_data:
+                rating = rest_data.get('TotalRating')
+                category = rest_data.get('FirstCategory', '')
+                type_info = f"Restaurant | {category}" if category else 'Restaurant'
+        elif item_type == 'hotel':
+            from utils.database import get_hotel_by_id
+            hotel_data = get_hotel_by_id(item_id)
+            if hotel_data:
+                rating = hotel_data.get('Rating')
+                hotel_types = hotel_data.get('Types', [])
+
+                # Debug logging
+                print(f"[SCHEDULE HOTEL TYPE DEBUG] Hotel ID: {item_id}, Types: {hotel_types}, Type: {type(hotel_types)}")
+
+                # Filter out generic types and get the most specific one
+                generic_types = ['lodging', 'point_of_interest', 'establishment', 'place_of_worship']
+                meaningful_types = []
+
+                if isinstance(hotel_types, list):
+                    meaningful_types = [t for t in hotel_types if t not in generic_types]
+                elif isinstance(hotel_types, str):
+                    types_list = [t.strip() for t in hotel_types.split(',')]
+                    meaningful_types = [t for t in types_list if t not in generic_types]
+
+                # Use the first meaningful type, or default to 'Accommodation'
+                if meaningful_types:
+                    hotel_type = meaningful_types[0].replace('_', ' ').title()
+                else:
+                    hotel_type = 'Accommodation'
+
+                type_info = f"Hotel | {hotel_type}" if hotel_type else 'Hotel'
+        elif item_type == 'attraction':
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM attractions WHERE ID = ?", (item_id,))
+                row = cursor.fetchone()
+                if row:
+                    attr_data = dict(row)
+                    rating = attr_data.get('Rating')
+                    attr_type = attr_data.get('Type', '')
+                    type_info = f"Attraction | {attr_type}" if attr_type else 'Attraction'
+
+        if not type_info:
+            type_info = item_type.capitalize()
+
+        # Create rating display
+        rating_span = []
+        if rating:
+            try:
+                rating_num = float(rating)
+                rating_span = [
+                    html.Span([
+                        html.I(className='fas fa-star', style={'color': '#deb522', 'fontSize': '0.7rem', 'marginRight': '3px'}),
+                        html.Span(f"{rating_num:.1f}", style={'fontWeight': '600', 'color': '#deb522', 'marginRight': '6px'})
+                    ], style={'display': 'inline-flex', 'alignItems': 'center'})
+                ]
+            except (ValueError, TypeError):
+                pass
+
+        item_card = html.Div([
+            # Top row: Time, Cost, Item details, Remove button
+            html.Div([
+                # Time dropdown
+                html.Div([
+                    dcc.Dropdown(
+                        id={'type': 'schedule-time', 'day': day_number, 'item-id': item['item_id'], 'item-type': item['item_type']},
+                        options=[
+                            {'label': f'{h:02d}:{m:02d}', 'value': f'{h:02d}:{m:02d}'}
+                            for h in range(6, 24)  # 06:00 to 23:45
+                            for m in [0, 15, 30, 45]
+                        ],
+                        value=item.get('time', None),
+                        placeholder='Time',
+                        clearable=True,
+                        searchable=False,
+                        className='time-dropdown',
+                        optionHeight=35,
+                        style={
+                            'width': '110px',
+                            'fontSize': '0.85rem',
+                            'fontFamily': 'monospace',
+                            'color': '#003580'
+                        }
+                    )
+                ], style={'marginRight': '0.5rem'}),
+
+                # Cost input
+                html.Div([
+                    dcc.Input(
+                        id={'type': 'schedule-cost', 'day': day_number, 'item-id': item['item_id'], 'item-type': item['item_type']},
+                        type='number',
+                        value=item.get('cost', None),
+                        placeholder='¥',
+                        min=0,
+                        step=100,
+                        style={
+                            'width': '90px',
+                            'padding': '6px 8px',
+                            'fontSize': '0.85rem',
+                            'border': '1px solid #ccc',
+                            'borderRadius': '4px',
+                            'textAlign': 'right'
+                        }
+                    )
+                ], style={'marginRight': '0.75rem'}),
+
+                # Item details
+                html.Div([
+                    html.I(className=icon_map.get(item['item_type'], 'fas fa-map-pin'),
+                           style={'marginRight': '0.75rem', 'color': '#deb522'}),
+                    html.Div([
+                        html.Div(item['item_name'], style={'fontWeight': '500', 'color': '#003580', 'fontSize': '0.95rem'}),
+                        html.Div([
+                            *rating_span,
+                            html.Span(type_info, style={'color': '#888'})
+                        ], style={'fontSize': '0.75rem', 'marginTop': '2px', 'display': 'flex', 'alignItems': 'center'})
+                    ], style={'flex': '1'}),
+                    html.Button(
+                        html.I(className='fas fa-times'),
+                        id={'type': 'remove-from-schedule', 'day': day_number, 'item-id': item['item_id'], 'item-type': item['item_type']},
+                        style={
+                            'backgroundColor': 'transparent',
+                            'border': 'none',
+                            'color': '#dc3545',
+                            'cursor': 'pointer',
+                            'padding': '0.25rem 0.5rem',
+                            'fontSize': '0.9rem'
+                        }
+                    )
+                ], style={'display': 'flex', 'alignItems': 'center', 'flex': '1'})
+            ], style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '0.5rem'}),
+
+            # Bottom row: Notes input
+            html.Div([
+                dcc.Textarea(
+                    id={'type': 'schedule-notes', 'day': day_number, 'item-id': item['item_id'], 'item-type': item['item_type']},
+                    value=item.get('notes', ''),
+                    placeholder='Add notes... (e.g., "Try the ramen", "Bring camera", "Reserve in advance")',
+                    style={
+                        'width': '100%',
+                        'padding': '6px 8px',
+                        'fontSize': '0.85rem',
+                        'border': '1px solid #ddd',
+                        'borderRadius': '4px',
+                        'resize': 'vertical',
+                        'minHeight': '40px',
+                        'fontFamily': 'inherit'
+                    }
+                )
+            ])
+        ], style={
+            'padding': '0.75rem',
+            'marginBottom': '0.5rem',
+            'backgroundColor': '#F0F8FF',
+            'border': '1px solid #B8D4E8',
+            'borderRadius': '6px'
+        })
+        item_elements.append(item_card)
+
+        # Add separator with "+ Add note" button after each item (except the last one)
+        if idx < len(items_for_day) - 1:
+            item_elements.append(html.Div([
+                html.Button([
+                    html.I(className='fas fa-plus', style={'marginRight': '0.5rem', 'fontSize': '0.8rem'}),
+                    'Add note'
+                ],
+                id={'type': 'add-note-btn', 'day': day_number, 'position': idx + 1},
+                n_clicks=0,
+                className='add-note-between-btn',
+                style={
+                    'display': 'none',  # Hidden by default
+                    'padding': '0.35rem 0.75rem',
+                    'backgroundColor': '#FFFFFF',
+                    'border': '1px solid #deb522',
+                    'borderRadius': '4px',
+                    'color': '#deb522',
+                    'cursor': 'pointer',
+                    'fontSize': '0.8rem',
+                    'fontWeight': '500',
+                    'transition': 'all 0.2s ease'
+                })
+            ], className='note-separator', style={
+                'padding': '0.5rem 0',
+                'textAlign': 'center',
+                'cursor': 'pointer'
+            }))
+
+    # Empty state
+    if not item_elements:
+        item_elements = [html.Div(
+            'Drop places here',
+            style={
+                'padding': '2rem',
+                'textAlign': 'center',
+                'color': '#ccc',
+                'fontStyle': 'italic',
+                'border': '2px dashed #E0E0E0',
+                'borderRadius': '8px'
+            }
+        )]
+
+    return html.Div([
+        html.Div(f'Day {day_number}', style={
+            'fontWeight': '600',
+            'color': '#003580',
+            'marginBottom': '0.75rem',
+            'fontSize': '1.1rem'
+        }),
+        html.Div(
+            item_elements,
+            id={'type': 'day-drop-zone', 'day': day_number},
+            **{'data-day': str(day_number)},
+            style={
+                'minHeight': '120px',
+                'padding': '0.75rem',
+                'backgroundColor': '#FAFBFC',
+                'borderRadius': '8px',
+                'border': '2px dashed #D0D5DD'
+            },
+            className='drop-zone'
+        )
+    ], style={'marginBottom': '1.5rem'})
+
+
+def create_trip_layout(session_data=None, edit_trip_id=None):
+    """
+    New Create Trip layout with drag-and-drop interface
+
+    Structure:
+    - Top: Trip information form
+    - Bottom: Two-column layout
+      - Left (40%): Draggable favorites categorized
+      - Right (60%): Timeline with drop zones for each day
+    - Bottom: Save button
+
+    Args:
+        session_data: User session data
+        edit_trip_id: If provided, load this trip for editing
+    """
+    from utils.favorites import get_user_favorites
+    from utils.auth import get_session
+    from utils.trips import get_trip_by_id, get_trip_items
+
+    # Get user's favorites
+    user_id = None
+    if session_data and 'session_id' in session_data:
+        user_id = get_session(session_data['session_id'])
+
+    # Load trip data if editing
+    trip_name = ''
+    start_date = None
+    end_date = None
+    description = ''
+    existing_items = []
+
+    initial_schedule = {}
+    if edit_trip_id:
+        trip = get_trip_by_id(edit_trip_id)
+        if trip:
+            trip_name = trip['trip_name']
+            start_date = trip['start_date']
+            end_date = trip['end_date']
+            description = trip.get('description', '')
+            existing_items = get_trip_items(edit_trip_id)
+
+            # Convert existing items to schedule format
+            # Schedule format: { "1": [...items...], "2": [...items...] }
+            for item in existing_items:
+                day_str = str(item['day_number'])
+                if day_str not in initial_schedule:
+                    initial_schedule[day_str] = []
+                initial_schedule[day_str].append({
+                    'item_type': item['item_type'],
+                    'item_id': item['item_id'],
+                    'item_name': item['item_name'],
+                    'time': item.get('time', '')
+                })
+
+            print(f"[EDIT MODE] Loading trip {edit_trip_id}: {trip_name}")
+            print(f"[EDIT MODE] Loaded {len(existing_items)} items across {len(initial_schedule)} days")
+            print(f"[EDIT MODE] Initial schedule: {initial_schedule}")
+
+    return html.Div([
+        # Header
+        html.Div([
+            html.Div([
                 html.Div([
                     html.Button([
                         html.I(className='fas fa-arrow-left'),
                         html.Span('Back', style={'marginLeft': '8px'})
-                    ], id={'type': 'back-btn', 'index': 'create-trip'}, className='btn-back', n_clicks=0),
-                    html.H1('Create Your Trip', style={
+                    ], id={'type': 'back-btn', 'index': 'create-trip'}, className='btn-back'),
+                    html.H1('Edit Your Trip' if edit_trip_id else 'Create Your Trip', style={
                         'color': '#003580',
                         'marginLeft': '2rem',
                         'fontSize': '2rem',
@@ -1272,7 +1864,7 @@ def create_trip_layout():
                 'display': 'flex',
                 'justifyContent': 'space-between',
                 'alignItems': 'center',
-                'maxWidth': '1400px',
+                'maxWidth': '1600px',
                 'margin': '0 auto',
                 'padding': '1.5rem 2rem'
             })
@@ -1284,26 +1876,497 @@ def create_trip_layout():
             'zIndex': '1000'
         }),
 
+        # Main content
         html.Div([
-            # Main content area
-            html.Div("功能開發中...", style={
-                'textAlign': 'center',
-                'marginTop': '5rem',
-                'fontSize': '1.5rem',
-                'color': '#6c757d'
-            })
-        ], className='page-content', style={'padding': '2rem'})
+            html.Div([
+                # Top Section: Trip Info Form
+                html.Div([
+                    html.H2('Trip Information', style={
+                        'color': '#003580',
+                        'fontSize': '1.5rem',
+                        'fontWeight': '600',
+                        'marginBottom': '1.5rem'
+                    }),
+
+                    html.Div([
+                        # Trip Name
+                        html.Div([
+                            html.Label('Trip Name *', style={'fontWeight': '500', 'marginBottom': '0.5rem', 'display': 'block'}),
+                            dcc.Input(
+                                id='trip-name-input',
+                                type='text',
+                                value=trip_name,
+                                placeholder='e.g., Kyoto Summer Adventure 2024',
+                                style={
+                                    'width': '100%',
+                                    'padding': '0.75rem',
+                                    'borderRadius': '8px',
+                                    'border': '1px solid #ddd',
+                                    'fontSize': '1rem'
+                                }
+                            )
+                        ], style={'flex': '2', 'marginRight': '1rem'}),
+
+                        # Start Date
+                        html.Div([
+                            html.Label('Start Date *', style={'fontWeight': '500', 'marginBottom': '0.5rem', 'display': 'block'}),
+                            dcc.DatePickerSingle(
+                                id='trip-start-date',
+                                date=start_date,
+                                placeholder='Start date',
+                                display_format='YYYY-MM-DD',
+                                style={'width': '100%'}
+                            )
+                        ], style={'flex': '1', 'marginRight': '1rem'}),
+
+                        # End Date
+                        html.Div([
+                            html.Label('End Date *', style={'fontWeight': '500', 'marginBottom': '0.5rem', 'display': 'block'}),
+                            dcc.DatePickerSingle(
+                                id='trip-end-date',
+                                date=end_date,
+                                placeholder='End date',
+                                display_format='YYYY-MM-DD',
+                                style={'width': '100%'}
+                            )
+                        ], style={'flex': '1'})
+                    ], style={'display': 'flex', 'marginBottom': '1rem'}),
+
+                    # Description
+                    html.Div([
+                        html.Label('Description (Optional)', style={'fontWeight': '500', 'marginBottom': '0.5rem', 'display': 'block'}),
+                        dcc.Textarea(
+                            id='trip-description-input',
+                            value=description,
+                            placeholder='Add any notes or details about your trip...',
+                            style={
+                                'width': '100%',
+                                'padding': '0.75rem',
+                                'borderRadius': '8px',
+                                'border': '1px solid #ddd',
+                                'fontSize': '1rem',
+                                'minHeight': '80px',
+                                'resize': 'vertical'
+                            }
+                        )
+                    ])
+                ], style={
+                    'backgroundColor': '#FFFFFF',
+                    'padding': '2rem',
+                    'borderRadius': '12px',
+                    'boxShadow': '0 2px 8px rgba(0,0,0,0.1)',
+                    'marginBottom': '2rem'
+                }),
+
+                # Bottom Section: Two-Column Layout
+                html.Div([
+                    # LEFT COLUMN: Draggable Favorites Panel
+                    html.Div([
+                        html.H3('Your Favorites', style={
+                            'color': '#003580',
+                            'fontSize': '1.3rem',
+                            'marginBottom': '1rem'
+                        }),
+                        html.P('Drag places to your itinerary on the right', style={
+                            'color': '#888',
+                            'fontSize': '0.9rem',
+                            'marginBottom': '1rem'
+                        }),
+
+                        # Category filter
+                        html.Div([
+                            html.Button('All', id={'type': 'fav-filter', 'category': 'all'},
+                                      className='filter-chip active-filter', n_clicks=0),
+                            html.Button('Restaurants', id={'type': 'fav-filter', 'category': 'restaurant'},
+                                      className='filter-chip', n_clicks=0),
+                            html.Button('Hotels', id={'type': 'fav-filter', 'category': 'hotel'},
+                                      className='filter-chip', n_clicks=0),
+                            html.Button('Attractions', id={'type': 'fav-filter', 'category': 'attraction'},
+                                      className='filter-chip', n_clicks=0)
+                        ], style={'marginBottom': '1rem', 'display': 'flex', 'gap': '0.5rem', 'flexWrap': 'wrap'}),
+
+                        # Favorites list (populated by callback)
+                        html.Div(
+                            id='draggable-favorites-container',
+                            style={
+                                'maxHeight': '600px',
+                                'overflowY': 'auto',
+                                'overflowX': 'hidden'
+                            }
+                        )
+
+                    ], style={
+                        'flex': '0 0 38%',
+                        'backgroundColor': '#FFFFFF',
+                        'padding': '1.5rem',
+                        'borderRadius': '12px',
+                        'boxShadow': '0 2px 8px rgba(0,0,0,0.1)',
+                        'marginRight': '2%'
+                    }),
+
+                    # RIGHT COLUMN: Timeline with Drop Zones
+                    html.Div([
+                        html.H3('Trip Schedule', style={
+                            'color': '#003580',
+                            'fontSize': '1.3rem',
+                            'marginBottom': '1rem'
+                        }),
+
+                        # Timeline container (populated by callback based on dates)
+                        html.Div(
+                            id='trip-timeline-container',
+                            style={
+                                'maxHeight': '600px',
+                                'overflowY': 'auto'
+                            }
+                        )
+
+                    ], style={
+                        'flex': '0 0 60%',
+                        'backgroundColor': '#FFFFFF',
+                        'padding': '1.5rem',
+                        'borderRadius': '12px',
+                        'boxShadow': '0 2px 8px rgba(0,0,0,0.1)'
+                    })
+
+                ], style={'display': 'flex', 'marginBottom': '2rem'}),
+
+                # Save Button
+                html.Div([
+                    html.Button([
+                        html.I(className='fas fa-save', style={'marginRight': '8px'}),
+                        'Save Trip'
+                    ], id='save-trip-btn', n_clicks=0, style={
+                        'backgroundColor': '#deb522',
+                        'color': '#FFFFFF',
+                        'border': 'none',
+                        'padding': '1rem 2.5rem',
+                        'borderRadius': '8px',
+                        'fontSize': '1.1rem',
+                        'fontWeight': '600',
+                        'cursor': 'pointer',
+                        'boxShadow': '0 4px 12px rgba(222, 181, 34, 0.4)',
+                        'transition': 'all 0.3s ease'
+                    })
+                ], style={'textAlign': 'center'})
+
+            ], style={'maxWidth': '1600px', 'margin': '0 auto'})
+        ], style={'padding': '2rem', 'backgroundColor': '#F2F6FA', 'minHeight': '100vh'}),
+
+        # Hidden stores for tracking items in schedule
+        # Initialize with existing items if editing, otherwise empty
+        dcc.Store(id='trip-schedule-items', data=initial_schedule if edit_trip_id else {}),
+
+        # Store for initial schedule items (for edit mode)
+        dcc.Store(id='trip-initial-schedule', data=initial_schedule, storage_type='memory'),
+
+        # Store for current edit trip ID
+        dcc.Store(id='trip-current-edit-id', data=edit_trip_id, storage_type='memory'),
+
+        # Store for receiving drop events from JavaScript
+        dcc.Store(id='trip-drop-trigger', storage_type='memory', data=None),
+
+        # Interval to poll for drop events (100ms)
+        dcc.Interval(id='drop-poll-interval', interval=100, n_intervals=0),
+
+        # Hidden div for drag setup callback output
+        html.Div(id='drag-setup-complete', style={'display': 'none'}),
+
+        # Hidden div for trip event handler callback output
+        html.Div(id='trip-event-handler-complete', style={'display': 'none'})
     ])
 
-def create_hotel_card(hotel, id_type='hotel-card'): # <--- [修正] 加入參數
-    """創建旅館卡片 (支援自定義 ID 類型)"""
+
+def create_trip_view_layout(trip_id, session_data=None):
+    """
+    Create trip view layout to display an existing trip with all its details
+    """
+    from utils.trips import get_trip_by_id, get_trip_items
+    from utils.auth import get_session
+    from datetime import datetime
+
+    # Verify session
+    if not session_data or 'session_id' not in session_data:
+        return html.Div([
+            html.H2("Please log in to view trips", style={'textAlign': 'center', 'padding': '3rem', 'color': '#888'})
+        ])
+
+    user_id = get_session(session_data['session_id'])
+    if not user_id:
+        return html.Div([
+            html.H2("Session expired", style={'textAlign': 'center', 'padding': '3rem', 'color': '#888'})
+        ])
+
+    # Get trip data
+    trip = get_trip_by_id(trip_id)
+    if not trip:
+        return html.Div([
+            html.H2("Trip not found", style={'textAlign': 'center', 'padding': '3rem', 'color': '#888'}),
+            html.Button([
+                html.I(className='fas fa-arrow-left'),
+                html.Span('Back to Home', style={'marginLeft': '8px'})
+            ], id={'type': 'back-btn', 'index': 'trip-view'}, className='btn-back', n_clicks=0)
+        ], style={'textAlign': 'center'})
+
+    # Get trip items organized by day
+    trip_items = get_trip_items(trip_id)
+
+    # Calculate trip duration
+    try:
+        start = datetime.fromisoformat(trip['start_date'])
+        end = datetime.fromisoformat(trip['end_date'])
+        num_days = (end - start).days + 1
+    except:
+        num_days = 0
+
+    # Organize items by day
+    items_by_day = {}
+    for item in trip_items:
+        day = item['day_number']
+        if day not in items_by_day:
+            items_by_day[day] = []
+        items_by_day[day].append(item)
+
+    # Sort items within each day by time (handle None and empty strings)
+    for day in items_by_day:
+        items_by_day[day].sort(key=lambda x: x.get('time') or '99:99')
+
+    return html.Div([
+        # Header with back, edit, and delete buttons
+        html.Div([
+            html.Div([
+                html.Button([
+                    html.I(className='fas fa-arrow-left'),
+                    html.Span('Back', style={'marginLeft': '8px'})
+                ], id={'type': 'back-btn', 'index': 'trip-view'}, className='btn-back', n_clicks=0),
+                html.Button([
+                    html.I(className='fas fa-edit'),
+                    html.Span('Edit Trip', style={'marginLeft': '8px'})
+                ], id={'type': 'edit-trip-btn', 'index': trip_id}, className='btn-primary', n_clicks=0, style={
+                    'marginLeft': '1rem',
+                    'backgroundColor': '#deb522',
+                    'color': '#FFFFFF',
+                    'border': 'none',
+                    'padding': '0.75rem 1.5rem',
+                    'borderRadius': '8px',
+                    'fontSize': '1rem',
+                    'fontWeight': '600',
+                    'cursor': 'pointer',
+                    'display': 'inline-flex',
+                    'alignItems': 'center',
+                    'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
+                    'transition': 'all 0.3s ease'
+                }),
+            ], style={'display': 'flex', 'alignItems': 'center'}),
+            html.Button([
+                html.I(className='fas fa-trash-alt')
+            ], id={'type': 'delete-trip-btn', 'index': trip_id}, className='btn-danger', n_clicks=0, style={
+                'backgroundColor': '#dc3545',
+                'color': '#FFFFFF',
+                'border': 'none',
+                'padding': '0.75rem 1rem',
+                'borderRadius': '8px',
+                'fontSize': '1rem',
+                'fontWeight': '600',
+                'cursor': 'pointer',
+                'display': 'inline-flex',
+                'alignItems': 'center',
+                'justifyContent': 'center',
+                'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
+                'transition': 'all 0.3s ease',
+                'width': '50px',
+                'height': '50px'
+            }),
+        ], style={'marginBottom': '1.5rem', 'display': 'flex', 'alignItems': 'center', 'justifyContent': 'space-between'}),
+
+        # Trip Title and Info
+        html.Div([
+            html.H1(trip['trip_name'], className='trip-view-title'),
+            html.Div([
+                html.Span([
+                    html.I(className='fas fa-calendar', style={'marginRight': '0.5rem', 'color': '#deb522'}),
+                    f"{trip['start_date']} to {trip['end_date']}"
+                ], style={'marginRight': '2rem', 'fontSize': '1rem', 'color': '#666'}),
+                html.Span([
+                    html.I(className='fas fa-clock', style={'marginRight': '0.5rem', 'color': '#deb522'}),
+                    f"{num_days} Day{'s' if num_days > 1 else ''}"
+                ], style={'fontSize': '1rem', 'color': '#666'})
+            ], style={'marginTop': '0.5rem', 'marginBottom': '1rem'}),
+            html.P(trip.get('description', 'No description'),
+                   style={'color': '#666', 'fontSize': '1.05rem', 'lineHeight': '1.6'})
+        ], style={
+            'backgroundColor': '#FFFFFF',
+            'padding': '2rem',
+            'borderRadius': '12px',
+            'marginBottom': '2rem',
+            'boxShadow': '0 2px 8px rgba(0,0,0,0.1)'
+        }),
+
+        # Schedule by Days
+        html.Div([
+            html.H2('Trip Schedule', style={'color': '#003580', 'marginBottom': '1.5rem'}),
+            html.Div([
+                create_trip_day_view(day, items_by_day.get(day, []))
+                for day in range(1, num_days + 1)
+            ])
+        ])
+    ], className='container', style={'padding': '2rem', 'maxWidth': '1200px', 'margin': '0 auto'})
+
+
+def create_trip_day_view(day_number, items):
+    """Create a day view showing all scheduled items"""
+    from utils.database import get_restaurant_by_id, get_hotel_by_id, get_attraction_by_id
+
+    icon_map = {
+        'restaurant': ('fas fa-utensils', '#e74c3c'),
+        'hotel': ('fas fa-hotel', '#3498db'),
+        'attraction': ('fas fa-map-marker-alt', '#2ecc71')
+    }
+
+    item_cards = []
+    for item in items:
+        item_type = item['item_type']
+        item_id = item['item_id']
+        time_str = item.get('time', '')
+
+        # Special handling for note items
+        if item_type == 'note':
+            notes_text = item.get('notes', '')
+            note_card = html.Div([
+                html.Div([
+                    html.I(className='fas fa-sticky-note', style={'marginRight': '0.75rem', 'color': '#deb522', 'fontSize': '1.2rem'}),
+                    html.Div(notes_text if notes_text else '[Empty note]', style={
+                        'flex': '1',
+                        'color': '#666',
+                        'fontSize': '0.95rem',
+                        'fontStyle': 'italic',
+                        'lineHeight': '1.5'
+                    })
+                ], style={'display': 'flex', 'alignItems': 'flex-start'})
+            ], style={
+                'padding': '1rem 1.25rem',
+                'backgroundColor': '#FFFEF0',
+                'border': '1px solid #deb522',
+                'borderRadius': '8px',
+                'borderLeft': '4px solid #deb522',
+                'marginBottom': '0.75rem'
+            })
+            item_cards.append(note_card)
+            continue
+
+        # Get item details
+        try:
+            if item_type == 'restaurant':
+                details = get_restaurant_by_id(item_id)
+                item_name = details['RestaurantName'] if details else item['item_name']
+            elif item_type == 'hotel':
+                details = get_hotel_by_id(item_id)
+                item_name = details['HotelName'] if details else item['item_name']
+            elif item_type == 'attraction':
+                details = get_attraction_by_id(item_id)
+                item_name = details['Name'] if details else item['item_name']
+            else:
+                item_name = item['item_name']
+        except:
+            item_name = item['item_name']
+
+        icon_class, icon_color = icon_map.get(item_type, ('fas fa-map-pin', '#888'))
+
+        # Get cost and notes
+        cost_value = item.get('cost')
+        notes_text = item.get('notes', '')
+
+        item_card = html.Div([
+            # Top row: Time, Item, Cost
+            html.Div([
+                # Time badge
+                html.Div(
+                    time_str if time_str else '—',
+                    style={
+                        'backgroundColor': '#deb522',
+                        'color': '#FFFFFF',
+                        'padding': '0.5rem 1rem',
+                        'borderRadius': '8px',
+                        'fontWeight': '600',
+                        'fontSize': '1rem',
+                        'fontFamily': 'monospace',
+                        'minWidth': '80px',
+                        'textAlign': 'center'
+                    }
+                ),
+                # Item details
+                html.Div([
+                    html.I(className=icon_class, style={'marginRight': '0.75rem', 'color': icon_color, 'fontSize': '1.2rem'}),
+                    html.Div([
+                        html.Div(item_name, style={'fontWeight': '500', 'color': '#003580', 'fontSize': '1.05rem'}),
+                        html.Div(item_type.capitalize(), style={'color': '#888', 'fontSize': '0.85rem', 'marginTop': '0.25rem'})
+                    ])
+                ], style={'display': 'flex', 'alignItems': 'center', 'flex': '1'}),
+                # Cost badge (if exists)
+                html.Div(
+                    [
+                        html.I(className='fas fa-yen-sign', style={'marginRight': '0.5rem', 'fontSize': '0.9rem'}),
+                        f"¥{int(cost_value):,}" if cost_value else "—"
+                    ],
+                    style={
+                        'backgroundColor': '#10B981',
+                        'color': '#FFFFFF',
+                        'padding': '0.5rem 1rem',
+                        'borderRadius': '8px',
+                        'fontWeight': '600',
+                        'fontSize': '0.95rem',
+                        'minWidth': '100px',
+                        'textAlign': 'center',
+                        'display': 'flex',
+                        'alignItems': 'center',
+                        'justifyContent': 'center'
+                    }
+                ) if cost_value else None
+            ], style={'display': 'flex', 'alignItems': 'center', 'gap': '1.5rem', 'marginBottom': '0.75rem' if notes_text else '0'}),
+            # Notes (if exists)
+            html.Div([
+                html.I(className='fas fa-sticky-note', style={'marginRight': '0.5rem', 'color': '#888', 'fontSize': '0.85rem'}),
+                html.Span(notes_text, style={'color': '#666', 'fontSize': '0.9rem', 'fontStyle': 'italic'})
+            ], style={'paddingLeft': '100px', 'display': 'flex', 'alignItems': 'flex-start'}) if notes_text else None
+        ], style={
+            'padding': '1rem 1.25rem',
+            'backgroundColor': '#F8F9FA',
+            'border': '1px solid #E0E0E0',
+            'borderRadius': '8px',
+            'marginBottom': '0.75rem',
+            'transition': 'all 0.2s ease'
+        })
+        item_cards.append(item_card)
+
+    if not item_cards:
+        item_cards = [html.Div(
+            'No activities planned for this day',
+            style={'padding': '2rem', 'textAlign': 'center', 'color': '#aaa', 'fontStyle': 'italic'}
+        )]
+
+    return html.Div([
+        html.Div([
+            html.H3(f'Day {day_number}', style={'color': '#003580', 'margin': '0'}),
+        ], style={'marginBottom': '1rem'}),
+        html.Div(item_cards)
+    ], style={
+        'backgroundColor': '#FFFFFF',
+        'padding': '1.5rem',
+        'borderRadius': '12px',
+        'marginBottom': '1.5rem',
+        'boxShadow': '0 2px 8px rgba(0,0,0,0.08)'
+    })
+
+
+def create_hotel_card(hotel, id_type='hotel-card', is_favorited=False):
+    """創建旅館卡片 (支援自定義 ID 類型和收藏狀態)"""
     types_text = ', '.join(hotel['Types'][:2]) if isinstance(hotel['Types'], list) and hotel['Types'] else 'Hotel'
     rating = hotel.get('Rating', 0)
     rating_text = f"{rating:.1f}" if rating is not None else "N/A"
 
     card_content = html.Div([
         html.Div([
-            html.Img(src=get_random_image_from_folder('Hotel'), className='card-image')
+            html.Img(src=get_random_image_from_folder('Hotel'), className='card-image'),
         ], className='card-image-section'),
         html.Div([
             html.Div(hotel['HotelName'], className='card-title'),
@@ -1324,12 +2387,42 @@ def create_hotel_card(hotel, id_type='hotel-card'): # <--- [修正] 加入參數
         ], className='card-content-section')
     ], className='destination-card')
 
-    # [修正] 使用傳入的 id_type
-    return html.Div(
-        card_content,
-        id={'type': id_type, 'index': hotel['Hotel_ID']},
-        n_clicks=0,
-        style={'cursor': 'pointer'}
+    # Wrap card and button as siblings
+    return html.Div([
+        html.Div(
+            card_content,
+            id={'type': id_type, 'index': hotel['Hotel_ID']},
+            n_clicks=0,
+            style={'cursor': 'pointer'}
+        ),
+        html.Button(
+            html.I(
+                className='fas fa-heart' if is_favorited else 'far fa-heart',
+                style={'fontSize': '1.2rem'}
+            ),
+            id={'type': 'favorite-btn', 'item-type': 'hotel', 'index': hotel['Hotel_ID']},
+            n_clicks=0,
+            className='card-favorite-btn',
+            style={
+                'position': 'absolute',
+                'top': '12px',
+                'right': '12px',
+                'backgroundColor': 'rgba(255, 255, 255, 0.9)',
+                'border': 'none',
+                'borderRadius': '50%',
+                'width': '40px',
+                'height': '40px',
+                'display': 'flex',
+                'alignItems': 'center',
+                'justifyContent': 'center',
+                'cursor': 'pointer',
+                'boxShadow': '0 2px 8px rgba(0,0,0,0.15)',
+                'transition': 'all 0.2s ease',
+                'color': '#deb522' if is_favorited else '#888888',
+                'zIndex': '10'
+            }
+        )
+    ], style={'position': 'relative'}
     )
 
 def create_hotel_type_options():
@@ -1488,11 +2581,11 @@ def create_hotel_detail_page(hotel_id):
         ])
     ], style={'backgroundColor': '#F2F6FA', 'minHeight': '100vh'})
 
-def create_hotel_detail_content(hotel_data):
+def create_hotel_detail_content(hotel_data, is_favorited=False):
     """根據旅館數據創建詳細頁面內容"""
     if not hotel_data:
         return create_loading_state()
-    
+
     if 'error' in hotel_data:
         return create_error_state(hotel_data.get('error', 'An error occurred'))
     
@@ -1579,23 +2672,26 @@ def create_hotel_detail_content(hotel_data):
                             'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)'
                         }),
                         html.Button([
-                            html.I(className='fas fa-heart', style={'marginRight': '6px'}),
-                            'Add to Favorites'
-                        ], id='favorite-button', n_clicks=0, style={
-                            'backgroundColor': 'rgba(255, 255, 255, 0.25)',
+                            html.I(className='fas fa-heart' if is_favorited else 'far fa-heart', style={'marginRight': '6px'}),
+                            'Remove from Favorites' if is_favorited else 'Add to Favorites'
+                        ], id={'type': 'favorite-btn', 'item-type': 'hotel', 'index': hotel_data.get('Hotel_ID', 0)},
+                        n_clicks=0, style={
+                            'backgroundColor': '#deb522' if is_favorited else 'rgba(255, 255, 255, 0.25)',
                             'backdropFilter': 'blur(10px)',
-                            'border': '1.5px solid rgba(255, 255, 255, 0.5)',
-                            'color': '#FFFFFF',
+                            'border': f"1.5px solid {'#deb522' if is_favorited else 'rgba(255, 255, 255, 0.5)'}",
+                            'color': '#FFFFFF' if is_favorited else '#1a1a1a',
                             'padding': '8px 16px',
                             'borderRadius': '20px',
                             'fontSize': '1rem',
                             'fontWeight': '500',
                             'cursor': 'pointer',
-                            'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)',
-                            'transition': 'all 0.3s ease'
+                            'boxShadow': '0 4px 12px rgba(222, 181, 34, 0.4)' if is_favorited else '0 2px 8px rgba(0, 0, 0, 0.2)',
+                            'transition': 'all 0.3s ease',
+                            'zIndex': '100',
+                            'position': 'relative'
                         })
                     ], style={
-                        'display': 'flex', 
+                        'display': 'flex',
                         'alignItems': 'center',
                         'flexWrap': 'wrap'
                     })
@@ -1606,8 +2702,8 @@ def create_hotel_detail_content(hotel_data):
                 'left': '2rem',
                 'right': '2rem',
                 'maxWidth': '1400px',
-                'margin': '0 auto',
-                'pointerEvents': 'none'
+                'margin': '0 auto'
+                # Removed pointerEvents: none to allow button clicks
             })
         ], style={
             'position': 'relative',
@@ -1615,7 +2711,7 @@ def create_hotel_detail_content(hotel_data):
             'minHeight': '400px',
             'overflow': 'hidden'
         }),
-        
+
         # --- 內容容器 (包含詳細資訊 Grid + 分析圖表) ---
         html.Div([
             # 1. 上半部：詳細資訊 Grid
@@ -1674,8 +2770,8 @@ def create_hotel_detail_content(hotel_data):
 
 # --- Attractions UI Components ---
 
-def create_attraction_card(attr):
-    """建立景點小卡 (樣式與 Hotel/Restaurant 完全一致)"""
+def create_attraction_card(attr, is_favorited=False):
+    """建立景點小卡 (樣式與 Hotel/Restaurant 完全一致，支持收藏狀態)"""
     # 處理 Price Level
     price_level = attr.get('PriceLevel')
     price_display = ''
@@ -1685,7 +2781,7 @@ def create_attraction_card(attr):
             price_display = '💰' * int(p_val)
         except:
             pass
-            
+
     # 使用與 Hotel Card 相同的 CSS class 結構
     card_content = html.Div([
         # 上半部：圖片區
@@ -1693,9 +2789,9 @@ def create_attraction_card(attr):
             html.Img(
                 src=get_random_image_from_folder('Attraction'),
                 className='card-image'
-            )
+            ),
         ], className='card-image-section'),
-        
+
         # 下半部：內容區
         html.Div([
             html.Div(attr['Name'], className='card-title'),
@@ -1703,7 +2799,7 @@ def create_attraction_card(attr):
                 html.Span(attr.get('Type', 'Spot'), className='card-subtitle'),
                 html.Span(price_display, style={'marginLeft': '10px', 'color': '#FBC02D', 'fontSize': '0.9rem'})
             ], style={'marginBottom': '0.5rem'}),
-            
+
             html.Div([
                 html.I(className='fas fa-star'),
                 html.I(className='fas fa-star'),
@@ -1712,20 +2808,51 @@ def create_attraction_card(attr):
                 html.I(className='fas fa-star'),
                 html.Span(f"{attr.get('Rating', 0):.1f}", style={'marginLeft': '5px'})
             ], className='card-rating'),
-            
+
             html.Div([
                 html.I(className='fas fa-map-marker-alt', style={'marginRight': '5px', 'fontSize': '0.8rem'}),
                 html.Span(str(attr.get('Address', ''))[:30] + '...', style={'fontSize': '0.75rem', 'color': '#888'})
             ], style={'marginTop': '5px'})
-            
-        ], className='card-content-section') 
+
+        ], className='card-content-section')
     ], className='destination-card')
 
-    return html.Div(
-        card_content,
-        id={'type': 'attraction-card', 'index': attr['ID']},
-        style={'cursor': 'pointer'},
-        n_clicks=0  # <--- 🚨 關鍵修正：必須加上這一行，點擊才會生效！
+    # Wrap card and button as siblings
+    return html.Div([
+        html.Div(
+            card_content,
+            id={'type': 'attraction-card', 'index': attr['ID']},
+            style={'cursor': 'pointer'},
+            n_clicks=0
+        ),
+        html.Button(
+            html.I(
+                className='fas fa-heart' if is_favorited else 'far fa-heart',
+                style={'fontSize': '1.2rem'}
+            ),
+            id={'type': 'favorite-btn', 'item-type': 'attraction', 'index': attr['ID']},
+            n_clicks=0,
+            className='card-favorite-btn',
+            style={
+                'position': 'absolute',
+                'top': '12px',
+                'right': '12px',
+                'backgroundColor': 'rgba(255, 255, 255, 0.9)',
+                'border': 'none',
+                'borderRadius': '50%',
+                'width': '40px',
+                'height': '40px',
+                'display': 'flex',
+                'alignItems': 'center',
+                'justifyContent': 'center',
+                'cursor': 'pointer',
+                'boxShadow': '0 2px 8px rgba(0,0,0,0.15)',
+                'transition': 'all 0.2s ease',
+                'color': '#deb522' if is_favorited else '#888888',
+                'zIndex': '10'
+            }
+        )
+    ], style={'position': 'relative'}
     )
 
 def create_attraction_search_bar():
@@ -1916,15 +3043,20 @@ def create_attraction_list_page():
 
     ], style={'backgroundColor': '#F2F6FA', 'minHeight': '100vh'})
 
-def create_attraction_detail_page(attr_id):
+def create_attraction_detail_page(attr_id, favorites_cache=None):
     """建立景點詳細頁 (直接載入模式)"""
     # 1. 直接在這裡抓資料！
     print(f"DEBUG: Fetching data directly for Attraction ID: {attr_id}")
     data = get_attraction_by_id(attr_id)
-    
-    # 2. 生成內容
+
+    # 2. Check if this attraction is favorited
+    is_favorited = False
+    if favorites_cache and 'attractions' in favorites_cache and data:
+        is_favorited = data.get('ID') in favorites_cache['attractions']
+
+    # 3. 生成內容
     if data:
-        content = create_attraction_detail_content(data)
+        content = create_attraction_detail_content(data, is_favorited=is_favorited)
     else:
         content = create_error_state("Attraction not found in database")
 
@@ -1955,7 +3087,7 @@ def create_attraction_detail_page(attr_id):
 
     ], style={'backgroundColor': '#F2F6FA', 'minHeight': '100vh'})
 
-def create_attraction_detail_content(data):
+def create_attraction_detail_content(data, is_favorited=False):
     """建立景點詳細內容 (包含超強防呆機制)"""
     # 1. 基礎檢查
     if not data or 'error' in data:
@@ -2086,20 +3218,23 @@ def create_attraction_detail_content(data):
                             'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)'
                         }),
                         html.Button([
-                            html.I(className='fas fa-heart', style={'marginRight': '6px'}),
-                            'Add to Favorites'
-                        ], id='favorite-button-attraction', n_clicks=0, style={
-                            'backgroundColor': 'rgba(255, 255, 255, 0.25)',
+                            html.I(className='fas fa-heart' if is_favorited else 'far fa-heart', style={'marginRight': '6px'}),
+                            'Remove from Favorites' if is_favorited else 'Add to Favorites'
+                        ], id={'type': 'favorite-btn', 'item-type': 'attraction', 'index': data.get('ID', 0)},
+                        n_clicks=0, style={
+                            'backgroundColor': '#deb522' if is_favorited else 'rgba(255, 255, 255, 0.25)',
                             'backdropFilter': 'blur(10px)',
-                            'border': '1.5px solid rgba(255, 255, 255, 0.5)',
-                            'color': '#FFFFFF',
+                            'border': f"1.5px solid {'#deb522' if is_favorited else 'rgba(255, 255, 255, 0.5)'}",
+                            'color': '#FFFFFF' if is_favorited else '#1a1a1a',
                             'padding': '8px 16px',
                             'borderRadius': '20px',
                             'fontSize': '1rem',
                             'fontWeight': '500',
                             'cursor': 'pointer',
-                            'boxShadow': '0 2px 8px rgba(0, 0, 0, 0.2)',
-                            'transition': 'all 0.3s ease'
+                            'boxShadow': '0 4px 12px rgba(222, 181, 34, 0.4)' if is_favorited else '0 2px 8px rgba(0, 0, 0, 0.2)',
+                            'transition': 'all 0.3s ease',
+                            'zIndex': '100',
+                            'position': 'relative'
                         })
                     ], style={
                         'display': 'flex',
@@ -2113,8 +3248,8 @@ def create_attraction_detail_content(data):
                 'left': '2rem',
                 'right': '2rem',
                 'maxWidth': '1400px',
-                'margin': '0 auto',
-                'pointerEvents': 'none'
+                'margin': '0 auto'
+                # Removed pointerEvents: none to allow button clicks
             })
         ], style={
             'position': 'relative',
@@ -2778,14 +3913,54 @@ app.layout = html.Div([
     dcc.Store(id='dropdown-open-list', data=False, storage_type='memory'),
     dcc.Store(id='dropdown-open-hotel-list', data=False, storage_type='memory'),
     dcc.Store(id='dropdown-open-detail', data=False, storage_type='memory'),
+    dcc.Store(id='dropdown-open-favorites-list', data=False, storage_type='memory'),
+    dcc.Store(id='favorites-filter', data='all', storage_type='memory'),
+    dcc.Store(id='favorites-sort', data='name', storage_type='memory'),
     dcc.Store(id='previous-view-mode', storage_type='memory'),
     dcc.Store(id='previous-pathname', storage_type='memory'),
     dcc.Store(id='traffic-map-store', storage_type='memory', data={'points': []}),
     # ADD THIS LINE - Load all place names for traffic calculator
     dcc.Store(id='all-places-store', data=load_all_place_names(), storage_type='memory'),
+    # Favorites system stores
+    dcc.Store(id='user-favorites-cache', storage_type='session'),
+    dcc.Store(id='notification-queue', storage_type='memory', data=[]),
+    dcc.Store(id='notification-trigger', storage_type='memory'),
+    dcc.Store(id='event-listener-trigger', storage_type='memory'),
+    # Trip creation stores
+    dcc.Store(id='trip-selected-items', data=[], storage_type='memory'),
+    dcc.Store(id='trip-active-tab', data='favorites', storage_type='memory'),
+    dcc.Store(id='edit-trip-id', data=None, storage_type='memory'),  # Store trip ID when editing
+    # Hidden dummy button for pattern matching registration (CRITICAL - do not remove!)
+    html.Button(
+        id={'type': 'favorite-btn', 'item-type': 'dummy', 'index': -1},
+        style={'display': 'none'}
+    ),
+    # Hidden dummy filter chip for pattern matching registration (CRITICAL - do not remove!)
+    html.Span(
+        id={'type': 'favorites-filter-chip', 'filter': 'dummy'},
+        style={'display': 'none'}
+    ),
+    # Toast notification container
+    html.Div(
+        id='toast-container',
+        className='toast-container',
+        style={
+            'position': 'fixed',
+            'top': '100px',
+            'right': '30px',
+            'zIndex': '9999',
+            'display': 'flex',
+            'flexDirection': 'column',
+            'gap': '10px',
+            'maxWidth': '350px'
+        }
+    ),
     html.Div(id='scroll-trigger', style={'display': 'none'}),
     html.Div(id='page-content', style={'minHeight': '100vh'})
 ], style={'backgroundColor': '#F2F6FA', 'minHeight': '100vh'})
+
+# Note: We use suppress_callback_exceptions=True instead of validation_layout
+# to handle dynamically created components
 
 # ===== Profile Page Layout =====
 def create_profile_page(user_data):
@@ -3104,19 +4279,29 @@ def create_main_layout():
                 html.Div(id='attractions-card-container', className='card-row')
             ], className='card-scroll-container')
         ], className='content-section'),
-        
-        # ===== Personalized Content Section - Your Saved Trips & Favorites =====
+
+        # ===== My Favorite Collection Section =====
         html.Div([
-            html.H2('Your Saved Trips & Favorites', className='section-title'),
-
-            # Tab Navigation
             html.Div([
-                html.Div('Saved Trips', id='tab-saved-trips', className='tab-item active', n_clicks=0),
-                html.Div('Wishlisted Hotels', id='tab-wishlisted', className='tab-item', n_clicks=0),
-                html.Div('Favorite Restaurants', id='tab-favorites', className='tab-item', n_clicks=0)
-            ], className='tab-navigation'),
+                html.H2('My Favorite Collection', className='section-title'),
+                html.A(['View All', html.I(className='fas fa-arrow-right')],
+                       className='view-all-link', id='view-all-favorites', n_clicks=0)
+            ], className='section-header'),
+            html.Div([
+                html.Div(id='favorites-preview-container', className='card-row')
+            ], className='card-scroll-container')
+        ], className='content-section'),
 
-            # Tab Content
+        # ===== Personalized Content Section - Your Saved Trips =====
+        html.Div([
+            html.Div([
+                html.H2('Your Saved Trips', className='section-title'),
+            ], className='section-header'),
+
+            # Hidden element to maintain tab functionality for callback
+            html.Div('', id='tab-saved-trips', style={'display': 'none'}, n_clicks=0),
+
+            # Trip cards container
             html.Div(id='tab-content-container')
         ], className='content-section'),
 
@@ -3442,6 +4627,61 @@ def create_pagination_buttons(current_page, total_pages):
     return buttons
 
 
+def create_favorites_list_page():
+    """Create My Favorite Collection page - shows all favorited items"""
+    return html.Div([
+        # Header with back button
+        html.Div([
+            html.Div([
+                # Back button and title
+                html.Div([
+                    html.Button([
+                        html.I(className='fas fa-arrow-left'),
+                        html.Span('Back', style={'marginLeft': '8px'})
+                    ], id={'type': 'back-btn', 'index': 'favorites-list'}, className='btn-back', n_clicks=0),
+                    html.H1('My Favorite Collection', style={
+                        'color': '#003580',
+                        'marginLeft': '2rem',
+                        'fontSize': '2rem',
+                        'fontWeight': 'bold'
+                    })
+                ], style={'display': 'flex', 'alignItems': 'center'}),
+
+                # User Avatar
+                html.Div([
+                    html.Div([
+                        html.Img(id='user-avatar-img-favorites-list', src=None, style={
+                            'width': '40px', 'height': '40px', 'borderRadius': '50%',
+                            'objectFit': 'cover', 'display': 'none'
+                        }),
+                        html.I(id='user-avatar-icon-favorites-list', className='fas fa-user', style={'display': 'block'})
+                    ], className='user-avatar', id='user-avatar-favorites-list', n_clicks=0),
+
+                    # Dropdown Menu
+                    html.Div([
+                        html.Div([html.I(className='fas fa-user-circle'), html.Span('Profile')],
+                                 className='dropdown-item', id='dropdown-profile-favorites-list', n_clicks=0),
+                        html.Div([html.I(className='fas fa-sign-out-alt'), html.Span('Logout')],
+                                 className='dropdown-item', id='menu-logout-favorites-list', n_clicks=0),
+                    ], id='user-dropdown-favorites-list', className='user-dropdown')
+                ], style={'position': 'relative'})
+            ], style={
+                'display': 'flex', 'justifyContent': 'space-between', 'alignItems': 'center',
+                'maxWidth': '1400px', 'margin': '0 auto', 'padding': '1.5rem 2rem'
+            })
+        ], style={
+            'backgroundColor': '#F2F6FA', 'borderBottom': '1px solid #E8ECEF',
+            'position': 'sticky', 'top': '0', 'zIndex': '1000'
+        }),
+
+        # Favorites Content Container
+        html.Div(id='favorites-content-container', style={
+            'backgroundColor': '#F2F6FA',
+            'minHeight': '100vh',
+            'padding': '2rem 0'
+        })
+    ], style={'backgroundColor': '#F2F6FA'})
+
 
 # ====== 認證相關 Callbacks ======
 
@@ -3454,15 +4694,27 @@ def create_pagination_buttons(current_page, total_pages):
      Input('session-store', 'data'),
      Input('page-mode', 'data'),
      Input('view-mode', 'data'),
-     Input('selected-restaurant-id', 'data')],
+     Input('selected-restaurant-id', 'data'),
+     Input('user-favorites-cache', 'data'),
+     Input('edit-trip-id', 'data')],
     prevent_initial_call=False
 )
-def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_data):
+def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_data, favorites_cache, edit_trip_id):
     """根據 session 狀態、view_mode 和 pathname 顯示對應頁面"""
     clean_expired_sessions()
-    
+
     ctx = callback_context
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+
+    # If triggered by favorites cache change, only re-render detail pages
+    if triggered_id == 'user-favorites-cache':
+        # Only re-render if we're on an attraction detail page
+        # (Restaurant/hotel details have separate callbacks that handle this)
+        if pathname and pathname.startswith('/attraction/') and 'list' not in pathname:
+            pass  # Continue to re-render attraction detail page
+        else:
+            # Don't re-render homepage, list pages, restaurant/hotel details, or Create Trip page
+            raise PreventUpdate
 
     # 檢查 session
     if session_data and 'session_id' in session_data:
@@ -3472,7 +4724,18 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
 
             # 0. 檢查是否為 Create Trip 頁面
             if pathname == '/create-trip':
-                return create_trip_layout(), 'main'
+                return create_trip_layout(session_data, edit_trip_id), 'main'
+
+            # 0.5 檢查是否為 Trip View 頁面
+            if pathname and pathname.startswith('/trip/'):
+                try:
+                    trip_id = int(pathname.split('/')[-1])
+                    return create_trip_view_layout(trip_id, session_data), 'main'
+                except Exception as e:
+                    print(f"[ERROR] Failed to load trip view for trip {trip_id}: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    return create_main_layout(), 'main'
 
             # 1. 檢查是否為旅館詳細頁面
             if pathname and pathname.startswith('/hotel/'):
@@ -3502,7 +4765,7 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
                     if url_parts and url_parts[-1].isdigit():
                         a_id = int(url_parts[-1])
                         # 直接呼叫新的頁面生成器 (它會自己抓資料)
-                        return create_attraction_detail_page(a_id), 'main'
+                        return create_attraction_detail_page(a_id, favorites_cache), 'main'
                 except Exception as e:
                     print(f"Error in display_page for attraction: {e}")
                     return create_main_layout(), 'main'
@@ -3745,6 +5008,10 @@ def display_page(pathname, session_data, current_mode, view_mode, restaurant_id_
             elif view_mode == 'attraction-list':
                 return create_attraction_list_page(), 'main'
 
+            elif view_mode == 'favorites':
+                print("[DISPLAY PAGE] Rendering favorites list page")
+                return create_favorites_list_page(), 'main'
+
             elif view_mode == 'analytics':
                 return create_analytics_layout(analytics_df), 'main'
 
@@ -3937,15 +5204,47 @@ def navigate_to_restaurant_list(n_clicks):
 
 # Update navigation trigger when back button is clicked
 @app.callback(
-    Output('navigation-trigger', 'data'),
+    [Output('navigation-trigger', 'data'),
+     Output('url', 'pathname', allow_duplicate=True)],
     [Input({'type': 'back-btn', 'index': ALL}, 'n_clicks')],
+    [State({'type': 'back-btn', 'index': ALL}, 'id'),
+     State('previous-view-mode', 'data')],
     prevent_initial_call=True
 )
-def trigger_back_navigation(n_clicks_list):
+def trigger_back_navigation(n_clicks_list, button_ids, previous_view):
     """當返回按鈕被點擊時觸發導航"""
-    if any(n_clicks_list):
-        return 'home'
-    raise PreventUpdate
+    ctx = callback_context
+    if not ctx.triggered or not any(n_clicks_list):
+        raise PreventUpdate
+
+    # Get which button was clicked
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    import json as _json
+    clicked_button = _json.loads(triggered_id)
+    button_index = clicked_button['index']
+
+    print(f"[BACK NAVIGATION] Button clicked: {button_index}, previous_view: {previous_view}")
+
+    # If coming from create-trip page, navigate to home URL
+    if button_index == 'create-trip':
+        print(f"[BACK NAVIGATION] Navigating from create-trip to home")
+        return 'home', '/'
+
+    # If coming from trip-view page, navigate to home
+    if button_index == 'trip-view':
+        print(f"[BACK NAVIGATION] Navigating from trip-view to home")
+        return 'home', '/'
+
+    # If coming from a detail page, check where we came from
+    if button_index in ['restaurant-detail', 'hotel-detail', 'attraction-detail']:
+        # If we came from favorites, go back to favorites
+        if previous_view == 'favorites':
+            print(f"[BACK NAVIGATION] Navigating back to favorites")
+            return 'favorites', no_update
+
+    # For all other cases (or if previous_view is not favorites), go to home
+    print(f"[BACK NAVIGATION] Navigating to home")
+    return 'home', no_update
 
 # Listen to navigation trigger and update view-mode
 @app.callback(
@@ -3955,7 +5254,9 @@ def trigger_back_navigation(n_clicks_list):
 )
 def handle_navigation_trigger(nav_command):
     """根據導航觸發器更新視圖模式"""
+    print(f"[NAVIGATION TRIGGER] nav_command={nav_command}")
     if nav_command:
+        print(f"[NAVIGATION TRIGGER] Setting view-mode to: {nav_command}")
         return nav_command
     raise PreventUpdate
 
@@ -4001,33 +5302,151 @@ def logout_from_dropdown(n_clicks, session_data):
 # Populate Destinations/Restaurants Cards
 @app.callback(
     Output('destinations-card-container', 'children'),
-    [Input('url', 'pathname')]
+    [Input('url', 'pathname')],
+    [State('user-favorites-cache', 'data')]
 )
-def populate_destinations_cards(pathname):
+def populate_destinations_cards(pathname, favorites_cache):
     """填充餐廳卡片（橫向滾動）"""
     # Get random 4-5 star restaurants
     top_restaurants = get_random_top_restaurants(4)
 
+    # Get favorited restaurant IDs
+    favorited_ids = []
+    if favorites_cache and 'restaurants' in favorites_cache:
+        favorited_ids = favorites_cache['restaurants']
+
     cards = []
     for _, restaurant in top_restaurants.iterrows():
-        card = create_destination_card(restaurant)
+        is_favorited = restaurant['Restaurant_ID'] in favorited_ids
+        card = create_destination_card(restaurant, is_favorited=is_favorited)
         cards.append(card)
 
     return cards
 
 @app.callback(
     Output('hotels-card-container', 'children'),
-    [Input('url', 'pathname')]
+    [Input('url', 'pathname')],
+    [State('user-favorites-cache', 'data')]
 )
-def populate_hotels_cards(pathname):
+def populate_hotels_cards(pathname, favorites_cache):
     """填充旅館卡片（橫向滾動）"""
     top_hotels = get_random_top_hotels(4, min_rating=4.0)
-    
+
+    # Get favorited hotel IDs
+    favorited_ids = []
+    if favorites_cache and 'hotels' in favorites_cache:
+        favorited_ids = favorites_cache['hotels']
+
     if len(top_hotels) > 0:
-        cards = [create_hotel_card(row) for _, row in top_hotels.iterrows()]
+        cards = []
+        for _, row in top_hotels.iterrows():
+            is_favorited = row['Hotel_ID'] in favorited_ids
+            cards.append(create_hotel_card(row, is_favorited=is_favorited))
         return cards
     else:
         return [html.Div("No hotels found", style={'color': '#888', 'padding': '2rem'})]
+
+@app.callback(
+    Output('favorites-preview-container', 'children'),
+    [Input('url', 'pathname'),
+     Input('user-favorites-cache', 'data')],
+    [State('session-store', 'data')],
+    prevent_initial_call=False
+)
+def populate_favorites_preview(pathname, favorites_cache, session_data):
+    """Populate favorites preview on homepage"""
+    # Get user_id from session
+    if not session_data or 'session_id' not in session_data:
+        return [html.Div([
+            html.P('Log in to see your favorites',
+                   style={'color': '#888888', 'fontSize': '1rem', 'textAlign': 'center', 'padding': '2rem'})
+        ])]
+
+    user_id = get_session(session_data['session_id'])
+    if not user_id:
+        return [html.Div([
+            html.P('Log in to see your favorites',
+                   style={'color': '#888888', 'fontSize': '1rem', 'textAlign': 'center', 'padding': '2rem'})
+        ])]
+
+    # Fetch favorites (limited preview)
+    fav_restaurants_df = get_favorite_restaurants_full(user_id).head(2)
+    fav_hotels_df = get_favorite_hotels_full(user_id).head(2)
+    fav_attractions_df = get_favorite_attractions_full(user_id).head(2)
+
+    # Check if user has any favorites
+    total_favorites = len(fav_restaurants_df) + len(fav_hotels_df) + len(fav_attractions_df)
+
+    if total_favorites == 0:
+        return [html.Div([
+            html.P('Click the heart icon on places you love to save them here!',
+                   style={'color': '#888888', 'fontSize': '1rem', 'textAlign': 'center', 'padding': '2rem'})
+        ])]
+
+    # Create preview cards grouped by type with labels
+    sections = []
+
+    # Add restaurant section
+    if len(fav_restaurants_df) > 0:
+        restaurant_cards = []
+        for _, restaurant in fav_restaurants_df.iterrows():
+            is_favorited = True
+            card = create_destination_card(restaurant, id_type='restaurant-card', is_favorited=is_favorited)
+            restaurant_cards.append(card)
+
+        sections.append(html.Div([
+            html.H4('🍽️ Restaurants', style={
+                'color': '#003580',
+                'fontSize': '1.2rem',
+                'fontWeight': '600',
+                'marginBottom': '1rem',
+                'marginTop': '0.5rem'
+            }),
+            html.Div(restaurant_cards, style={'display': 'flex', 'gap': '1rem', 'flexWrap': 'wrap'})
+        ]))
+
+    # Add hotel section
+    if len(fav_hotels_df) > 0:
+        hotel_cards = []
+        for _, hotel in fav_hotels_df.iterrows():
+            is_favorited = True
+            card = create_hotel_card(hotel, id_type='hotel-card', is_favorited=is_favorited)
+            hotel_cards.append(card)
+
+        sections.append(html.Div([
+            html.H4('🏨 Hotels', style={
+                'color': '#003580',
+                'fontSize': '1.2rem',
+                'fontWeight': '600',
+                'marginBottom': '1rem',
+                'marginTop': '1.5rem'
+            }),
+            html.Div(hotel_cards, style={'display': 'flex', 'gap': '1rem', 'flexWrap': 'wrap'})
+        ]))
+
+    # Add attraction section
+    if len(fav_attractions_df) > 0:
+        attraction_cards = []
+        for _, attraction in fav_attractions_df.iterrows():
+            is_favorited = True
+            card = create_attraction_card(attraction, is_favorited=is_favorited)
+            attraction_cards.append(card)
+
+        sections.append(html.Div([
+            html.H4('🗼 Attractions', style={
+                'color': '#003580',
+                'fontSize': '1.2rem',
+                'fontWeight': '600',
+                'marginBottom': '1rem',
+                'marginTop': '1.5rem'
+            }),
+            html.Div(attraction_cards, style={'display': 'flex', 'gap': '1rem', 'flexWrap': 'wrap'})
+        ]))
+
+    return sections if sections else [html.Div([
+        html.P('Click the heart icon on places you love to save them here!',
+               style={'color': '#888888', 'fontSize': '1rem', 'textAlign': 'center', 'padding': '2rem'})
+    ])]
 
 @app.callback(
     Output('hotels-card-container', 'children', allow_duplicate=True),
@@ -4092,6 +5511,21 @@ def view_all_attractions(n_clicks, current_view):
         return 'attraction-list'
     raise PreventUpdate
 
+# Navigate to favorites list page
+@app.callback(
+    Output('view-mode', 'data', allow_duplicate=True),
+    [Input('view-all-favorites', 'n_clicks')],
+    [State('view-mode', 'data')],
+    prevent_initial_call=True
+)
+def view_all_favorites(n_clicks, current_view):
+    print(f"[VIEW ALL FAVORITES BUTTON] Clicked! n_clicks={n_clicks}, current_view={current_view}")
+    if n_clicks and current_view != 'favorites':
+        print("[VIEW ALL FAVORITES BUTTON] Setting view-mode to 'favorites'")
+        return 'favorites'
+    print("[VIEW ALL FAVORITES BUTTON] PreventUpdate")
+    raise PreventUpdate
+
 @app.callback(
     Output('view-mode', 'data', allow_duplicate=True),
     [Input('nav-analytics', 'n_clicks')],
@@ -4129,74 +5563,317 @@ def navigate_to_create_trip(n_clicks):
 # Handle Tab Navigation
 @app.callback(
     [Output('tab-saved-trips', 'className'),
-     Output('tab-wishlisted', 'className'),
-     Output('tab-favorites', 'className'),
      Output('tab-content-container', 'children')],
     [Input('tab-saved-trips', 'n_clicks'),
-     Input('tab-wishlisted', 'n_clicks'),
-     Input('tab-favorites', 'n_clicks')],
+     Input('session-store', 'data')],
     prevent_initial_call=False
 )
-def handle_tab_navigation(saved_clicks, wishlisted_clicks, favorites_clicks):
-    """處理標籤頁導航"""
-    ctx = callback_context
+def handle_tab_navigation(saved_clicks, session_data):
+    """Display saved trips"""
+    from utils.trips import get_user_trips, get_trip_items
+    from utils.auth import get_session
+    from datetime import datetime
 
-    # Default to saved trips
+    # Always show saved trips (only one tab now)
     active_tab = 'saved-trips'
 
-    if ctx.triggered:
-        button_id = ctx.triggered[0]['prop_id'].split('.')[0]
-        if button_id == 'tab-wishlisted':
-            active_tab = 'wishlisted'
-        elif button_id == 'tab-favorites':
-            active_tab = 'favorites'
+    # Set active class
+    tab_class = 'tab-item active'
 
-    # Set active classes
-    base_class = 'tab-item'
-    active_class = 'tab-item active'
+    # Get real trips from database
+    trips_data = []
+    if session_data and 'session_id' in session_data:
+        user_id = get_session(session_data['session_id'])
+        if user_id:
+            db_trips = get_user_trips(user_id)
+            # Convert database format to card format
+            for trip in db_trips:
+                # Calculate duration
+                try:
+                    start = datetime.fromisoformat(trip['start_date'])
+                    end = datetime.fromisoformat(trip['end_date'])
+                    days = (end - start).days + 1
+                    duration = f"{days} Day{'s' if days > 1 else ''}"
+                except:
+                    duration = "N/A"
 
-    tab_classes = (
-        active_class if active_tab == 'saved-trips' else base_class,
-        active_class if active_tab == 'wishlisted' else base_class,
-        active_class if active_tab == 'favorites' else base_class
-    )
+                # Get trip items to calculate total cost and check for notes
+                trip_items = get_trip_items(trip['id'])
+                total_cost = 0
+                has_notes = False
 
-    # Generate content based on active tab
-    if active_tab == 'saved-trips':
-        # Sample trip data
-        trips = [
-            {'title': 'Kyoto Cultural Journey', 'description': 'Experience traditional Japanese culture', 'duration': '7 Days', 'location': 'Kyoto, Japan'},
-            {'title': 'Tokyo Food Adventure', 'description': 'Taste the best of Tokyo cuisine', 'duration': '5 Days', 'location': 'Tokyo, Japan'},
-        ]
+                for item in trip_items:
+                    if item.get('cost'):
+                        total_cost += float(item['cost'])
+                    if item.get('notes') and item['notes'].strip():
+                        has_notes = True
 
-        cards = [create_saved_trip_card(trip) for trip in trips]
-        cards.append(create_add_new_card("Start planning a new trip..."))
+                trips_data.append({
+                    'trip_id': trip['id'],
+                    'title': trip['trip_name'],
+                    'description': trip.get('description', 'No description'),
+                    'duration': duration,
+                    'location': 'Kyoto, Japan',  # Default location
+                    'total_cost': total_cost if total_cost > 0 else None,
+                    'has_notes': has_notes
+                })
 
-        content = html.Div(cards, className='card-row')
-        content = html.Div(content, className='card-scroll-container')
-
-    elif active_tab == 'wishlisted':
-        content = html.Div([
-            html.P('No wishlisted hotels yet. Start exploring!',
-                   style={'color': '#888888', 'fontSize': '1.1rem', 'textAlign': 'center', 'padding': '3rem'})
-        ])
-
-    else:  # favorites
-        # Show favorite restaurants
-        fav_restaurants = get_random_top_restaurants(6)
+    if trips_data:
+        cards = [create_saved_trip_card(trip) for trip in trips_data]
+    else:
         cards = []
-        for _, restaurant in fav_restaurants.iterrows():
-            card = create_saved_trip_card({
-                'title': restaurant['Name'],
-                'description': f"{restaurant['FirstCategory']} - {restaurant['SecondCategory']}",
-                'duration': f"{restaurant['TotalRating']:.1f} ⭐",
-                'location': restaurant['Station']
-            })
-            cards.append(card)
 
-        content = html.Div(cards, className='card-grid')
+    cards.append(create_add_new_card("Start planning a new trip..."))
 
-    return (*tab_classes, content)
+    content = html.Div(cards, className='card-row')
+    content = html.Div(content, className='card-scroll-container')
+
+    return (tab_class, content)
+
+
+# CALLBACK: Handle Trip Card Clicks (View Trip)
+@app.callback(
+    Output('url', 'pathname', allow_duplicate=True),
+    Input({'type': 'saved-trip-card', 'index': ALL}, 'n_clicks'),
+    State({'type': 'saved-trip-card', 'index': ALL}, 'id'),
+    prevent_initial_call=True
+)
+def handle_trip_card_click(n_clicks_list, card_ids):
+    """Navigate to trip view page when card is clicked"""
+    ctx = callback_context
+
+    # Debug logging
+    print(f"[TRIP CARD CLICK] Callback fired!")
+    print(f"[TRIP CARD CLICK] Triggered: {ctx.triggered}")
+    print(f"[TRIP CARD CLICK] Triggered ID: {ctx.triggered_id}")
+    print(f"[TRIP CARD CLICK] n_clicks_list: {n_clicks_list}")
+    print(f"[TRIP CARD CLICK] card_ids: {card_ids}")
+
+    # Check if callback was actually triggered by a click
+    if not ctx.triggered:
+        print(f"[TRIP CARD CLICK] No trigger - PreventUpdate")
+        raise PreventUpdate
+
+    # Get the ID of the component that triggered the callback
+    triggered_id = ctx.triggered_id
+
+    # triggered_id will be None if no component triggered, or a dict if pattern-matching
+    if not triggered_id or not isinstance(triggered_id, dict):
+        print(f"[TRIP CARD CLICK] Invalid triggered_id - PreventUpdate")
+        raise PreventUpdate
+
+    # CRITICAL: Check if this is an actual click (n_clicks > 0), not component initialization
+    # Get the triggered prop info to check the n_clicks value
+    triggered_prop = ctx.triggered[0]
+    n_clicks_value = triggered_prop.get('value')
+
+    if n_clicks_value is None or n_clicks_value == 0:
+        print(f"[TRIP CARD CLICK] n_clicks is {n_clicks_value} (not a real click) - PreventUpdate")
+        raise PreventUpdate
+
+    # Extract trip_id from the pattern-matching ID
+    trip_id = triggered_id.get('index')
+    if trip_id is None:
+        print(f"[TRIP CARD CLICK] No index in triggered_id - PreventUpdate")
+        raise PreventUpdate
+
+    print(f"[TRIP CLICK] Navigating to trip view for trip {trip_id}")
+
+    # Navigate to trip view page
+    return f'/trip/{trip_id}'
+
+
+# CALLBACK: Navigate to Create Trip from "Add New Trip" button
+@app.callback(
+    [Output('url', 'pathname', allow_duplicate=True),
+     Output('edit-trip-id', 'data', allow_duplicate=True)],
+    Input('add-new-trip-btn', 'n_clicks'),
+    prevent_initial_call=True
+)
+def navigate_to_create_trip(n_clicks):
+    """Navigate to create trip page when 'Start planning a new trip...' is clicked"""
+    if not n_clicks:
+        raise PreventUpdate
+
+    print(f"[ADD NEW TRIP] Navigating to create trip page")
+    return '/create-trip', None  # Clear edit-trip-id for new trip
+
+
+# CALLBACK: Navigate to Edit Trip from Edit button
+@app.callback(
+    [Output('url', 'pathname', allow_duplicate=True),
+     Output('edit-trip-id', 'data', allow_duplicate=True)],
+    Input({'type': 'edit-trip-btn', 'index': ALL}, 'n_clicks'),
+    State({'type': 'edit-trip-btn', 'index': ALL}, 'id'),
+    prevent_initial_call=True
+)
+def navigate_to_edit_trip(n_clicks_list, button_ids):
+    """Navigate to create trip page in edit mode when Edit button is clicked"""
+    ctx = callback_context
+
+    if not ctx.triggered:
+        raise PreventUpdate
+
+    triggered_id = ctx.triggered_id
+    if not triggered_id or not isinstance(triggered_id, dict):
+        raise PreventUpdate
+
+    # Check if this is an actual click
+    triggered_prop = ctx.triggered[0]
+    n_clicks_value = triggered_prop.get('value')
+    if n_clicks_value is None or n_clicks_value == 0:
+        raise PreventUpdate
+
+    # Extract trip_id from the pattern-matching ID
+    trip_id = triggered_id.get('index')
+    if trip_id is None:
+        raise PreventUpdate
+
+    print(f"[EDIT TRIP] Navigating to edit trip {trip_id}")
+    return '/create-trip', trip_id  # Store trip_id for editing
+
+
+# CALLBACK: Handle Trip Deletion
+@app.callback(
+    [Output('notification-queue', 'data', allow_duplicate=True),
+     Output('session-store', 'data', allow_duplicate=True),
+     Output('url', 'pathname', allow_duplicate=True)],  # Redirect after deletion
+    Input({'type': 'delete-trip-btn', 'index': ALL}, 'n_clicks'),
+    State({'type': 'delete-trip-btn', 'index': ALL}, 'id'),
+    State('session-store', 'data'),
+    State('url', 'pathname'),  # Check current page
+    prevent_initial_call=True
+)
+def handle_trip_deletion(n_clicks_list, button_ids, session_data, current_pathname):
+    """Delete a trip when delete button is clicked"""
+    from utils.trips import delete_trip
+    from utils.auth import get_session
+
+    ctx = callback_context
+
+    # Debug logging
+    print(f"[TRIP DELETE] Callback fired!")
+    print(f"[TRIP DELETE] Triggered: {ctx.triggered}")
+    print(f"[TRIP DELETE] Triggered ID: {ctx.triggered_id}")
+    print(f"[TRIP DELETE] n_clicks_list: {n_clicks_list}")
+    print(f"[TRIP DELETE] button_ids: {button_ids}")
+
+    # Check if callback was actually triggered by a click
+    if not ctx.triggered:
+        print(f"[TRIP DELETE] No trigger - PreventUpdate")
+        raise PreventUpdate
+
+    # Get the ID of the component that triggered the callback
+    triggered_id = ctx.triggered_id
+
+    # triggered_id will be None if no component triggered, or a dict if pattern-matching
+    if not triggered_id or not isinstance(triggered_id, dict):
+        print(f"[TRIP DELETE] Invalid triggered_id - PreventUpdate")
+        raise PreventUpdate
+
+    # CRITICAL: Check if this is an actual click (n_clicks > 0), not component initialization
+    # Get the triggered prop info to check the n_clicks value
+    triggered_prop = ctx.triggered[0]
+    n_clicks_value = triggered_prop.get('value')
+
+    if n_clicks_value is None or n_clicks_value == 0:
+        print(f"[TRIP DELETE] n_clicks is {n_clicks_value} (not a real click) - PreventUpdate")
+        raise PreventUpdate
+
+    # Extract trip_id from the pattern-matching ID
+    trip_id = triggered_id.get('index')
+    if trip_id is None:
+        print(f"[TRIP DELETE] No index in triggered_id - PreventUpdate")
+        raise PreventUpdate
+
+    print(f"[TRIP DELETE] Attempting to delete trip {trip_id}")
+
+    # Verify user session
+    if not session_data or 'session_id' not in session_data:
+        return ([{
+            'message': 'Please log in to delete trips',
+            'type': 'error',
+            'id': str(uuid.uuid4())
+        }], session_data, no_update)
+
+    user_id = get_session(session_data['session_id'])
+    if not user_id:
+        return ([{
+            'message': 'Session expired. Please log in again.',
+            'type': 'error',
+            'id': str(uuid.uuid4())
+        }], session_data, no_update)
+
+    # Delete the trip (returns tuple: success, message)
+    success, message = delete_trip(trip_id)
+
+    if success:
+        print(f"[TRIP DELETE] Successfully deleted trip {trip_id}")
+        # Trigger refresh by updating session store with timestamp
+        session_data['_refresh'] = datetime.now().isoformat()
+
+        # If currently viewing the deleted trip, redirect to home
+        redirect_url = '/' if current_pathname and current_pathname.startswith('/trip/') else no_update
+
+        return ([{
+            'message': 'Trip deleted successfully',
+            'type': 'success',
+            'id': str(uuid.uuid4())
+        }], session_data, redirect_url)
+    else:
+        return ([{
+            'message': 'Failed to delete trip',
+            'type': 'error',
+            'id': str(uuid.uuid4())
+        }], session_data, no_update)
+
+
+# CLIENTSIDE: Prevent delete button click from triggering card click
+app.clientside_callback(
+    """
+    function(pathname) {
+        console.log('[TRIP EVENTS] Setting up event handlers, pathname:', pathname);
+
+        // Remove existing listener if any
+        if (window.tripDeleteHandler) {
+            document.removeEventListener('click', window.tripDeleteHandler, false);
+            console.log('[TRIP EVENTS] Removed old handler');
+        }
+
+        // Create new handler
+        window.tripDeleteHandler = function(e) {
+            // Log all clicks for debugging
+            const target = e.target;
+            console.log('[TRIP EVENTS] Click detected on:', target.className);
+
+            // Check if click is on delete button or its children
+            const deleteBtn = e.target.closest('.trip-delete-btn');
+            if (deleteBtn) {
+                console.log('[TRIP EVENTS] Delete button clicked - stopping propagation to card');
+                // Stop propagation to prevent card click, but let Dash receive the event
+                const tripCard = e.target.closest('.saved-trip-card');
+                if (tripCard) {
+                    tripCard.onclick = null;  // Temporarily disable card click
+                    setTimeout(() => {
+                        tripCard.onclick = undefined;  // Re-enable after a moment
+                    }, 100);
+                }
+                return;
+            }
+        };
+
+        // Add listener in bubble phase (not capture)
+        document.addEventListener('click', window.tripDeleteHandler, false);
+        console.log('[TRIP EVENTS] Handler attached');
+
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output('trip-event-handler-complete', 'children'),
+    Input('url', 'pathname'),
+    prevent_initial_call=False
+)
+
 
 # Enhanced search function with advanced filters (使用數據庫查詢)
 def search_restaurants(keyword=None, cuisine=None, rating=None, price_range=None,
@@ -4586,9 +6263,10 @@ def handle_restaurant_list_search(destination, cuisine, rating, price_range, vie
      Output('search-stats', 'children')],
     [Input('search-results-store', 'data'),
      Input('current-page-store', 'data')],
+    [State('user-favorites-cache', 'data')],
     prevent_initial_call=False
 )
-def update_restaurant_grid(search_results, current_page):
+def update_restaurant_grid(search_results, current_page, favorites_cache):
     """更新餐廳網格和分頁控制"""
     if search_results is None:
         # Initial load, fetch default results
@@ -4620,13 +6298,16 @@ def update_restaurant_grid(search_results, current_page):
     # Create restaurant cards in grid layout
     cards = []
     for restaurant in current_items:
-        # 卡片內容
+        # 卡片內容 (without button)
         card_content = html.Div([
-            html.Img(
-                src=get_random_image_from_folder('Food'),
-                className='card-image',
-                style={'width': '100%', 'height': '200px', 'objectFit': 'cover', 'borderRadius': '8px 8px 0 0'}
-            ),
+            # Image wrapper
+            html.Div([
+                html.Img(
+                    src=get_random_image_from_folder('Food'),
+                    className='card-image',
+                    style={'width': '100%', 'height': '200px', 'objectFit': 'cover', 'borderRadius': '8px 8px 0 0'}
+                ),
+            ], style={'position': 'relative'}),
             html.Div([
                 html.Div(restaurant['Name'], style={
                     'color': '#1A1A1A',
@@ -4667,13 +6348,50 @@ def update_restaurant_grid(search_results, current_page):
             'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.08)'
         }, className='restaurant-list-card')
 
-        # 包裝在可點擊的容器中，使用 pattern-matching ID
-        card_wrapper = html.Div(
-            card_content,
-            id={'type': 'restaurant-card', 'index': restaurant['Restaurant_ID']},
-            n_clicks=0
-        )
-        cards.append(card_wrapper)
+        # Check if this restaurant is favorited
+        is_favorited = False
+        if favorites_cache and 'restaurants' in favorites_cache:
+            is_favorited = restaurant['Restaurant_ID'] in favorites_cache['restaurants']
+
+        # Card and button as siblings in container
+        card_with_button = html.Div([
+            # Clickable card
+            html.Div(
+                card_content,
+                id={'type': 'restaurant-card', 'index': restaurant['Restaurant_ID']},
+                n_clicks=0
+            ),
+            # Heart button positioned over card
+            html.Button(
+                html.I(
+                    className='fas fa-heart' if is_favorited else 'far fa-heart',
+                    style={'fontSize': '1.1rem'}
+                ),
+                id={'type': 'favorite-btn', 'item-type': 'restaurant', 'index': restaurant['Restaurant_ID']},
+                n_clicks=0,
+                className='card-favorite-btn',
+                style={
+                    'position': 'absolute',
+                    'top': '10px',
+                    'right': '10px',
+                    'backgroundColor': 'rgba(255, 255, 255, 0.95)',
+                    'border': 'none',
+                    'borderRadius': '50%',
+                    'width': '36px',
+                    'height': '36px',
+                    'display': 'flex',
+                    'alignItems': 'center',
+                    'justifyContent': 'center',
+                    'cursor': 'pointer',
+                    'boxShadow': '0 2px 6px rgba(0,0,0,0.2)',
+                    'transition': 'all 0.2s ease',
+                    'color': '#deb522' if is_favorited else '#888888',
+                    'zIndex': '10'
+                }
+            )
+        ], style={'position': 'relative'})
+
+        cards.append(card_with_button)
 
     # Create grid layout
     grid = html.Div(cards, style={
@@ -4890,6 +6608,80 @@ def navigate_to_profile_from_attraction_list(n_clicks, current_view_mode):
     prevent_initial_call=True
 )
 def logout_from_dropdown_attraction_list(n_clicks, session_data):
+    if not n_clicks:
+        raise PreventUpdate
+    if session_data and 'session_id' in session_data:
+        delete_session(session_data['session_id'])
+    return None
+
+# ====== Favorites List Page Callbacks ======
+
+# Update favorites list page avatar
+@app.callback(
+    [Output('user-avatar-img-favorites-list', 'src'),
+     Output('user-avatar-img-favorites-list', 'style'),
+     Output('user-avatar-icon-favorites-list', 'style')],
+    [Input('current-user-data', 'data'),
+     Input('view-mode', 'data')]
+)
+def update_favorites_list_avatar(user_data, view_mode):
+    """Update favorites list page user avatar"""
+    if view_mode != 'favorites':
+        raise PreventUpdate
+
+    if not user_data:
+        profile_photo = None
+    else:
+        profile_photo = user_data.get('profile_photo')
+
+    if profile_photo:
+        img_style = {'width': '40px', 'height': '40px', 'borderRadius': '50%', 'objectFit': 'cover', 'display': 'block'}
+        icon_style = {'display': 'none'}
+        return profile_photo, img_style, icon_style
+    else:
+        img_style = {'width': '40px', 'height': '40px', 'borderRadius': '50%', 'objectFit': 'cover', 'display': 'none'}
+        icon_style = {'display': 'block'}
+        return None, img_style, icon_style
+
+# Toggle user dropdown in favorites list page
+@app.callback(
+    [Output('user-dropdown-favorites-list', 'className'),
+     Output('dropdown-open-favorites-list', 'data')],
+    [Input('user-avatar-favorites-list', 'n_clicks')],
+    [State('dropdown-open-favorites-list', 'data')],
+    prevent_initial_call=True
+)
+def toggle_user_dropdown_favorites_list(n_clicks, is_open):
+    """Toggle user dropdown in favorites list page"""
+    if n_clicks:
+        new_state = not is_open
+        className = 'user-dropdown show' if new_state else 'user-dropdown'
+        return className, new_state
+    raise PreventUpdate
+
+# Navigate to profile from favorites list
+@app.callback(
+    [Output('view-mode', 'data', allow_duplicate=True),
+     Output('previous-view-mode', 'data', allow_duplicate=True),
+     Output('url', 'pathname', allow_duplicate=True)],
+    [Input('dropdown-profile-favorites-list', 'n_clicks')],
+    [State('view-mode', 'data')],
+    prevent_initial_call=True
+)
+def navigate_to_profile_from_favorites_list(n_clicks, current_view_mode):
+    if n_clicks:
+        return 'profile', current_view_mode or 'favorites', '/'
+    raise PreventUpdate
+
+# Handle logout from favorites list page dropdown
+@app.callback(
+    Output('session-store', 'data', allow_duplicate=True),
+    [Input('menu-logout-favorites-list', 'n_clicks')],
+    [State('session-store', 'data')],
+    prevent_initial_call=True
+)
+def logout_from_dropdown_favorites_list(n_clicks, session_data):
+    """Logout from favorites list page dropdown"""
     if not n_clicks:
         raise PreventUpdate
     if session_data and 'session_id' in session_data:
@@ -5408,9 +7200,10 @@ def handle_hotel_list_search(keyword, hotel_type, view_mode):
      Output('hotel-search-stats', 'children')],
     [Input('hotel-search-results-store', 'data'),
      Input('hotel-current-page-store', 'data')],
+    [State('user-favorites-cache', 'data')],
     prevent_initial_call=False
 )
-def update_hotel_grid(search_results, current_page):
+def update_hotel_grid(search_results, current_page, favorites_cache):
     """更新旅館網格和分頁"""
     if search_results is None:
         df = search_hotels(sort_by='rating_desc')
@@ -5450,10 +7243,13 @@ def update_hotel_grid(search_results, current_page):
         reviews_count = int(user_ratings_total) if user_ratings_total is not None else 0
 
         card_content = html.Div([
-            html.Img(
-                src=get_random_image_from_folder('Hotel'),
-                style={'width': '100%', 'height': '200px', 'objectFit': 'cover', 'borderRadius': '8px 8px 0 0'}
-            ),
+            # Image wrapper
+            html.Div([
+                html.Img(
+                    src=get_random_image_from_folder('Hotel'),
+                    style={'width': '100%', 'height': '200px', 'objectFit': 'cover', 'borderRadius': '8px 8px 0 0'}
+                ),
+            ], style={'position': 'relative'}),
             html.Div([
                 html.Div(hotel['HotelName'], style={'color': '#1A1A1A', 'fontSize': '1.2rem', 'fontWeight': 'bold', 'marginBottom': '0.5rem'}),
                 html.Div(types_text, style={'color': '#003580', 'fontSize': '0.9rem', 'marginBottom': '0.5rem'}),
@@ -5481,13 +7277,49 @@ def update_hotel_grid(search_results, current_page):
             'cursor': 'pointer',
             'boxShadow': '0 1px 3px rgba(0, 0, 0, 0.08)'
         })
-        
-        card_wrapper = html.Div(
-            card_content,
-            id={'type': 'hotel-card', 'index': hotel['Hotel_ID']},
-            n_clicks=0
-        )
-        cards.append(card_wrapper)
+
+        # Check if this hotel is favorited
+        is_favorited = False
+        if favorites_cache and 'hotels' in favorites_cache:
+            is_favorited = hotel['Hotel_ID'] in favorites_cache['hotels']
+
+        # Card and button as siblings
+        card_with_button = html.Div([
+            html.Div(
+                card_content,
+                id={'type': 'hotel-card', 'index': hotel['Hotel_ID']},
+                n_clicks=0
+            ),
+            html.Button(
+                html.I(
+                    className='fas fa-heart' if is_favorited else 'far fa-heart',
+                    style={'fontSize': '1.1rem'}
+                ),
+                id={'type': 'favorite-btn', 'item-type': 'hotel', 'index': hotel['Hotel_ID']},
+                n_clicks=0,
+                className='card-favorite-btn',
+                style={
+                    'position': 'absolute',
+                    'top': '10px',
+                    'right': '10px',
+                    'backgroundColor': 'rgba(255, 255, 255, 0.95)',
+                    'border': 'none',
+                    'borderRadius': '50%',
+                    'width': '36px',
+                    'height': '36px',
+                    'display': 'flex',
+                    'alignItems': 'center',
+                    'justifyContent': 'center',
+                    'cursor': 'pointer',
+                    'boxShadow': '0 2px 6px rgba(0,0,0,0.2)',
+                    'transition': 'all 0.2s ease',
+                    'color': '#deb522' if is_favorited else '#888888',
+                    'zIndex': '10'
+                }
+            )
+        ], style={'position': 'relative'})
+
+        cards.append(card_with_button)
     
     # 創建網格
     grid = html.Div(cards, style={
@@ -5595,10 +7427,11 @@ def load_restaurant_detail(restaurant_id_data):
 # Callback 3: Content Renderer - 渲染詳細頁面內容
 @app.callback(
     Output('restaurant-detail-content', 'children'),
-    [Input('restaurant-detail-data', 'data')],
+    [Input('restaurant-detail-data', 'data'),
+     Input('user-favorites-cache', 'data')],
     prevent_initial_call=True
 )
-def render_restaurant_detail(restaurant_data):
+def render_restaurant_detail(restaurant_data, favorites_cache):
     """根據餐廳數據渲染詳細頁面內容"""
     if not restaurant_data:
         return create_loading_state()
@@ -5606,8 +7439,13 @@ def render_restaurant_detail(restaurant_data):
     if 'error' in restaurant_data:
         return create_error_state(restaurant_data.get('error', 'An error occurred'))
 
+    # Check if this restaurant is favorited
+    is_favorited = False
+    if favorites_cache and 'restaurants' in favorites_cache and 'Restaurant_ID' in restaurant_data:
+        is_favorited = restaurant_data['Restaurant_ID'] in favorites_cache['restaurants']
+
     # 渲染完整的詳細頁面
-    return create_restaurant_detail_content(restaurant_data)
+    return create_restaurant_detail_content(restaurant_data, is_favorited=is_favorited)
 
 
 # ====== Hotel detail data loader (attach reviews) ======
@@ -5678,7 +7516,8 @@ def load_hotel_detail_data(pathname):
 @app.callback(
     [Output('url', 'pathname', allow_duplicate=True),
      Output('view-mode', 'data', allow_duplicate=True),
-     Output('previous-page-location', 'data', allow_duplicate=True)], # 確保有這個 Output
+     Output('previous-page-location', 'data', allow_duplicate=True),
+     Output('previous-view-mode', 'data', allow_duplicate=True)],
     [Input({'type': 'restaurant-card', 'index': ALL}, 'n_clicks')],
     [State({'type': 'restaurant-card', 'index': ALL}, 'id'),
      State('view-mode', 'data')], # 讀取當前頁面模式
@@ -5693,22 +7532,24 @@ def handle_card_click(n_clicks_list, card_ids, current_view_mode):
     try:
         triggered_prop_id = ctx.triggered[0]['prop_id'].split('.')[0]
         triggered_id = json.loads(triggered_prop_id)
-        
+
         # 確保是點擊餐廳卡片
         if triggered_id.get('type') != 'restaurant-card':
             raise PreventUpdate
-            
+
         restaurant_id = triggered_id['index']
 
         # [關鍵修正] 判斷來源
         # 預設來自列表
-        prev_loc = {'from': 'restaurant-list'} 
-        
+        prev_loc = {'from': 'restaurant-list'}
+        previous_view = current_view_mode  # Store where we're coming from
+
         # 如果當前 view-mode 是 analytics，就標記來源為 analytics
         if current_view_mode == 'analytics':
             prev_loc = {'from': 'analytics'}
 
-        return f'/restaurant/{restaurant_id}', None, prev_loc
+        print(f"[RESTAURANT CARD CLICK] Navigating to restaurant {restaurant_id} from view: {current_view_mode}")
+        return f'/restaurant/{restaurant_id}', None, prev_loc, previous_view
         
     except Exception as e:
         print(f"Error in handle_card_click: {e}")
@@ -5744,23 +7585,34 @@ def handle_nearby_card_click(n_clicks_list, card_ids):
      Output('from-map-navigation', 'data', allow_duplicate=True)],
     [Input('restaurant-detail-back-btn', 'n_clicks')],
     [State('previous-page-location', 'data'),
-     State('from-map-navigation', 'data')],
+     State('from-map-navigation', 'data'),
+     State('previous-view-mode', 'data')],
     prevent_initial_call=True
 )
-def handle_back_button(n_clicks, previous_page, from_map):
+def handle_back_button(n_clicks, previous_page, from_map, previous_view):
     if not n_clicks:
         raise PreventUpdate
+
+    print(f"[RESTAURANT BACK] previous_page={previous_page}, from_map={from_map}, previous_view={previous_view}")
+
+    # Check if came from favorites
+    if previous_view == 'favorites':
+        print("[RESTAURANT BACK] Navigating back to favorites")
+        return '/', 'favorites', False
 
     # [關鍵修正] 優先檢查是否來自 Analytics
     if previous_page and previous_page.get('from') == 'analytics':
         # URL 改回首頁 (停止顯示詳細頁)，並將模式切回 analytics
+        print("[RESTAURANT BACK] Navigating back to analytics")
         return '/', 'analytics', False
 
     # 處理來自地圖導航的情況
     if from_map:
+        print("[RESTAURANT BACK] Navigating back to map")
         return '/#distribution-map-section', 'home', False
 
     # 預設回到餐廳列表
+    print("[RESTAURANT BACK] Navigating back to restaurant list")
     return '/restaurant-list', 'restaurant-list', False
 
 # Callback 6: Error Back Button Handler - 處理錯誤頁面的返回按鈕
@@ -6051,7 +7903,8 @@ def update_bar_chart_selection(selected_rating, restaurant_data, hotel_data):
 @app.callback(
     [Output('url', 'pathname', allow_duplicate=True),
      Output('view-mode', 'data', allow_duplicate=True),
-     Output('previous-page-location', 'data', allow_duplicate=True)], # 新增 output (請確認 store id 正確)
+     Output('previous-page-location', 'data', allow_duplicate=True),
+     Output('previous-view-mode', 'data', allow_duplicate=True)],
     [Input({'type': 'hotel-card', 'index': ALL}, 'n_clicks')],
     [State({'type': 'hotel-card', 'index': ALL}, 'id'),
      State('view-mode', 'data')],
@@ -6069,21 +7922,23 @@ def handle_hotel_card_click(n_clicks_list, card_ids, current_view):
 
         # [關鍵] 判斷來源
         prev_loc = {'from': 'hotel-list'} # 預設 (旅館原本可能沒有這個store邏輯，現在統一加上)
+        previous_view = current_view  # Store where we're coming from
+
         if current_view == 'analytics':
             prev_loc = {'from': 'analytics'}
-        # 注意：你需要確保有 previous-page-location 這個 Store
-        # 如果 hotel 原本用 from-map-navigation，這裡最好統一用 previous-page-location
 
-        return f'/hotel/{hotel_id}', None, prev_loc
+        print(f"[HOTEL CARD CLICK] Navigating to hotel {hotel_id} from view: {current_view}")
+        return f'/hotel/{hotel_id}', None, prev_loc, previous_view
     except: raise PreventUpdate
 
 # Callback 3: Render hotel detail content when hotel-detail-data store is populated
 @app.callback(
     Output('hotel-detail-content', 'children'),
-    [Input('hotel-detail-data', 'data')],
+    [Input('hotel-detail-data', 'data'),
+     Input('user-favorites-cache', 'data')],
     prevent_initial_call=True
 )
-def render_hotel_detail(hotel_data):
+def render_hotel_detail(hotel_data, favorites_cache):
     """根據 hotel-detail-data store 渲染旅館詳細內容（與餐廳流程一致）"""
     print("DEBUG: render_hotel_detail called")
     if not hotel_data:
@@ -6093,7 +7948,12 @@ def render_hotel_detail(hotel_data):
     if isinstance(hotel_data, dict) and 'error' in hotel_data:
         return create_error_state(hotel_data.get('error', 'An error occurred'))
 
-    return create_hotel_detail_content(hotel_data)
+    # Check if this hotel is favorited
+    is_favorited = False
+    if favorites_cache and 'hotels' in favorites_cache and 'Hotel_ID' in hotel_data:
+        is_favorited = hotel_data['Hotel_ID'] in favorites_cache['hotels']
+
+    return create_hotel_detail_content(hotel_data, is_favorited=is_favorited)
 
 # Callback 4: Load nearby hotels
 @app.callback(
@@ -6202,24 +8062,35 @@ def handle_nearby_hotel_click(n_clicks_list, card_ids):
      Output('view-mode', 'data', allow_duplicate=True)], # 新增 view-mode 輸出
     [Input('hotel-detail-back-btn', 'n_clicks')],
     [State('from-map-navigation', 'data'),
-     State('previous-page-location', 'data')], # 加入這個 State
+     State('previous-page-location', 'data'),
+     State('previous-view-mode', 'data')],
     prevent_initial_call=True
 )
-def handle_hotel_back_button(n_clicks, from_map, previous_page):
+def handle_hotel_back_button(n_clicks, from_map, previous_page, previous_view):
     """處理旅館詳情頁返回按鈕"""
     if not n_clicks:
         raise PreventUpdate
 
+    print(f"[HOTEL BACK] from_map={from_map}, previous_page={previous_page}, previous_view={previous_view}")
+
+    # Check if came from favorites
+    if previous_view == 'favorites':
+        print("[HOTEL BACK] Navigating back to favorites")
+        return '/', False, 'favorites'
+
     # [關鍵修正] 如果是從 analytics 來的
     if previous_page and previous_page.get('from') == 'analytics':
         # URL 必須變回根目錄 '/'，否則 display_page 會一直以為還在 hotel 頁面
+        print("[HOTEL BACK] Navigating back to analytics")
         return '/', False, 'analytics'
 
     # If came from map
     if from_map:
+        print("[HOTEL BACK] Navigating back to map")
         return '/#distribution-map-section', False, 'home'
-    
+
     # Default back to list
+    print("[HOTEL BACK] Navigating back to hotel list")
     return '/', False, 'hotel-list'
 
 ##########################################################
@@ -6228,12 +8099,14 @@ def handle_hotel_back_button(n_clicks, from_map, previous_page):
 
 # Callback 1: Handle attraction card click
 @app.callback(
-    Output('url', 'pathname', allow_duplicate=True),
+    [Output('url', 'pathname', allow_duplicate=True),
+     Output('previous-view-mode', 'data', allow_duplicate=True)],
     [Input({'type': 'attraction-card', 'index': ALL}, 'n_clicks')],
-    [State({'type': 'attraction-card', 'index': ALL}, 'id')],
+    [State({'type': 'attraction-card', 'index': ALL}, 'id'),
+     State('view-mode', 'data')],
     prevent_initial_call=True
 )
-def handle_attraction_card_click(n_clicks_list, card_ids):
+def handle_attraction_card_click(n_clicks_list, card_ids, current_view):
     """處理景點卡片點擊，導航到詳細頁面"""
     ctx = callback_context
 
@@ -6244,9 +8117,9 @@ def handle_attraction_card_click(n_clicks_list, card_ids):
     triggered_dict = json.loads(triggered_id)
     attraction_id = triggered_dict['index']
 
-    print(f"DEBUG: Attraction card clicked! attraction_id={attraction_id}")
+    print(f"[ATTRACTION CARD CLICK] Navigating to attraction {attraction_id} from view: {current_view}")
 
-    return f'/attraction/{attraction_id}'
+    return f'/attraction/{attraction_id}', current_view
 
 # Callback 2: Store attraction search results
 @app.callback(
@@ -6436,6 +8309,451 @@ def handle_attraction_rating_selection(n_clicks_list, option_ids):
         display_text = rating_text_map.get(selected_index, 'Rating')
         return selected_index, display_text, {'display': 'none'}
 
+# ====== Favorites List Page Callbacks ======
+
+# Handle favorites filter chip selection
+@app.callback(
+    Output('favorites-filter', 'data'),
+    [Input({'type': 'favorites-filter-chip', 'filter': ALL}, 'n_clicks')],
+    [State({'type': 'favorites-filter-chip', 'filter': ALL}, 'id')],
+    prevent_initial_call=True
+)
+def handle_favorites_filter_selection(n_clicks_list, chip_ids):
+    """Handle favorites filter chip clicks"""
+    ctx = callback_context
+    if not ctx.triggered or not any(n_clicks_list):
+        raise PreventUpdate
+
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    import json as _json
+    selected_chip = _json.loads(triggered_id)
+    selected_filter = selected_chip['filter']
+
+    print(f"[FAVORITES FILTER] Selected filter: {selected_filter}")
+    return selected_filter
+
+# Handle favorites sort selection
+@app.callback(
+    Output('favorites-sort', 'data'),
+    [Input('favorites-sort-dropdown', 'value')],
+    prevent_initial_call=True
+)
+def handle_favorites_sort_selection(sort_value):
+    """Handle favorites sort dropdown change"""
+    if sort_value:
+        print(f"[FAVORITES SORT] Selected sort: {sort_value}")
+        return sort_value
+    raise PreventUpdate
+
+# Populate favorites content
+@app.callback(
+    Output('favorites-content-container', 'children'),
+    [Input('view-mode', 'data'),
+     Input('user-favorites-cache', 'data'),
+     Input('favorites-filter', 'data'),
+     Input('favorites-sort', 'data')],
+    [State('session-store', 'data')],
+    prevent_initial_call=False
+)
+def update_favorites_content(view_mode, favorites_cache, selected_filter, sort_by, session_data):
+    """Populate the favorites list page with user's favorites"""
+    print(f"[FAVORITES VIEW ALL] Callback fired! view_mode={view_mode}")
+
+    if view_mode != 'favorites':
+        print(f"[FAVORITES VIEW ALL] PreventUpdate - view_mode is '{view_mode}', not 'favorites'")
+        raise PreventUpdate
+
+    print(f"[FAVORITES VIEW ALL] Rendering favorites page for view_mode='favorites'")
+
+    # Get user_id from session
+    if not session_data or 'session_id' not in session_data:
+        print("[FAVORITES VIEW ALL] No session data")
+        return html.Div([
+            html.P('Please log in to view your favorites.',
+                   style={'color': '#888888', 'fontSize': '1.1rem', 'textAlign': 'center', 'padding': '3rem'})
+        ])
+
+    user_id = get_session(session_data['session_id'])
+    if not user_id:
+        print("[FAVORITES VIEW ALL] Session expired")
+        return html.Div([
+            html.P('Session expired. Please log in again.',
+                   style={'color': '#888888', 'fontSize': '1.1rem', 'textAlign': 'center', 'padding': '3rem'})
+        ])
+
+    print(f"[FAVORITES VIEW ALL] Fetching favorites for user_id={user_id}")
+
+    # Fetch all favorites with full data
+    fav_restaurants_df = get_favorite_restaurants_full(user_id)
+    fav_hotels_df = get_favorite_hotels_full(user_id)
+    fav_attractions_df = get_favorite_attractions_full(user_id)
+
+    # Debug: Print column names
+    if len(fav_restaurants_df) > 0:
+        print(f"[DEBUG] Restaurant columns: {fav_restaurants_df.columns.tolist()}")
+    if len(fav_hotels_df) > 0:
+        print(f"[DEBUG] Hotel columns: {fav_hotels_df.columns.tolist()}")
+    if len(fav_attractions_df) > 0:
+        print(f"[DEBUG] Attraction columns: {fav_attractions_df.columns.tolist()}")
+
+    print(f"[FAVORITES VIEW ALL] Found {len(fav_restaurants_df)} restaurants, {len(fav_hotels_df)} hotels, {len(fav_attractions_df)} attractions")
+
+    # Check if user has any favorites
+    total_favorites = len(fav_restaurants_df) + len(fav_hotels_df) + len(fav_attractions_df)
+
+    print(f"[FAVORITES VIEW ALL] Total favorites: {total_favorites}")
+
+    if total_favorites == 0:
+        print("[FAVORITES VIEW ALL] Showing empty state")
+
+        # Empty state
+        return html.Div([
+            html.Div([
+                html.I(className='far fa-heart', style={
+                    'fontSize': '4rem',
+                    'color': '#deb522',
+                    'marginBottom': '1rem'
+                }),
+                html.H3('No Favorites Yet', style={
+                    'color': '#003580',
+                    'marginBottom': '0.5rem'
+                }),
+                html.P('Start exploring and click the heart icon on places you love!', style={
+                    'color': '#888888',
+                    'fontSize': '1.1rem'
+                })
+            ], style={
+                'textAlign': 'center',
+                'padding': '4rem 2rem',
+                'backgroundColor': '#FFFFFF',
+                'borderRadius': '12px',
+                'margin': '2rem auto',
+                'maxWidth': '500px'
+            })
+        ])
+
+    # Default filter to 'all' if not set
+    if selected_filter is None:
+        selected_filter = 'all'
+
+    # Default sort to 'name' if not set
+    if sort_by is None:
+        sort_by = 'name'
+
+    print(f"[FAVORITES VIEW ALL] Selected filter: {selected_filter}, sort: {sort_by}")
+
+    # Sort dataframes based on selected sort option
+    def sort_dataframe(df, item_type, sort_option):
+        """Sort dataframe based on sort option and item type"""
+        if df.empty:
+            return df
+
+        try:
+            if sort_option == 'name':
+                # All types can sort by name
+                if item_type == 'restaurant':
+                    return df.sort_values('Name', ascending=True)
+                elif item_type == 'hotel':
+                    return df.sort_values('HotelName', ascending=True)
+                elif item_type == 'attraction':
+                    return df.sort_values('Name', ascending=True)
+
+            elif sort_option == 'category' and item_type == 'restaurant':
+                return df.sort_values(['FirstCategory', 'Name'], ascending=[True, True])
+
+            elif sort_option == 'station' and item_type == 'restaurant':
+                return df.sort_values(['Station', 'Name'], ascending=[True, True])
+
+            elif sort_option == 'type' and item_type == 'hotel':
+                return df.sort_values(['Types', 'HotelName'], ascending=[True, True])
+
+            elif sort_option == 'type' and item_type == 'attraction':
+                return df.sort_values(['Type', 'Name'], ascending=[True, True])
+
+            elif sort_option == 'rating':
+                if item_type == 'restaurant':
+                    return df.sort_values('TotalRating', ascending=False)
+                elif item_type == 'hotel':
+                    return df.sort_values('Rating', ascending=False)
+                elif item_type == 'attraction':
+                    return df.sort_values('Rating', ascending=False)
+        except Exception as e:
+            print(f"[SORT ERROR] Failed to sort {item_type} by {sort_option}: {e}")
+
+        return df
+
+    # Apply sorting to each dataframe
+    fav_restaurants_df = sort_dataframe(fav_restaurants_df, 'restaurant', sort_by)
+    fav_hotels_df = sort_dataframe(fav_hotels_df, 'hotel', sort_by)
+    fav_attractions_df = sort_dataframe(fav_attractions_df, 'attraction', sort_by)
+
+    # Create filter chips with pattern-matching IDs and active state
+    def create_filter_chip(label, filter_value, count, is_active):
+        return html.Span(
+            label if filter_value == 'all' else f'{label} ({count})',
+            id={'type': 'favorites-filter-chip', 'filter': filter_value},
+            n_clicks=0,
+            className='filter-chip active' if is_active else 'filter-chip',
+            style={
+                'backgroundColor': '#deb522' if is_active else '#F3F4F6',
+                'color': '#FFFFFF' if is_active else '#374151',
+                'padding': '8px 20px',
+                'borderRadius': '20px',
+                'cursor': 'pointer',
+                'fontWeight': '500' if is_active else '400',
+                'fontSize': '0.95rem',
+                'transition': 'all 0.3s ease',
+                'border': '2px solid transparent',
+                'borderColor': '#deb522' if is_active else 'transparent'
+            }
+        )
+
+    # Determine sort options based on selected filter
+    sort_options = []
+    if selected_filter == 'all':
+        sort_options = [
+            {'label': 'Name (A-Z)', 'value': 'name'},
+            {'label': 'Rating (High to Low)', 'value': 'rating'}
+        ]
+    elif selected_filter == 'restaurants':
+        sort_options = [
+            {'label': 'Name (A-Z)', 'value': 'name'},
+            {'label': 'Category', 'value': 'category'},
+            {'label': 'Station', 'value': 'station'},
+            {'label': 'Rating (High to Low)', 'value': 'rating'}
+        ]
+    elif selected_filter == 'hotels':
+        sort_options = [
+            {'label': 'Name (A-Z)', 'value': 'name'},
+            {'label': 'Type', 'value': 'type'},
+            {'label': 'Rating (High to Low)', 'value': 'rating'}
+        ]
+    elif selected_filter == 'attractions':
+        sort_options = [
+            {'label': 'Name (A-Z)', 'value': 'name'},
+            {'label': 'Type', 'value': 'type'},
+            {'label': 'Rating (High to Low)', 'value': 'rating'}
+        ]
+
+    # Filter and controls row
+    filter_controls = html.Div([
+        # Filter chips
+        html.Div([
+            create_filter_chip('All', 'all', 0, selected_filter == 'all'),
+            create_filter_chip('Restaurants', 'restaurants', len(fav_restaurants_df), selected_filter == 'restaurants'),
+            create_filter_chip('Hotels', 'hotels', len(fav_hotels_df), selected_filter == 'hotels'),
+            create_filter_chip('Attractions', 'attractions', len(fav_attractions_df), selected_filter == 'attractions')
+        ], style={'display': 'flex', 'flexWrap': 'wrap', 'gap': '8px', 'flex': '1'}),
+
+        # Sort dropdown and Remove All button
+        html.Div([
+            # Sort dropdown
+            dcc.Dropdown(
+                id='favorites-sort-dropdown',
+                options=sort_options,
+                value=sort_by,
+                clearable=False,
+                style={
+                    'width': '200px',
+                    'marginRight': '1rem',
+                    'fontSize': '0.9rem'
+                }
+            ),
+            # Remove All button
+            html.Button([
+                html.I(className='fas fa-trash-alt', style={'marginRight': '6px'}),
+                f"Clear {selected_filter.title() if selected_filter != 'all' else 'All'}"
+            ], id='favorites-remove-all-btn', n_clicks=0, style={
+                'backgroundColor': '#dc3545',
+                'color': '#FFFFFF',
+                'border': 'none',
+                'padding': '8px 16px',
+                'borderRadius': '6px',
+                'cursor': 'pointer',
+                'fontSize': '0.9rem',
+                'fontWeight': '500',
+                'transition': 'all 0.2s ease',
+                'display': 'flex',
+                'alignItems': 'center'
+            })
+        ], style={'display': 'flex', 'alignItems': 'center'})
+    ], style={'marginBottom': '2rem', 'display': 'flex', 'justifyContent': 'space-between', 'alignItems': 'center', 'flexWrap': 'wrap', 'gap': '1rem'})
+
+    # Create filtered cards list based on selected filter
+    all_cards = []
+
+    print("[FAVORITES VIEW ALL] Creating cards...")
+
+    # Helper function to create section header
+    def create_section_header(title):
+        return html.Div([
+            html.H3(title, style={
+                'color': '#003580',
+                'fontSize': '1.3rem',
+                'fontWeight': '600',
+                'marginTop': '2rem',
+                'marginBottom': '1rem',
+                'paddingBottom': '0.5rem',
+                'borderBottom': '2px solid #deb522',
+                'gridColumn': '1 / -1'  # Span all columns
+            })
+        ], style={'gridColumn': '1 / -1'})
+
+    # Add restaurant cards if filter allows
+    if selected_filter in ['all', 'restaurants']:
+        if sort_by in ['category', 'station'] and len(fav_restaurants_df) > 0:
+            # Group by category or station
+            group_col = 'FirstCategory' if sort_by == 'category' else 'Station'
+            current_group = None
+
+            for _, restaurant in fav_restaurants_df.iterrows():
+                group_value = restaurant[group_col]
+
+                # Add section header if group changes
+                if group_value != current_group:
+                    current_group = group_value
+                    all_cards.append(create_section_header(f"📍 {group_value}" if sort_by == 'station' else f"🍽️ {group_value}"))
+
+                is_favorited = True
+                card = create_destination_card(restaurant, id_type='restaurant-card', is_favorited=is_favorited)
+                all_cards.append(card)
+        else:
+            # No grouping
+            for _, restaurant in fav_restaurants_df.iterrows():
+                is_favorited = True
+                card = create_destination_card(restaurant, id_type='restaurant-card', is_favorited=is_favorited)
+                all_cards.append(card)
+
+    # Add hotel cards if filter allows
+    if selected_filter in ['all', 'hotels']:
+        if sort_by == 'type' and len(fav_hotels_df) > 0:
+            # Group by type
+            current_group = None
+
+            for _, hotel in fav_hotels_df.iterrows():
+                group_value = hotel['Types']
+
+                # Add section header if group changes
+                if group_value != current_group:
+                    current_group = group_value
+                    all_cards.append(create_section_header(f"🏨 {group_value}"))
+
+                is_favorited = True
+                card = create_hotel_card(hotel, id_type='hotel-card', is_favorited=is_favorited)
+                all_cards.append(card)
+        else:
+            # No grouping
+            for _, hotel in fav_hotels_df.iterrows():
+                is_favorited = True
+                card = create_hotel_card(hotel, id_type='hotel-card', is_favorited=is_favorited)
+                all_cards.append(card)
+
+    # Add attraction cards if filter allows
+    if selected_filter in ['all', 'attractions']:
+        if sort_by == 'type' and len(fav_attractions_df) > 0:
+            # Group by type
+            current_group = None
+
+            for _, attraction in fav_attractions_df.iterrows():
+                group_value = attraction['Type']
+
+                # Add section header if group changes
+                if group_value != current_group:
+                    current_group = group_value
+                    all_cards.append(create_section_header(f"🗼 {group_value}"))
+
+                is_favorited = True
+                card = create_attraction_card(attraction, is_favorited=is_favorited)
+                all_cards.append(card)
+        else:
+            # No grouping
+            for _, attraction in fav_attractions_df.iterrows():
+                is_favorited = True
+                card = create_attraction_card(attraction, is_favorited=is_favorited)
+                all_cards.append(card)
+
+    print(f"[FAVORITES VIEW ALL] Created {len(all_cards)} cards total")
+    print(f"[FAVORITES VIEW ALL] Returning grid layout")
+
+    # Create grid layout
+    return html.Div([
+        html.Div([
+            filter_controls,
+            html.Div(all_cards, style={
+                'display': 'grid',
+                'gridTemplateColumns': 'repeat(auto-fill, minmax(280px, 1fr))',
+                'gap': '1.5rem',
+                'padding': '0'
+            })
+        ], style={'maxWidth': '1400px', 'margin': '0 auto', 'padding': '0 2rem'})
+    ])
+
+# Handle Remove All button
+@app.callback(
+    [Output('user-favorites-cache', 'data', allow_duplicate=True),
+     Output('notification-queue', 'data', allow_duplicate=True)],
+    [Input('favorites-remove-all-btn', 'n_clicks')],
+    [State('favorites-filter', 'data'),
+     State('session-store', 'data'),
+     State('notification-queue', 'data')],
+    prevent_initial_call=True
+)
+def handle_remove_all_favorites(n_clicks, selected_filter, session_data, notification_queue):
+    """Handle Remove All favorites button click"""
+    if not n_clicks:
+        raise PreventUpdate
+
+    # Get user_id from session
+    if not session_data or 'session_id' not in session_data:
+        return dash.no_update, notification_queue
+
+    user_id = get_session(session_data['session_id'])
+    if not user_id:
+        return dash.no_update, notification_queue
+
+    print(f"[REMOVE ALL] User {user_id} removing {selected_filter} favorites")
+
+    # Determine which favorites to clear
+    item_type = None if selected_filter == 'all' else selected_filter.rstrip('s')  # 'restaurants' -> 'restaurant'
+
+    # Clear favorites using the utility function
+    from utils.favorites import clear_user_favorites
+    success, message = clear_user_favorites(user_id, item_type)
+
+    if success:
+        # Update cache by reloading favorites
+        from utils.favorites import get_favorites_by_ids
+        updated_cache = {
+            'restaurants': get_favorites_by_ids(user_id, 'restaurant'),
+            'hotels': get_favorites_by_ids(user_id, 'hotel'),
+            'attractions': get_favorites_by_ids(user_id, 'attraction'),
+            'last_updated': datetime.now().isoformat()
+        }
+
+        # Add success notification
+        if not notification_queue:
+            notification_queue = []
+        notification_queue.append({
+            'message': message,
+            'type': 'success',
+            'id': f'remove-all-{datetime.now().timestamp()}'
+        })
+
+        print(f"[REMOVE ALL] Success: {message}")
+        return updated_cache, notification_queue
+    else:
+        # Add error notification
+        if not notification_queue:
+            notification_queue = []
+        notification_queue.append({
+            'message': message,
+            'type': 'error',
+            'id': f'remove-all-error-{datetime.now().timestamp()}'
+        })
+
+        print(f"[REMOVE ALL] Error: {message}")
+        return dash.no_update, notification_queue
+
 # ====== Attraction Detail Page Callbacks ======
 
 # Toggle user dropdown on attraction detail page
@@ -6493,12 +8811,21 @@ def logout_from_attraction_detail(n_clicks, session_data):
     [Output('view-mode', 'data', allow_duplicate=True),
      Output('url', 'pathname', allow_duplicate=True)],
     [Input('attraction-detail-back-btn', 'n_clicks')],
-    [State('view-mode', 'data')],
+    [State('previous-view-mode', 'data')],
     prevent_initial_call=True
 )
-def navigate_back_from_attraction_detail(n_clicks, current_view_mode):
-    """Navigate back from attraction detail page to attraction list"""
+def navigate_back_from_attraction_detail(n_clicks, previous_view):
+    """Navigate back from attraction detail page"""
     if n_clicks:
+        print(f"[ATTRACTION BACK] previous_view={previous_view}")
+
+        # Check if came from favorites
+        if previous_view == 'favorites':
+            print("[ATTRACTION BACK] Navigating back to favorites")
+            return 'favorites', '/'
+
+        # Default back to attraction list
+        print("[ATTRACTION BACK] Navigating back to attraction list")
         return 'attraction-list', '/'
     raise PreventUpdate
 
@@ -7815,23 +10142,764 @@ def calculate_text_distance(n_clicks, start_value, end_value, places_data):
             html.I(className='fas fa-exclamation-circle', style={'fontSize': '2rem', 'color': '#FF0000', 'marginBottom': '1rem'}),
             html.P(f'Error calculating distance: {str(e)}', style={'color': '#FF0000', 'textAlign': 'center'})
         ], style={'textAlign': 'center', 'padding': '2rem'})
-    
-if __name__ == '__main__':
-    app.run(debug=True, port=8050)
+# ===== FAVORITES SYSTEM CALLBACKS =====
 
-
-
-# --- START: 新增的程式碼 (Create Trip 功能) ---
-
-# Callback 1: 將餐廳加入 'selected-restaurants' store
+# 1. Initialize favorites cache on login AND page load
 @app.callback(
-    Output('selected-restaurants', 'data'),
-    Input({'type': 'add-to-trip-btn', 'index': ALL}, 'n_clicks'),
-    State('selected-restaurants', 'data'),
-    State('search-results-store', 'data'),
+    Output('user-favorites-cache', 'data'),
+    Input('session-store', 'data'),
+    prevent_initial_call=False  # Allow initial call to load cache on page refresh
+)
+def initialize_favorites_cache(session_data):
+    """Load user's favorites into cache when they log in or refresh page"""
+    if not session_data or 'session_id' not in session_data:
+        raise PreventUpdate
+
+    user_id = get_session(session_data['session_id'])
+    if not user_id:
+        raise PreventUpdate
+
+    from utils.favorites import get_favorites_by_ids
+    from datetime import datetime
+
+    print(f"[FAVORITES] Loading favorites cache for user {user_id}")
+
+    # Load favorites by type
+    cache = {
+        'restaurants': get_favorites_by_ids(user_id, 'restaurant'),
+        'hotels': get_favorites_by_ids(user_id, 'hotel'),
+        'attractions': get_favorites_by_ids(user_id, 'attraction'),
+        'last_updated': datetime.now().isoformat()
+    }
+
+    return cache
+
+
+# TEST: Simple callback with normal button ID
+@app.callback(
+    Output('url', 'search', allow_duplicate=True),
+    Input('test-simple-button', 'n_clicks'),
     prevent_initial_call=True
 )
-def add_restaurant_to_trip(n_clicks, selected_data, search_data):
+def test_simple_button_click(n_clicks):
+    print("=" * 80, flush=True)
+    print("SIMPLE BUTTON CALLBACK FIRED!", flush=True)
+    print(f"n_clicks: {n_clicks}", flush=True)
+    print("=" * 80, flush=True)
+    from dash import no_update
+    return no_update
+
+# 2. Toggle favorite (master callback)
+import sys
+print("[STARTUP] Registering favorite toggle callback...", flush=True)
+sys.stdout.flush()
+@app.callback(
+    [Output('user-favorites-cache', 'data', allow_duplicate=True),
+     Output('notification-queue', 'data', allow_duplicate=True)],
+    Input({'type': 'favorite-btn', 'item-type': ALL, 'index': ALL}, 'n_clicks'),
+    [State({'type': 'favorite-btn', 'item-type': ALL, 'index': ALL}, 'id'),
+     State('session-store', 'data'),
+     State('user-favorites-cache', 'data'),
+     State('notification-queue', 'data'),
+     State('search-results-store', 'data'),
+     State('hotel-search-results-store', 'data')],
+    prevent_initial_call=True  # Must be True when using allow_duplicate
+)
+def handle_favorite_toggle(n_clicks_list, btn_ids, session_data, favorites_cache,
+                          notification_queue, restaurant_results, hotel_results):
+    print("[CALLBACK] !!!!! CALLBACK FUNCTION EXECUTING !!!!!")  # This should print if callback runs
+    """
+    Universal favorite toggle handler using pattern matching
+    Handles all favorite buttons across the app
+    """
+    print("=" * 80)
+    print("FAVORITE TOGGLE CALLBACK FIRED!")
+    print(f"n_clicks_list: {n_clicks_list}")
+    print(f"Number of buttons: {len(btn_ids) if btn_ids else 0}")
+    print("=" * 80)
+
+    from utils.favorites import toggle_favorite
+    from utils.database import get_restaurant_by_id, get_hotel_by_id
+    from datetime import datetime
+    import json
+
+    ctx = callback_context
+    print(f"ctx.triggered: {ctx.triggered}")
+
+    if not ctx.triggered:
+        print("No trigger detected - raising PreventUpdate")
+        raise PreventUpdate
+
+    # Get which button was clicked
+    triggered_prop = ctx.triggered[0]['prop_id']
+    triggered_value = ctx.triggered[0]['value']
+
+    # Ignore if value is None or 0 (button not actually clicked, just created/initialized)
+    if not triggered_prop or triggered_prop == '.' or triggered_value is None or triggered_value == 0:
+        print(f"Ignoring trigger - value is {triggered_value} (button initialization, not a click)")
+        raise PreventUpdate
+
+    print(f"Valid click detected! Button ID: {triggered_prop}, Value: {triggered_value}")
+
+    # Parse the triggered ID
+    try:
+        triggered_id = ctx.triggered_id
+        item_type = triggered_id['item-type']
+        item_id = triggered_id['index']
+    except:
+        raise PreventUpdate
+
+    # Validate session
+    if not session_data or 'session_id' not in session_data:
+        return no_update, no_update
+
+    user_id = get_session(session_data['session_id'])
+    if not user_id:
+        return no_update, no_update
+
+    # Get item name and data based on type
+    item_name = "Item"
+    item_metadata = {}
+
+    if item_type == 'restaurant':
+        # Try to get from search results first
+        restaurant_data = None
+        if restaurant_results:
+            for r in restaurant_results:
+                if r.get('Restaurant_ID') == item_id:
+                    restaurant_data = r
+                    break
+
+        # If not in search results, query database
+        if not restaurant_data:
+            restaurant_data = get_restaurant_by_id(item_id)
+
+        if restaurant_data:
+            item_name = restaurant_data['Name']
+            item_metadata = {
+                'rating': restaurant_data.get('TotalRating'),
+                'category': restaurant_data.get('FirstCategory'),
+                'station': restaurant_data.get('Station')
+            }
+
+    elif item_type == 'hotel':
+        # Try to get from search results first
+        hotel_data = None
+        if hotel_results:
+            for h in hotel_results:
+                if h.get('Hotel_ID') == item_id:
+                    hotel_data = h
+                    break
+
+        # If not in search results, query database
+        if not hotel_data:
+            from utils.database import get_hotel_by_id
+            hotel_data = get_hotel_by_id(item_id)
+
+        if hotel_data:
+            item_name = hotel_data['HotelName']
+            # Types is a list, filter out generic Google Places types
+            hotel_types = hotel_data.get('Types', [])
+
+            # Debug logging
+            print(f"[HOTEL TYPE DEBUG] Hotel ID: {item_id}, Types: {hotel_types}, Type: {type(hotel_types)}")
+
+            # Filter out generic types and get the most specific one
+            generic_types = ['lodging', 'point_of_interest', 'establishment', 'place_of_worship']
+            meaningful_types = []
+
+            if isinstance(hotel_types, list):
+                meaningful_types = [t for t in hotel_types if t not in generic_types]
+            elif isinstance(hotel_types, str):
+                types_list = [t.strip() for t in hotel_types.split(',')]
+                meaningful_types = [t for t in types_list if t not in generic_types]
+
+            # Use the first meaningful type, or default to 'Accommodation'
+            if meaningful_types:
+                hotel_type = meaningful_types[0].replace('_', ' ').title()
+            else:
+                hotel_type = 'Accommodation'
+
+            item_metadata = {
+                'rating': hotel_data.get('Rating'),
+                'type': hotel_type,
+                'address': hotel_data.get('Address')
+            }
+
+    elif item_type == 'attraction':
+        # Query database for attraction
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM attractions WHERE ID = ?", (item_id,))
+            row = cursor.fetchone()
+            if row:
+                attr_data = dict(row)
+                item_name = attr_data['Name']
+                item_metadata = {
+                    'rating': attr_data.get('Rating'),
+                    'type': attr_data.get('Type')
+                }
+
+    # Toggle favorite in database
+    success, is_favorited, message = toggle_favorite(
+        user_id, item_type, item_id, item_name, item_metadata
+    )
+
+    # Update cache
+    if favorites_cache is None:
+        favorites_cache = {'restaurants': [], 'hotels': [], 'attractions': []}
+
+    type_key = f"{item_type}s"  # restaurant -> restaurants
+    current_favs = favorites_cache.get(type_key, [])
+
+    if is_favorited and item_id not in current_favs:
+        current_favs.append(item_id)
+    elif not is_favorited and item_id in current_favs:
+        current_favs.remove(item_id)
+
+    favorites_cache[type_key] = current_favs
+    favorites_cache['last_updated'] = datetime.now().isoformat()
+
+    # Add notification
+    if notification_queue is None:
+        notification_queue = []
+
+    notification_queue.append({
+        'message': message,
+        'type': 'success' if success else 'error',
+        'id': str(datetime.now().timestamp())
+    })
+
+    return favorites_cache, notification_queue
+
+
+# 3. Display toast notifications
+@app.callback(
+    Output('toast-container', 'children'),
+    Input('notification-queue', 'data'),
+    prevent_initial_call=True
+)
+def display_toast_notifications(notification_queue):
+    """Display toast notifications from queue"""
+    if not notification_queue:
+        return []
+
+    # Get the latest notification
+    latest = notification_queue[-1]
+
+    toast = create_toast(
+        latest['message'],
+        latest['type'],
+        latest['id']
+    )
+
+    return [toast]
+
+
+# 4. Auto-dismiss toast after 3 seconds (clientside callback)
+# Just adds exit animation - toast will be replaced by next notification
+app.clientside_callback(
+    """
+    function(notification_queue) {
+        if (!notification_queue || notification_queue.length === 0) {
+            return window.dash_clientside.no_update;
+        }
+
+        // Add exit animation after 3 seconds
+        setTimeout(function() {
+            const toastContainer = document.getElementById('toast-container');
+            if (toastContainer && toastContainer.children.length > 0) {
+                const toasts = toastContainer.querySelectorAll('[id*="toast"]');
+                toasts.forEach(toast => {
+                    if (toast && !toast.classList.contains('toast-exit')) {
+                        toast.classList.add('toast-exit');
+                    }
+                });
+            }
+        }, 3000);
+
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output('notification-trigger', 'data', allow_duplicate=True),
+    Input('notification-queue', 'data'),
+    prevent_initial_call=True
+)
+
+
+# 5. Update heart icons/colors when favorites cache changes
+app.clientside_callback(
+    """
+    function(favorites_cache) {
+        if (!favorites_cache) {
+            return window.dash_clientside.no_update;
+        }
+
+        console.log('Updating heart icons based on favorites cache:', favorites_cache);
+
+        // Get all favorite buttons
+        const buttons = document.querySelectorAll('[id*="favorite-btn"]');
+
+        buttons.forEach(button => {
+            try {
+                // Parse button ID to get item type and ID
+                const idStr = button.id;
+                const idObj = JSON.parse(idStr);
+                const itemType = idObj['item-type'];
+                const itemId = idObj['index'];
+
+                // Skip dummy button
+                if (itemType === 'dummy' || itemId === -1) {
+                    return;
+                }
+
+                // Check if this item is favorited
+                const cacheKey = itemType + 's'; // restaurant -> restaurants
+                const favoriteIds = favorites_cache[cacheKey] || [];
+                const isFavorited = favoriteIds.includes(itemId);
+
+                // Get the icon element (child of button)
+                const icon = button.querySelector('i');
+                if (!icon) return;
+
+                // Update icon class
+                if (isFavorited) {
+                    icon.className = 'fas fa-heart'; // Filled heart
+                    button.style.color = '#deb522'; // Gold
+                } else {
+                    icon.className = 'far fa-heart'; // Outline heart
+                    button.style.color = '#888888'; // Gray
+                }
+
+                console.log(`Updated ${itemType} ${itemId}: ${isFavorited ? 'favorited' : 'not favorited'}`);
+            } catch (e) {
+                console.error('Error updating button:', button.id, e);
+            }
+        });
+
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output('notification-trigger', 'data', allow_duplicate=True),
+    Input('user-favorites-cache', 'data'),
+    prevent_initial_call=True
+)
+
+
+# Debug callback - Log when any heart button is clicked
+app.clientside_callback(
+    """
+    function(n_clicks_list) {
+        console.log('=== DEBUG: Heart button n_clicks changed ===');
+        console.log('n_clicks_list:', n_clicks_list);
+
+        // Find which button was clicked (non-zero, non-null value)
+        n_clicks_list.forEach((clicks, index) => {
+            if (clicks && clicks > 0) {
+                console.log(`Button ${index} was clicked! Value: ${clicks}`);
+            }
+        });
+
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output('notification-trigger', 'data', allow_duplicate=True),
+    Input({'type': 'favorite-btn', 'item-type': ALL, 'index': ALL}, 'n_clicks'),
+    prevent_initial_call=True
+)
+
+# Clientside callback to scroll to top when entering favorites page
+app.clientside_callback(
+    """
+    function(viewMode) {
+        if (viewMode === 'favorites') {
+            console.log('[FAVORITES] Scrolling to top');
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output('event-listener-trigger', 'data', allow_duplicate=True),
+    Input('view-mode', 'data'),
+    prevent_initial_call=True
+)
+
+
+# ==========================================
+# CREATE TRIP CALLBACKS
+# ==========================================
+
+# ===== NEW DRAG-AND-DROP CALLBACKS =====
+
+# CALLBACK 1: Populate Draggable Favorites
+@app.callback(
+    Output('draggable-favorites-container', 'children'),
+    [Input('session-store', 'data'),
+     Input({'type': 'fav-filter', 'category': ALL}, 'n_clicks')],
+    [State({'type': 'fav-filter', 'category': ALL}, 'id')],
+    prevent_initial_call=False
+)
+def populate_draggable_favorites(session_data, filter_clicks, filter_ids):
+    """Load and display draggable favorite items"""
+    from utils.favorites import get_user_favorites
+    from utils.auth import get_session
+    from dash import callback_context
+
+    # Determine active filter
+    active_category = 'all'
+    ctx = callback_context
+    if ctx.triggered and 'fav-filter' in ctx.triggered[0]['prop_id']:
+        triggered_id = ctx.triggered_id
+        if triggered_id:
+            active_category = triggered_id['category']
+
+    # Get user ID
+    if not session_data or 'session_id' not in session_data:
+        return html.Div("Please log in to see your favorites.", style={'padding': '2rem', 'textAlign': 'center', 'color': '#888'})
+
+    user_id = get_session(session_data['session_id'])
+    if not user_id:
+        return html.Div("Session expired. Please log in again.", style={'padding': '2rem', 'textAlign': 'center', 'color': '#888'})
+
+    # Get favorites
+    all_favorites = get_user_favorites(user_id)
+    if not all_favorites:
+        return html.Div([
+            html.I(className='fas fa-heart', style={'fontSize': '3rem', 'color': '#ddd', 'marginBottom': '1rem'}),
+            html.P("No favorites yet", style={'color': '#888'}),
+            html.P("Add favorites from restaurant, hotel, or attraction pages", style={'color': '#aaa', 'fontSize': '0.85rem'})
+        ], style={'textAlign': 'center', 'padding': '3rem'})
+
+    # Filter by category
+    if active_category != 'all':
+        favorites = [f for f in all_favorites if f['item_type'] == active_category]
+    else:
+        favorites = all_favorites
+
+    if not favorites:
+        return html.Div(f"No {active_category}s in your favorites", style={'padding': '2rem', 'textAlign': 'center', 'color': '#888'})
+
+    # Create draggable items
+    return [create_draggable_favorite_item(fav) for fav in favorites]
+
+
+# CALLBACK 2: Update Filter Button Styles
+@app.callback(
+    [Output({'type': 'fav-filter', 'category': 'all'}, 'className'),
+     Output({'type': 'fav-filter', 'category': 'restaurant'}, 'className'),
+     Output({'type': 'fav-filter', 'category': 'hotel'}, 'className'),
+     Output({'type': 'fav-filter', 'category': 'attraction'}, 'className')],
+    [Input({'type': 'fav-filter', 'category': ALL}, 'n_clicks')],
+    [State({'type': 'fav-filter', 'category': ALL}, 'id')],
+    prevent_initial_call=True
+)
+def update_filter_styles(n_clicks, filter_ids):
+    """Update active filter chip styling"""
+    from dash import callback_context
+
+    ctx = callback_context
+    if not ctx.triggered:
+        return ['filter-chip active-filter', 'filter-chip', 'filter-chip', 'filter-chip']
+
+    triggered_id = ctx.triggered_id
+    if not triggered_id:
+        return ['filter-chip active-filter', 'filter-chip', 'filter-chip', 'filter-chip']
+
+    active_category = triggered_id['category']
+
+    return [
+        'filter-chip active-filter' if active_category == 'all' else 'filter-chip',
+        'filter-chip active-filter' if active_category == 'restaurant' else 'filter-chip',
+        'filter-chip active-filter' if active_category == 'hotel' else 'filter-chip',
+        'filter-chip active-filter' if active_category == 'attraction' else 'filter-chip'
+    ]
+
+
+# CALLBACK 3: Populate Timeline Based on Dates
+@app.callback(
+    Output('trip-timeline-container', 'children'),
+    [Input('trip-start-date', 'date'),
+     Input('trip-end-date', 'date'),
+     Input('trip-schedule-items', 'data')],
+    prevent_initial_call=False
+)
+def populate_timeline(start_date, end_date, schedule_items):
+    """Create day drop zones based on selected date range"""
+    from datetime import datetime, timedelta
+
+    print(f"[TIMELINE] ========== POPULATE TIMELINE CALLBACK FIRED ==========")
+    print(f"[TIMELINE] start_date: {start_date}, end_date: {end_date}")
+    print(f"[TIMELINE] schedule_items: {schedule_items}")
+
+    if not start_date or not end_date:
+        return html.Div([
+            html.Div([
+                html.I(className='fas fa-calendar-alt', style={'fontSize': '3rem', 'color': '#ddd', 'marginBottom': '1rem'}),
+                html.P("Select start and end dates above", style={'color': '#888', 'fontSize': '1.1rem'}),
+                html.P("to see your trip timeline", style={'color': '#aaa', 'fontSize': '0.9rem'})
+            ], style={'textAlign': 'center', 'padding': '4rem 2rem'})
+        ])
+
+    try:
+        start = datetime.fromisoformat(start_date.split('T')[0])
+        end = datetime.fromisoformat(end_date.split('T')[0])
+
+        if end < start:
+            return html.Div("End date must be after start date", style={'padding': '2rem', 'textAlign': 'center', 'color': '#dc3545'})
+
+        num_days = (end - start).days + 1
+
+        if num_days > 30:
+            return html.Div("Trip is too long (max 30 days)", style={'padding': '2rem', 'textAlign': 'center', 'color': '#dc3545'})
+
+        # Organize items by day
+        items_by_day = {i: [] for i in range(1, num_days + 1)}
+        if schedule_items:
+            for day_key, items in schedule_items.items():
+                day_num = int(day_key)
+                if day_num in items_by_day:
+                    items_by_day[day_num] = items
+
+        # Create drop zones for each day
+        day_zones = []
+        for day in range(1, num_days + 1):
+            day_zones.append(create_day_drop_zone(day, items_by_day[day]))
+
+        return day_zones
+
+    except Exception as e:
+        return html.Div(f"Error: {str(e)}", style={'padding': '2rem', 'textAlign': 'center', 'color': '#dc3545'})
+
+
+# CALLBACK 4: Setup Drag-and-Drop Event Listeners (Clientside)
+# This runs whenever favorites or timeline content changes
+app.clientside_callback(
+    """
+    function(favorites_children, timeline_children) {
+        // Initialize global variables
+        if (!window.pendingDrops) {
+            window.pendingDrops = [];
+        }
+
+        // Prevent setting up multiple times
+        const setupKey = JSON.stringify([favorites_children, timeline_children]);
+        if (window.lastSetupKey === setupKey) {
+            return window.dash_clientside.no_update;
+        }
+        window.lastSetupKey = setupKey;
+
+        // Set up drag event handlers
+        setTimeout(function() {
+            const draggables = document.querySelectorAll('.draggable-item');
+            const dropZones = document.querySelectorAll('.drop-zone');
+
+            console.log('=== DRAG-DROP SETUP ===');
+            console.log('Draggables:', draggables.length, 'Drop zones:', dropZones.length);
+
+            if (draggables.length === 0 || dropZones.length === 0) {
+                console.log('Waiting for elements...');
+                return;
+            }
+
+            window.currentDraggedItem = null;
+
+            // Set up draggable items
+            draggables.forEach(draggable => {
+                draggable.ondragstart = function(e) {
+                    window.currentDraggedItem = {
+                        type: e.target.dataset.itemType,
+                        id: e.target.dataset.itemId,
+                        name: e.target.dataset.itemName
+                    };
+                    console.log('✓ Drag started:', window.currentDraggedItem);
+                    e.target.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', JSON.stringify(window.currentDraggedItem));
+                };
+
+                draggable.ondragend = function(e) {
+                    e.target.classList.remove('dragging');
+                    console.log('✓ Drag ended');
+                };
+            });
+
+            // Set up drop zones (only if not already set up)
+            dropZones.forEach(zone => {
+                // Skip if already has listeners attached
+                if (zone.dataset.listenersAttached === 'true') {
+                    console.log('✓ Zone already has listeners, skipping');
+                    return;
+                }
+
+                // Mark as having listeners
+                zone.dataset.listenersAttached = 'true';
+                console.log('✓ Attaching listeners to zone:', zone.dataset.day);
+
+                zone.ondragover = function(e) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    e.currentTarget.classList.add('drag-over');
+                };
+
+                zone.ondragleave = function(e) {
+                    e.currentTarget.classList.remove('drag-over');
+                };
+
+                zone.ondrop = function(e) {
+                    console.log('✓✓✓ DROP EVENT FIRED! ✓✓✓');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.currentTarget.classList.remove('drag-over');
+
+                    if (window.currentDraggedItem) {
+                        const dayNum = e.currentTarget.dataset.day;
+                        console.log('✓ Item dropped on day', dayNum);
+                        console.log('✓ Item data:', window.currentDraggedItem);
+
+                        // Create drop event data with timestamp to ensure uniqueness
+                        const dropData = {
+                            timestamp: Date.now(),
+                            day: dayNum,
+                            item: {
+                                type: window.currentDraggedItem.type,
+                                id: window.currentDraggedItem.id,
+                                name: window.currentDraggedItem.name
+                            }
+                        };
+
+                        // Update the store directly using setProps
+                        const storeElement = document.getElementById('trip-drop-trigger');
+                        if (storeElement && storeElement.dash) {
+                            storeElement.dash.setProps({data: dropData});
+                            console.log('✓ Updated store with drop data:', dropData);
+                        } else {
+                            // Fallback: store for polling callback
+                            window.lastDropData = dropData;
+                            console.log('✓ Stored drop data (fallback):', dropData);
+                        }
+                    } else {
+                        console.log('✗ No dragged item data!');
+                    }
+                };
+            });
+
+            console.log('=== SETUP COMPLETE ===');
+        }, 200);
+
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output('drag-setup-complete', 'children'),
+    [Input('draggable-favorites-container', 'children'),
+     Input('trip-timeline-container', 'children')],
+    prevent_initial_call=False
+)
+
+
+# CALLBACK 4b: Poll for drop events and update store (Clientside)
+# This interval callback checks every 100ms for drop data
+app.clientside_callback(
+    """
+    function(n_intervals) {
+        // Log polling (only every 50 intervals to avoid spam)
+        if (n_intervals % 50 === 0) {
+            console.log('[POLL] Checking for drop data... interval:', n_intervals);
+        }
+
+        // Check for pending drop events
+        if (window.lastDropData) {
+            const data = window.lastDropData;
+            window.lastDropData = null;
+
+            // Add interval counter to ensure uniqueness
+            data._pollInterval = n_intervals;
+
+            console.log('✓✓✓ SENDING DROP DATA TO PYTHON:', data);
+            console.log('✓ Store ID: trip-drop-trigger');
+            console.log('✓ Return type:', typeof data);
+            return data;
+        }
+
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output('trip-drop-trigger', 'data'),
+    Input('drop-poll-interval', 'n_intervals'),
+    prevent_initial_call=False
+)
+
+
+# CALLBACK 4c: Handle Drop Events from Store (Server-side)
+@app.callback(
+    Output('trip-schedule-items', 'data', allow_duplicate=True),
+    Input('trip-drop-trigger', 'data'),
+    State('trip-schedule-items', 'data'),
+    prevent_initial_call=True
+)
+def handle_drop_event(drop_data, schedule_items):
+    """Handle drop events from JavaScript"""
+    print(f"[DROP EVENT] ========== PYTHON CALLBACK FIRED ==========")
+    print(f"[DROP EVENT] Received drop trigger: {drop_data}")
+
+    if not drop_data:
+        print(f"[DROP EVENT] No drop data, raising PreventUpdate")
+        raise PreventUpdate
+
+    # Extract data from drop event
+    day = drop_data.get('day')
+    item = drop_data.get('item', {})
+    item_type = item.get('type')
+    item_id = item.get('id')
+    item_name = item.get('name')
+
+    print(f"[DROP EVENT] Day: {day}, Type: {item_type}, ID: {item_id}, Name: {item_name}")
+
+    if not day or not item_type or not item_id or not item_name:
+        print(f"[DROP EVENT] Missing required data")
+        raise PreventUpdate
+
+    # Initialize if needed
+    if schedule_items is None:
+        schedule_items = {}
+
+    # Add item to this day
+    day_key = str(day)
+    if day_key not in schedule_items:
+        schedule_items[day_key] = []
+
+    # Check if item already exists
+    exists = any(
+        existing['item_id'] == item_id and existing['item_type'] == item_type
+        for existing in schedule_items[day_key]
+    )
+
+    if not exists:
+        schedule_items[day_key].append({
+            'item_type': item_type,
+            'item_id': item_id,
+            'item_name': item_name
+        })
+        print(f"[DROP EVENT] ✓✓✓ SUCCESS! Added '{item_name}' to day {day}. Total items: {len(schedule_items[day_key])}")
+    else:
+        print(f"[DROP EVENT] Item already exists in schedule")
+
+    return schedule_items
+
+
+# CALLBACK 5: Remove Item from Schedule
+@app.callback(
+    Output('trip-schedule-items', 'data', allow_duplicate=True),
+    Input({'type': 'remove-from-schedule', 'day': ALL, 'item-id': ALL, 'item-type': ALL}, 'n_clicks'),
+    State('trip-schedule-items', 'data'),
+    prevent_initial_call=True
+)
+def remove_from_schedule(n_clicks, schedule_items):
+    """Remove an item from the schedule"""
+    from dash import callback_context
+
     if not any(n_clicks):
         raise PreventUpdate
 
@@ -7840,99 +10908,426 @@ def add_restaurant_to_trip(n_clicks, selected_data, search_data):
     if not triggered_id:
         raise PreventUpdate
 
-    restaurant_id = triggered_id['index']
-    
-    # 初始化
-    if selected_data is None:
-        selected_data = []
+    day = str(triggered_id['day'])
+    item_id = triggered_id['item-id']
+    item_type = triggered_id['item-type']
 
-    # 檢查是否已存在
-    existing_ids = {r['Restaurant_ID'] for r in selected_data}
-    if restaurant_id in existing_ids:
-        return no_update # or provide user feedback
+    if not schedule_items:
+        schedule_items = {}
 
-    # 從搜尋結果中找到餐廳的完整資料
-    restaurant_to_add = None
-    if search_data:
-        for r in search_data:
-            if r['Restaurant_ID'] == restaurant_id:
-                restaurant_to_add = r
-                break
-    
-    if restaurant_to_add:
-        selected_data.append(restaurant_to_add)
+    # Remove the item
+    if day in schedule_items:
+        schedule_items[day] = [
+            item for item in schedule_items[day]
+            if not (item['item_id'] == item_id and item['item_type'] == item_type)
+        ]
+        # Remove day if empty
+        if not schedule_items[day]:
+            del schedule_items[day]
 
-    return selected_data
+    return schedule_items
 
-# Callback 2: 在 Create Trip 頁面顯示選擇的餐廳列表
+
+# CALLBACK 5a: Update Time for Schedule Item
 @app.callback(
-    Output('selected-restaurants-container', 'children'),
-    Input('selected-restaurants', 'data')
-)
-def display_selected_restaurants(selected_data):
-    if not selected_data:
-        return html.Div("No restaurants selected yet. Go to 'View All' to add some!", style={'textAlign': 'center', 'padding': '2rem', 'color': '#888'})
-
-    list_items = []
-    for restaurant in selected_data:
-        item = dbc.ListGroupItem([
-            dbc.Row([
-                dbc.Col(
-                    html.Div([
-                        html.H5(restaurant['Name'], className="mb-1"),
-                        html.Small(restaurant.get('FirstCategory', ''), className="text-muted"),
-                    ]),
-                    width=10
-                ),
-                dbc.Col(
-                    dbc.Button(
-                        "Remove",
-                        id={'type': 'remove-from-trip-btn', 'index': restaurant['Restaurant_ID']},
-                        color="danger",
-                        outline=True,
-                        size="sm"
-                    ),
-                    width=2,
-                    className="d-flex align-items-center justify-content-end"
-                )
-            ], align="center")
-        ])
-        list_items.append(item)
-    
-    return dbc.ListGroup(list_items)
-
-# Callback 3: 從選擇列表中移除餐廳
-@app.callback(
-    Output('selected-restaurants', 'data', allow_duplicate=True),
-    Input({'type': 'remove-from-trip-btn', 'index': ALL}, 'n_clicks'),
-    State('selected-restaurants', 'data'),
+    Output('trip-schedule-items', 'data', allow_duplicate=True),
+    Input({'type': 'schedule-time', 'day': ALL, 'item-id': ALL, 'item-type': ALL}, 'value'),
+    State({'type': 'schedule-time', 'day': ALL, 'item-id': ALL, 'item-type': ALL}, 'id'),
+    State('trip-schedule-items', 'data'),
     prevent_initial_call=True
 )
-def remove_restaurant_from_trip(n_clicks, selected_data):
-    if not any(n_clicks) or not selected_data:
-        raise PreventUpdate
+def update_schedule_time(time_values, time_ids, schedule_items):
+    """Update the time for a scheduled item"""
+    from dash import callback_context
 
     ctx = callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
+
     triggered_id = ctx.triggered_id
     if not triggered_id:
         raise PreventUpdate
-        
-    restaurant_id_to_remove = triggered_id['index']
 
-    # 創建一個新的列表，排除要被刪除的餐廳
-    updated_list = [r for r in selected_data if r['Restaurant_ID'] != restaurant_id_to_remove]
-    
-    return updated_list
+    # Get the time value that was changed
+    triggered_prop = ctx.triggered[0]['prop_id']
+    new_time = ctx.triggered[0]['value']
 
-# Callback 4: 處理 Create Trip 頁面上的返回按鈕
+    print(f"[TIME UPDATE] Triggered: {triggered_prop}")
+    print(f"[TIME UPDATE] New time: {new_time}")
+    print(f"[TIME UPDATE] Triggered ID: {triggered_id}")
+
+    day = str(triggered_id['day'])
+    item_id = triggered_id['item-id']
+    item_type = triggered_id['item-type']
+
+    if not schedule_items:
+        schedule_items = {}
+
+    # Update the time for the specific item
+    if day in schedule_items:
+        for item in schedule_items[day]:
+            if item['item_id'] == item_id and item['item_type'] == item_type:
+                item['time'] = new_time if new_time else ''
+                print(f"[TIME UPDATE] ✓ Updated {item['item_name']} to {new_time}")
+                break
+
+    return schedule_items
+
+
+# CALLBACK 5b: Update Cost for Schedule Item
 @app.callback(
-    Output('url', 'pathname', allow_duplicate=True),
-    Input({'type': 'back-btn', 'index': 'create-trip'}, 'n_clicks'),
+    Output('trip-schedule-items', 'data', allow_duplicate=True),
+    Input({'type': 'schedule-cost', 'day': ALL, 'item-id': ALL, 'item-type': ALL}, 'value'),
+    State({'type': 'schedule-cost', 'day': ALL, 'item-id': ALL, 'item-type': ALL}, 'id'),
+    State('trip-schedule-items', 'data'),
     prevent_initial_call=True
 )
-def go_back_from_create_trip(n_clicks):
-    if n_clicks > 0:
-        return '/'
-    return no_update
+def update_schedule_cost(cost_values, cost_ids, schedule_items):
+    """Update the cost for a scheduled item"""
+    from dash import callback_context
 
-# --- END: 新增的程式碼 (Create Trip 功能) ---
+    ctx = callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
+
+    triggered_id = ctx.triggered_id
+    if not triggered_id:
+        raise PreventUpdate
+
+    new_cost = ctx.triggered[0]['value']
+
+    day = str(triggered_id['day'])
+    item_id = triggered_id['item-id']
+    item_type = triggered_id['item-type']
+
+    if not schedule_items:
+        schedule_items = {}
+
+    # Update the cost for the specific item
+    if day in schedule_items:
+        for item in schedule_items[day]:
+            if item['item_id'] == item_id and item['item_type'] == item_type:
+                item['cost'] = new_cost if new_cost else None
+                print(f"[COST UPDATE] ✓ Updated {item['item_name']} cost to {new_cost}")
+                break
+
+    return schedule_items
+
+
+# CALLBACK 5c: Update Notes for Schedule Item
+@app.callback(
+    Output('trip-schedule-items', 'data', allow_duplicate=True),
+    Input({'type': 'schedule-notes', 'day': ALL, 'item-id': ALL, 'item-type': ALL}, 'value'),
+    State({'type': 'schedule-notes', 'day': ALL, 'item-id': ALL, 'item-type': ALL}, 'id'),
+    State('trip-schedule-items', 'data'),
+    prevent_initial_call=True
+)
+def update_schedule_notes(notes_values, notes_ids, schedule_items):
+    """Update the notes for a scheduled item"""
+    from dash import callback_context
+
+    ctx = callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
+
+    triggered_id = ctx.triggered_id
+    if not triggered_id:
+        raise PreventUpdate
+
+    new_notes = ctx.triggered[0]['value']
+
+    day = str(triggered_id['day'])
+    item_id = triggered_id['item-id']
+    item_type = triggered_id['item-type']
+
+    if not schedule_items:
+        schedule_items = {}
+
+    # Update the notes for the specific item
+    if day in schedule_items:
+        for item in schedule_items[day]:
+            if item['item_id'] == item_id and item['item_type'] == item_type:
+                item['notes'] = new_notes if new_notes else ''
+                print(f"[NOTES UPDATE] ✓ Updated {item['item_name']} notes")
+                break
+
+    return schedule_items
+
+
+# CALLBACK 5d: Add Standalone Note Between Items
+@app.callback(
+    Output('trip-schedule-items', 'data', allow_duplicate=True),
+    Input({'type': 'add-note-btn', 'day': ALL, 'position': ALL}, 'n_clicks'),
+    State({'type': 'add-note-btn', 'day': ALL, 'position': ALL}, 'id'),
+    State('trip-schedule-items', 'data'),
+    prevent_initial_call=True
+)
+def add_standalone_note(n_clicks_list, button_ids, schedule_items):
+    """Add a standalone note between items"""
+    from dash import callback_context
+    from datetime import datetime
+
+    ctx = callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
+
+    triggered_id = ctx.triggered_id
+    if not triggered_id:
+        raise PreventUpdate
+
+    # Check if actually clicked
+    triggered_prop = ctx.triggered[0]
+    n_clicks_value = triggered_prop.get('value')
+    if n_clicks_value is None or n_clicks_value == 0:
+        raise PreventUpdate
+
+    day = str(triggered_id['day'])
+    position = triggered_id['position']
+
+    if not schedule_items:
+        schedule_items = {}
+
+    # Create new note item with unique ID
+    note_id = f"note-{datetime.now().timestamp()}"
+    new_note = {
+        'item_type': 'note',
+        'item_id': note_id,
+        'item_name': '',
+        'notes': '',
+        'time': None,
+        'cost': None
+    }
+
+    # Insert at the specified position
+    if day in schedule_items:
+        schedule_items[day].insert(position, new_note)
+    else:
+        schedule_items[day] = [new_note]
+
+    print(f"[ADD NOTE] ✓ Added standalone note to Day {day} at position {position}")
+
+    return schedule_items
+
+
+# CALLBACK 5e: Update Standalone Note Text
+@app.callback(
+    Output('trip-schedule-items', 'data', allow_duplicate=True),
+    Input({'type': 'standalone-note', 'day': ALL, 'note-id': ALL}, 'value'),
+    State({'type': 'standalone-note', 'day': ALL, 'note-id': ALL}, 'id'),
+    State('trip-schedule-items', 'data'),
+    prevent_initial_call=True
+)
+def update_standalone_note(note_values, note_ids, schedule_items):
+    """Update the text of a standalone note"""
+    from dash import callback_context
+
+    ctx = callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
+
+    triggered_id = ctx.triggered_id
+    new_note_text = ctx.triggered[0]['value']
+
+    day = str(triggered_id['day'])
+    note_id = triggered_id['note-id']
+
+    if day in schedule_items:
+        for item in schedule_items[day]:
+            if item['item_type'] == 'note' and item['item_id'] == note_id:
+                item['notes'] = new_note_text if new_note_text else ''
+                print(f"[NOTE UPDATE] ✓ Updated standalone note in Day {day}")
+                break
+
+    return schedule_items
+
+
+# CALLBACK 5f: Remove Standalone Note
+@app.callback(
+    Output('trip-schedule-items', 'data', allow_duplicate=True),
+    Input({'type': 'remove-note', 'day': ALL, 'note-id': ALL}, 'n_clicks'),
+    State({'type': 'remove-note', 'day': ALL, 'note-id': ALL}, 'id'),
+    State('trip-schedule-items', 'data'),
+    prevent_initial_call=True
+)
+def remove_standalone_note(n_clicks_list, button_ids, schedule_items):
+    """Remove a standalone note"""
+    from dash import callback_context
+
+    ctx = callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
+
+    triggered_id = ctx.triggered_id
+    if not triggered_id:
+        raise PreventUpdate
+
+    # Check if actually clicked
+    triggered_prop = ctx.triggered[0]
+    n_clicks_value = triggered_prop.get('value')
+    if n_clicks_value is None or n_clicks_value == 0:
+        raise PreventUpdate
+
+    day = str(triggered_id['day'])
+    note_id = triggered_id['note-id']
+
+    if day in schedule_items:
+        schedule_items[day] = [
+            item for item in schedule_items[day]
+            if not (item['item_type'] == 'note' and item['item_id'] == note_id)
+        ]
+        # Remove day if empty
+        if not schedule_items[day]:
+            del schedule_items[day]
+
+    print(f"[REMOVE NOTE] ✓ Removed standalone note from Day {day}")
+
+    return schedule_items
+
+
+# CALLBACK 6: Save Trip to Database (UPDATED for new structure and edit mode)
+@app.callback(
+    [Output('url', 'pathname', allow_duplicate=True),
+     Output('notification-queue', 'data', allow_duplicate=True)],
+    Input('save-trip-btn', 'n_clicks'),
+    [State('trip-name-input', 'value'),
+     State('trip-start-date', 'date'),
+     State('trip-end-date', 'date'),
+     State('trip-description-input', 'value'),
+     State('trip-schedule-items', 'data'),  # CHANGED: from trip-selected-items
+     State('trip-current-edit-id', 'data'),  # NEW: for edit mode
+     State('session-store', 'data')],
+    prevent_initial_call=True
+)
+def save_trip_to_database(n_clicks, trip_name, start_date, end_date, description, schedule_items, edit_trip_id, session_data):
+    """Save the trip to the database (create new or update existing)"""
+    from utils.trips import create_trip, add_item_to_trip, update_trip, delete_trip
+    from utils.auth import get_session
+    from datetime import datetime
+
+    if n_clicks == 0:
+        raise PreventUpdate
+
+    # Validate session
+    if not session_data or 'session_id' not in session_data:
+        return no_update, [{'message': 'Please log in to save your trip.', 'type': 'error', 'id': str(datetime.now().timestamp())}]
+
+    user_id = get_session(session_data['session_id'])
+    if not user_id:
+        return no_update, [{'message': 'Session expired. Please log in again.', 'type': 'error', 'id': str(datetime.now().timestamp())}]
+
+    # Validate inputs
+    if not trip_name or not trip_name.strip():
+        return no_update, [{'message': 'Please enter a trip name.', 'type': 'error', 'id': str(datetime.now().timestamp())}]
+
+    if not start_date or not end_date:
+        return no_update, [{'message': 'Please select start and end dates.', 'type': 'error', 'id': str(datetime.now().timestamp())}]
+
+    # Validate date format and order
+    try:
+        start = datetime.fromisoformat(start_date.split('T')[0])
+        end = datetime.fromisoformat(end_date.split('T')[0])
+        if end < start:
+            return no_update, [{'message': 'End date must be after start date.', 'type': 'error', 'id': str(datetime.now().timestamp())}]
+    except:
+        return no_update, [{'message': 'Invalid date format.', 'type': 'error', 'id': str(datetime.now().timestamp())}]
+
+    # Handle edit mode vs create mode
+    if edit_trip_id:
+        # EDIT MODE: Update existing trip
+        print(f"[EDIT MODE] Updating trip {edit_trip_id}")
+
+        # Update trip metadata
+        update_success, update_msg = update_trip(
+            trip_id=edit_trip_id,
+            trip_name=trip_name.strip(),
+            start_date=start_date.split('T')[0],
+            end_date=end_date.split('T')[0],
+            description=description.strip() if description else None
+        )
+
+        if not update_success:
+            return no_update, [{'message': f'Failed to update trip: {update_msg}', 'type': 'error', 'id': str(datetime.now().timestamp())}]
+
+        # Delete all existing trip items
+        from utils.trips import get_trip_items, remove_item_from_trip
+        existing_items = get_trip_items(edit_trip_id)
+        for item in existing_items:
+            remove_item_from_trip(item['id'])
+
+        trip_id = edit_trip_id
+        success_message = f'Trip "{trip_name}" updated successfully!'
+
+    else:
+        # CREATE MODE: Create new trip
+        print(f"[CREATE MODE] Creating new trip")
+
+        success, trip_id, message = create_trip(
+            user_id=user_id,
+            trip_name=trip_name.strip(),
+            start_date=start_date.split('T')[0],
+            end_date=end_date.split('T')[0],
+            description=description.strip() if description else None
+        )
+
+        if not success:
+            return no_update, [{'message': f'Failed to create trip: {message}', 'type': 'error', 'id': str(datetime.now().timestamp())}]
+
+        success_message = f'Trip "{trip_name}" created successfully!'
+
+    # Add all items to the trip (works for both create and edit)
+    # schedule_items is a dict where keys are day numbers (as strings) and values are lists of items
+    if schedule_items:
+        for day_str, items in schedule_items.items():
+            day_number = int(day_str)
+            for item in items:
+                # For note items, use a special item_id (0) and store the text in notes field
+                if item['item_type'] == 'note':
+                    item_id_to_save = 0  # Special ID for note items
+                    item_name_to_save = '[Note]'
+                    notes_to_save = item.get('notes', '')
+                else:
+                    item_id_to_save = item['item_id']
+                    item_name_to_save = item['item_name']
+                    notes_to_save = item.get('notes', None)
+
+                add_success, add_msg = add_item_to_trip(
+                    trip_id=trip_id,
+                    item_type=item['item_type'],
+                    item_id=item_id_to_save,
+                    item_name=item_name_to_save,
+                    day_number=day_number,
+                    notes=notes_to_save,
+                    time=item.get('time', None),  # Pass the time if it exists
+                    cost=item.get('cost', None)  # Pass cost if exists
+                )
+                if not add_success:
+                    print(f"Warning: Failed to add item {item_name_to_save}: {add_msg}")
+
+    # Success! Redirect to home page
+    return '/', [{'message': success_message, 'type': 'success', 'id': str(datetime.now().timestamp())}]
+
+
+# CALLBACK: Initialize trip schedule with existing items in edit mode
+@app.callback(
+    Output('trip-schedule-items', 'data', allow_duplicate=True),
+    Input('trip-initial-schedule', 'data'),
+    State('trip-current-edit-id', 'data'),
+    prevent_initial_call=True
+)
+def initialize_trip_schedule_for_edit(initial_schedule, edit_trip_id):
+    """Initialize trip schedule with existing items when in edit mode"""
+    if edit_trip_id and initial_schedule:
+        print(f"[EDIT MODE] Initializing schedule with {len(initial_schedule)} days")
+        return initial_schedule
+    raise PreventUpdate
+
+
+# Back button is now handled by the general back navigation callback above
+
+
+
+if __name__ == '__main__':
+    app.run(debug=True, port=8050)
+
+
+
