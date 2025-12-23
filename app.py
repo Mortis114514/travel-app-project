@@ -4236,7 +4236,7 @@ def create_main_layout():
 
         # ===== Hero Section =====
         html.Div([
-            html.Img(src='/assets/food_dirtyrice.png', className='hero-background'),
+            html.Img(src='/assets/JP.jpg', className='hero-background'),
             html.Div(className='hero-overlay'),
             html.Div([
                 html.H1('旅遊平台', className='hero-title'),
