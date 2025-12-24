@@ -4239,8 +4239,8 @@ def create_main_layout():
             html.Img(src='/assets/JP.jpg', className='hero-background'),
             html.Div(className='hero-overlay'),
             html.Div([
-                html.H1('旅遊平台', className='hero-title'),
-                html.P('自己設計想要的旅遊阿，底迪', className='hero-subtitle')
+                html.H1('Travel Platform', className='hero-title'),
+                html.P('Create Your Own Trip', className='hero-subtitle')
             ], className='hero-content')
         ], className='hero-section'),
 
